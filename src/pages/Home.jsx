@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, BriefcaseBusiness, Hammer, Search } from 'lucide-react';
+import { ArrowRight, Search } from 'lucide-react';
 import ListingCard from '../components/ListingCard.jsx';
 import StarRating from '../components/StarRating.jsx';
 import { getFeaturedWorkers, getListings } from '../lib/listingsApi.js';
@@ -200,9 +200,8 @@ function Home() {
         </div>
       </section>
 
-      <section className="split-section">
+      <section className="split-section home-jobs-section">
         <div className="section-heading">
-          <span className="icon-chip"><BriefcaseBusiness size={18} /></span>
           <h2>Find a Job</h2>
           <p>Browse full-time, part-time, and shift-based roles from Philly employers.</p>
         </div>
@@ -212,7 +211,12 @@ function Home() {
             {featuredJobs.map((job) => <ListingCard key={job.id} listing={job} />)}
           </div>
         )}
-        {!featuredError && !featuredJobs.length && <p className="empty-state">No jobs posted yet.</p>}
+        {!featuredError && !featuredJobs.length && (
+          <p className="empty-state">
+            Philly jobs are on the way — browse{' '}
+            <Link className="home-jobs-empty-link" to="/jobs">37,000+ listings on the jobs board.</Link>
+          </p>
+        )}
         <Link className="section-link" to="/jobs">Browse all jobs <ArrowRight size={17} /></Link>
       </section>
 
@@ -252,9 +256,8 @@ function Home() {
         </section>
       )}
 
-      <section className="split-section gig-band">
+      <section className="split-section gig-band home-gigs-section">
         <div className="section-heading">
-          <span className="icon-chip"><Hammer size={18} /></span>
           <h2>Find a Gig</h2>
           <p>Pick up one-time tasks, same-day help, and neighborhood side work.</p>
         </div>
