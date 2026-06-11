@@ -1,0 +1,5 @@
+[functions.email-reminder]
+verify_jwt = false
+
+[functions.marketplace-auto-release]
+verify_jwt = false

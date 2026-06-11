@@ -1,0 +1,18 @@
+{
+  "crons": [
+    {
+      "path": "/api/auto-release-payments",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/marketplace-orders?action=auto-release",
+      "schedule": "0 0 * * *"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/((?!api/|assets/|.*\\..*).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
