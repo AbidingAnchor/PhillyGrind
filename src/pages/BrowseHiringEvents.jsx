@@ -20,6 +20,16 @@ function BrowseHiringEvents() {
       </section>
 
       <section className="page-section hiring-events-page">
+        {!hiringEvents.length && (
+          <div className="hiring-events-empty">
+            <p className="empty-state">No hiring events posted yet. Be the first to post one!</p>
+            <Link className="primary-button hiring-events-post-cta" to="/post-hiring-event">
+              <PlusCircle size={18} />
+              Post a Hiring Event
+            </Link>
+          </div>
+        )}
+
         {Boolean(featuredEvents.length) && (
           <div className="hiring-events-featured-block">
             <div className="section-heading">
@@ -49,6 +59,7 @@ function BrowseHiringEvents() {
           </div>
         )}
 
+        {Boolean(hiringEvents.length) && (
         <div className="hiring-events-submit-banner">
           <div>
             <h3>Hosting a hiring event?</h3>
@@ -58,6 +69,7 @@ function BrowseHiringEvents() {
             Submit your event <ArrowRight size={17} />
           </Link>
         </div>
+        )}
       </section>
     </>
   );

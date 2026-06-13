@@ -3833,6 +3833,17 @@ body {
   background: linear-gradient(135deg, #0f1923 0%, #1a2d1a 100%);
 }
 
+.hiring-events-empty {
+  display: grid;
+  gap: 16px;
+  justify-items: start;
+  margin-bottom: 8px;
+}
+
+.hiring-events-empty .empty-state {
+  margin: 0;
+}
+
 .hiring-events-post-cta {
   display: inline-flex;
   align-items: center;
