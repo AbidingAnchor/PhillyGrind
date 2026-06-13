@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Search } from 'lucide-react';
+import HiringEventCard from '../components/HiringEventCard.jsx';
 import ListingCard from '../components/ListingCard.jsx';
 import StarRating from '../components/StarRating.jsx';
+import { getHomeHiringEvents } from '../data/hiringEvents.js';
 import { getFeaturedWorkers, getListings } from '../lib/listingsApi.js';
+
+const homeHiringEvents = getHomeHiringEvents(3);
 
 const FALLBACK_OPPORTUNITY_COUNT = 1000;
 
@@ -255,6 +259,19 @@ function Home() {
           </div>
         </section>
       )}
+
+      <section className="split-section home-hiring-events-section">
+        <div className="section-heading">
+          <h2>Hiring Events</h2>
+          <p>Open interviews, job fairs, and on-the-spot hiring days from Philly employers.</p>
+        </div>
+        <div className="hiring-events-grid home-hiring-events-grid">
+          {homeHiringEvents.map((event) => (
+            <HiringEventCard key={event.id} event={event} featured={event.featured} compact />
+          ))}
+        </div>
+        <Link className="section-link" to="/hiring-events">Browse all hiring events <ArrowRight size={17} /></Link>
+      </section>
 
       <section className="split-section gig-band home-gigs-section">
         <div className="section-heading">

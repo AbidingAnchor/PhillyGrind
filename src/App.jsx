@@ -10,6 +10,7 @@ const navItems = [
   { to: '/jobs', label: 'Browse Jobs', tour: 'browse-jobs', id: 'nav-browse-jobs' },
   { to: '/gigs', label: 'Browse Gigs', tour: 'browse-gigs', id: 'nav-browse-gigs' },
   { to: '/marketplace', label: 'Marketplace', tour: 'marketplace', id: 'nav-marketplace' },
+  { to: '/hiring-events', label: 'Hiring Events', tour: 'hiring-events', id: 'nav-hiring-events' },
   { to: '/post-job', label: 'Post a Job', tour: 'post-job', id: 'nav-post-job' },
   { to: '/post-gig', label: 'Post a Gig', tour: 'post-gig', id: 'nav-post-gig' },
 ];

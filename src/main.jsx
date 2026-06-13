@@ -10,6 +10,8 @@ import MarketplaceDetail from './pages/MarketplaceDetail.jsx';
 import PostJob from './pages/PostJob.jsx';
 import PostGig from './pages/PostGig.jsx';
 import PostMarketplaceListing from './pages/PostMarketplaceListing.jsx';
+import BrowseHiringEvents from './pages/BrowseHiringEvents.jsx';
+import PostHiringEvent from './pages/PostHiringEvent.jsx';
 import ListingDetail from './pages/ListingDetail.jsx';
 import Login from './pages/Login.jsx';
 import SignUp from './pages/SignUp.jsx';
@@ -35,6 +37,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="/gigs" element={<BrowseGigs />} />
             <Route path="/marketplace" element={<BrowseMarketplace />} />
             <Route path="/marketplace/:id" element={<MarketplaceDetail />} />
+            <Route path="/hiring-events" element={<BrowseHiringEvents />} />
+            <Route path="/post-hiring-event" element={<PostHiringEvent />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/terms" element={<Terms />} />
