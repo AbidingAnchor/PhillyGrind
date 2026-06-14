@@ -557,6 +557,12 @@ function BrowseMarketplace() {
     .marketplace-filter-bottom-row { flex-direction: column; }
     .marketplace-condition-select { width: 100%; }
     .marketplace-condition-select select { width: 100%; }
+    .marketplace-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 430px) {
+    .marketplace-content { padding: 1.25rem 0.875rem; }
+    .marketplace-filter-card { padding: 14px 16px; }
+    .marketplace-hero h1 { font-size: 1.5rem; }
   }
 `}</style>
     </>
