@@ -139,7 +139,7 @@ export async function getPublicProfileStats(userId) {
     throw new Error('Please log in to view this profile.');
   }
 
-  const response = await fetch(`/api/profile-stats?user_id=${encodeURIComponent(userId)}`, {
+  const response = await fetch(`/api/orders?action=profile-stats&user_id=${encodeURIComponent(userId)}`, {
     headers: {
       Authorization: `Bearer ${sessionData.session.access_token}`,
     },

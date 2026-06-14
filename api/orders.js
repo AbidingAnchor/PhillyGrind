@@ -1,4 +1,4 @@
-import { getUserFromRequest, requireMethod, sendJson, stripe, supabaseAdmin } from './_utils.js';
+import { getUserFromRequest, handleProfileStatsRequest, requireMethod, sendJson, stripe, supabaseAdmin } from './_utils.js';
 
 async function releasePayment(req, res) {
   const user = await getUserFromRequest(req);
@@ -69,9 +69,14 @@ async function expireBoosts(req, res) {
 }
 
 export default async function handler(req, res) {
-  if (!requireMethod(req, res)) return;
-
   try {
+    if (req.method === 'GET' && req.query.action === 'profile-stats') {
+      await handleProfileStatsRequest(req, res);
+      return;
+    }
+
+    if (!requireMethod(req, res)) return;
+
     if (req.query.action === 'release-payment' || req.query.action === 'release-funds') {
       await releasePayment(req, res);
       return;

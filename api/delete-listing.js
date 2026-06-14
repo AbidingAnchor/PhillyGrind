@@ -2,10 +2,35 @@ import { getUserFromRequest, requireMethod, sendJson, supabaseAdmin } from './_u
 
 const tableFor = (type) => (type === 'gig' ? 'gigs' : 'jobs');
 
+async function handleUnavailableListings(req, res) {
+  const listingIds = [...new Set((req.body?.listing_ids ?? []).filter(Boolean))];
+  if (!listingIds.length) {
+    sendJson(res, 200, { unavailableListingIds: [] });
+    return;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('orders')
+    .select('listing_id')
+    .in('listing_id', listingIds)
+    .neq('status', 'cancelled');
+
+  if (error) throw error;
+
+  sendJson(res, 200, {
+    unavailableListingIds: [...new Set((data ?? []).map((order) => order.listing_id))],
+  });
+}
+
 export default async function handler(req, res) {
   if (!requireMethod(req, res)) return;
 
   try {
+    if (req.query.action === 'unavailable-listings') {
+      await handleUnavailableListings(req, res);
+      return;
+    }
+
     const user = await getUserFromRequest(req);
     if (!user) {
       sendJson(res, 401, { error: 'Authentication required.' });

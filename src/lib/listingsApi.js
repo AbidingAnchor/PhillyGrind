@@ -121,7 +121,7 @@ async function attachBidCounts(listings) {
 
   let countsByListingId = {};
   try {
-    const response = await fetch('/api/bid-counts', {
+    const response = await fetch('/api/jobs?action=bid-counts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -196,7 +196,7 @@ async function removeListingsWithActiveOrders(listings) {
   if (!hasSupabaseConfig || !listingIds.length) return list;
 
   try {
-    const response = await fetch('/api/unavailable-listings', {
+    const response = await fetch('/api/delete-listing?action=unavailable-listings', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

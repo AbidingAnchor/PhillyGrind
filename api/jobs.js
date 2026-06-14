@@ -1,19 +1,47 @@
+import { requireMethod, sendJson, supabaseAdmin } from './_utils.js';
+
+
 const ADZUNA_ENDPOINT = 'https://api.adzuna.com/v1/api/jobs/us/search/1';
 const DEFAULT_APP_ID = '99927e9b';
 const DEFAULT_APP_KEY = 'd379aca384a966fd906906f2323ea9d6';
 
-function sendJson(res, status, body) {
-  res.setHeader('Content-Type', 'application/json');
-  res.status(status).json(body);
-}
-
-export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    sendJson(res, 405, { error: `Method ${req.method} not allowed.` });
+async function handleBidCounts(req, res) {
+  const listingIds = [...new Set((req.body?.listing_ids ?? []).filter(Boolean))];
+  if (!listingIds.length) {
+    sendJson(res, 200, { counts: {} });
     return;
   }
 
-  const { keyword = '', category = '', location = '' } = req.query;
+  const { data, error } = await supabaseAdmin
+    .from('bids')
+    .select('listing_id')
+    .in('listing_id', listingIds)
+    .neq('status', 'rejected');
+
+  if (error) throw error;
+
+  const counts = (data ?? []).reduce((nextCounts, bid) => ({
+    ...nextCounts,
+    [bid.listing_id]: (nextCounts[bid.listing_id] || 0) + 1,
+  }), {});
+
+  sendJson(res, 200, { counts });
+}
+
+export default async function handler(req, res) {
+  try {
+    if (req.method === 'POST' && req.query.action === 'bid-counts') {
+      if (!requireMethod(req, res, 'POST')) return;
+      await handleBidCounts(req, res);
+      return;
+    }
+
+    if (req.method !== 'GET') {
+      sendJson(res, 405, { error: `Method ${req.method} not allowed.` });
+      return;
+    }
+
+    const { keyword = '', category = '', location = '' } = req.query;
 
   // Call all three APIs in parallel
   const [adzunaRes, usajobsRes, joobleRes] = await Promise.allSettled([
@@ -31,8 +59,11 @@ export default async function handler(req, res) {
   console.log('Jooble results:', joobleJobs.length);
   console.log('USAJobs results:', usajobsJobs.length);
 
-  const allJobs = [...adzunaJobs, ...usajobsJobs, ...joobleJobs];
-  sendJson(res, 200, { results: allJobs, count: adzunaData.count || 0 });
+    const allJobs = [...adzunaJobs, ...usajobsJobs, ...joobleJobs];
+    sendJson(res, 200, { results: allJobs, count: adzunaData.count || 0 });
+  } catch (error) {
+    sendJson(res, 500, { error: error.message || 'Jobs request failed.' });
+  }
 }
 
 async function fetchAdzuna(keyword, category, location) {
