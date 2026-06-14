@@ -83,8 +83,8 @@ function ListingDetail({ type }) {
   const checkingRestrictedGigAccess = Boolean(restrictedGigStatus && isLoggedIn && (bidsLoading || ordersLoading));
   const activeBidCount = isSeekingGig ? (listing?.bidCount ?? bids.filter((bid) => bid.status !== 'rejected').length) : 0;
   const canSubmitBid = Boolean(isLoggedIn && isSeekingGig && listing?.user_id && listing.user_id !== user?.id && !hasActiveOrder && listing.status === 'open');
-  const canQuickApply = Boolean(isLoggedIn && type === 'job' && listing?.user_id && listing.user_id !== user?.id);
-  const canMessagePoster = Boolean(isLoggedIn && listing?.user_id && listing.user_id !== user?.id && !hasApplyUrl && (type !== 'gig' || isSeekingGig || isAcceptedGigWorker));
+  const canQuickApply = Boolean(isLoggedIn && type === 'job' && !hasApplyUrl && listing?.user_id && listing.user_id !== user?.id);
+  const canMessagePoster = Boolean(isLoggedIn && listing?.user_id && listing.user_id !== user?.id && !hasApplyUrl && !canQuickApply && (type !== 'gig' || isSeekingGig || isAcceptedGigWorker));
   const boostCancelled = searchParams.get('boost') === 'cancelled';
   const cancelledBoostTier = ['basic', 'pro'].includes(searchParams.get('tier')) ? searchParams.get('tier') : null;
   const showBoostCancelledPanel = Boolean(isOwner && listing?.boost_pending && boostCancelled);
@@ -509,15 +509,16 @@ function ListingDetail({ type }) {
           {isLoggedIn && listing.user_id === user?.id && (
             <p className="detail-note">You posted this listing.</p>
           )}
-          {!isLoggedIn && !hasApplyUrl && (
+          {!isLoggedIn && type === 'job' && !hasApplyUrl && listing?.user_id && (
             <Link className="primary-button" to="/login" state={{ from: `/${plural}/${listing.id}` }}>
-              <MessageCircle size={18} />
-              {isOfferingGig ? 'Login to Contact / Hire' : type === 'gig' ? 'Login to Place a Bid' : type === 'job' ? 'Login to Quick Apply' : 'Login to Message Poster'}
+              <Zap size={18} />
+              Login to Quick Apply
             </Link>
           )}
-          {!isLoggedIn && hasApplyUrl && type === 'job' && (
-            <Link className="secondary-detail-button" to="/login" state={{ from: `/${plural}/${listing.id}` }}>
-              Login to Quick Apply
+          {!isLoggedIn && !hasApplyUrl && type !== 'job' && (
+            <Link className="primary-button" to="/login" state={{ from: `/${plural}/${listing.id}` }}>
+              <MessageCircle size={18} />
+              {isOfferingGig ? 'Login to Contact / Hire' : type === 'gig' ? 'Login to Place a Bid' : 'Login to Message Poster'}
             </Link>
           )}
           {isLoggedIn && !listing.user_id && (
@@ -755,7 +756,7 @@ function ListingDetail({ type }) {
       )}
       {quickApplyOpen && type === 'job' && (
         <QuickApplyModal
-          job={listing}
+          listing={listing}
           onClose={() => setQuickApplyOpen(false)}
           onApplicationSubmitted={(application) => {
             setApplications((current) => [{ ...application, applicantName: 'You' }, ...current.filter((item) => item.id !== application.id)]);

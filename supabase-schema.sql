@@ -44,6 +44,7 @@ create table if not exists profiles (
   availability text,
   neighborhoods text[] not null default '{}',
   resume_path text,
+  resume_url text,
   avatar_url text,
   stripe_account_id text,
   stripe_onboarding_complete boolean not null default false,
@@ -112,6 +113,17 @@ create table if not exists bids (
   unique (listing_id, worker_id)
 );
 
+create table if not exists applications (
+  id uuid primary key default gen_random_uuid(),
+  job_id uuid not null references jobs(id) on delete cascade,
+  applicant_id uuid not null references auth.users(id) on delete cascade,
+  resume_url text not null,
+  cover_note text,
+  status text not null default 'pending' check (status in ('pending', 'reviewed', 'accepted', 'rejected')),
+  created_at timestamptz default now(),
+  unique (job_id, applicant_id)
+);
+
 alter table jobs
   add column if not exists user_id uuid references auth.users(id) on delete cascade;
 
@@ -168,6 +180,9 @@ alter table profiles
 
 alter table profiles
   add column if not exists resume_path text;
+
+alter table profiles
+  add column if not exists resume_url text;
 
 alter table profiles
   add column if not exists avatar_url text;
@@ -343,6 +358,7 @@ alter table reviews enable row level security;
 alter table notifications enable row level security;
 alter table orders enable row level security;
 alter table bids enable row level security;
+alter table applications enable row level security;
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('resumes', 'resumes', false, 5242880, array['application/pdf'])
@@ -552,6 +568,39 @@ create policy "Listing owners can update bid status"
     )
   );
 
+drop policy if exists "Applicants can read own applications" on applications;
+create policy "Applicants can read own applications"
+  on applications for select
+  to authenticated
+  using (auth.uid() = applicant_id);
+
+drop policy if exists "Job posters can read applications for own jobs" on applications;
+create policy "Job posters can read applications for own jobs"
+  on applications for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from jobs
+      where jobs.id = applications.job_id
+        and jobs.user_id = auth.uid()
+    )
+  );
+
+drop policy if exists "Applicants can submit applications" on applications;
+create policy "Applicants can submit applications"
+  on applications for insert
+  to authenticated
+  with check (
+    auth.uid() = applicant_id
+    and exists (
+      select 1
+      from jobs
+      where jobs.id = applications.job_id
+        and jobs.user_id <> auth.uid()
+    )
+  );
+
 drop policy if exists "Users can read own resumes" on storage.objects;
 create policy "Users can read own resumes"
   on storage.objects for select
@@ -590,6 +639,21 @@ create policy "Users can delete own resumes"
   using (
     bucket_id = 'resumes'
     and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "Job posters can read applicant resumes" on storage.objects;
+create policy "Job posters can read applicant resumes"
+  on storage.objects for select
+  to authenticated
+  using (
+    bucket_id = 'resumes'
+    and exists (
+      select 1
+      from applications a
+      join jobs j on j.id = a.job_id
+      where j.user_id = auth.uid()
+        and a.resume_url = storage.objects.name
+    )
   );
 
 drop policy if exists "Anyone can read avatars" on storage.objects;

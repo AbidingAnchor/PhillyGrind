@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { hasSupabaseConfig, supabase } from './supabase.js';
 
 const AuthContext = createContext(null);
-const profileFields = 'id,name,email,stripe_account_id,stripe_onboarding_complete,onboarding_complete,tos_agreed_at,created_at';
+const profileFields = 'id,name,email,resume_url,resume_path,stripe_account_id,stripe_onboarding_complete,onboarding_complete,tos_agreed_at,created_at';
 
 function withTimeout(promise, milliseconds, timeoutValue) {
   let timeoutId;

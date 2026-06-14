@@ -32,43 +32,6 @@ async function attachApplicantProfiles(applications) {
   }));
 }
 
-export async function submitApplication({ jobId, coverNote, resumeUrl }) {
-  if (!hasSupabaseConfig) {
-    throw new Error('Supabase credentials are missing.');
-  }
-
-  if (!resumeUrl) {
-    throw new Error('Please upload a resume before applying.');
-  }
-
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) {
-    throw new Error('Please log in before applying.');
-  }
-
-  const { data, error } = await supabase
-    .from('applications')
-    .insert({
-      job_id: jobId,
-      applicant_id: userData.user.id,
-      resume_url: resumeUrl,
-      cover_note: coverNote?.trim() || null,
-      status: 'pending',
-    })
-    .select('id,job_id,applicant_id,resume_url,cover_note,status,created_at')
-    .single();
-
-  if (error) {
-    if (error.code === '23505') {
-      throw new Error('You already applied to this job.');
-    }
-
-    throw error;
-  }
-
-  return data;
-}
-
 export async function getApplicationsForJob(jobId) {
   if (!hasSupabaseConfig || !jobId) return [];
 
@@ -113,6 +76,43 @@ export async function getMyApplications() {
     ...application,
     job: jobsById[application.job_id],
   }));
+}
+
+export async function submitApplication({ jobId, resumeUrl, coverNote }) {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  if (!resumeUrl?.trim()) {
+    throw new Error('A resume is required to apply.');
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw new Error('Please log in before applying.');
+  }
+
+  const { data, error } = await supabase
+    .from('applications')
+    .insert({
+      job_id: jobId,
+      applicant_id: userData.user.id,
+      resume_url: resumeUrl.trim(),
+      cover_note: coverNote?.trim() || null,
+      status: 'pending',
+    })
+    .select('id,job_id,applicant_id,resume_url,cover_note,status,created_at')
+    .single();
+
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('You already applied to this job.');
+    }
+
+    throw error;
+  }
+
+  return data;
 }
 
 export async function getApplicationResumeUrl(applicationId) {

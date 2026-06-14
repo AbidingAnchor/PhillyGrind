@@ -1,6 +1,5 @@
 import { hasSupabaseConfig, supabase } from './supabase.js';
 
-const resumePathFor = (userId) => `${userId}/resume.pdf`;
 const avatarExtensionFor = (file) => (file.type === 'image/png' ? 'png' : 'jpg');
 const profileSelect = 'id,name,bio,skills,availability,neighborhoods,resume_path,resume_url,avatar_url,created_at';
 
@@ -36,8 +35,8 @@ export async function uploadResume(file) {
     throw new Error('Supabase credentials are missing.');
   }
 
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !sessionData.session?.access_token) {
     throw new Error('Please log in before uploading a resume.');
   }
 
@@ -49,27 +48,23 @@ export async function uploadResume(file) {
     throw new Error('Resume must be 5MB or smaller.');
   }
 
-  const path = resumePathFor(userData.user.id);
-  const { error: uploadError } = await supabase.storage
-    .from('resumes')
-    .upload(path, file, {
-      cacheControl: '3600',
-      contentType: 'application/pdf',
-      upsert: true,
-    });
+  const formData = new FormData();
+  formData.append('file', file);
 
-  if (uploadError) throw uploadError;
+  const response = await fetch('/api/upload-resume', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sessionData.session.access_token}`,
+    },
+    body: formData,
+  });
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .update({ resume_path: path, resume_url: path })
-    .eq('id', userData.user.id)
-    .select(profileSelect)
-    .single();
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || 'Could not upload resume.');
+  }
 
-  if (error) throw error;
-
-  return data;
+  return payload.profile;
 }
 
 export async function getResumeUrl(resumePath) {
@@ -77,7 +72,7 @@ export async function getResumeUrl(resumePath) {
 
   const { data, error } = await supabase.storage
     .from('resumes')
-    .createSignedUrl(resumePath, 60);
+    .createSignedUrl(resumePath, 300);
 
   if (error) throw error;
 

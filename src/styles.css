@@ -1067,6 +1067,47 @@ main {
   font-size: 0.92rem;
 }
 
+.resume-upload-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.resume-upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.resume-replace-button,
+.resume-upload-button {
+  cursor: pointer;
+}
+
+.quick-apply-resume-field {
+  display: grid;
+  gap: 8px;
+}
+
+.quick-apply-resume-attached,
+.quick-apply-resume-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f9fafb;
+}
+
 .resume-replace-label {
   display: grid;
   gap: 8px;

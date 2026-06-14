@@ -1,62 +1,43 @@
-import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { FileText, X } from 'lucide-react';
 import { submitApplication } from '../lib/applicationsApi.js';
-import { getResumeUrl, uploadResume } from '../lib/profileApi.js';
+import { uploadResume } from '../lib/profileApi.js';
 import { useAuth } from '../lib/auth.jsx';
-import { hasSupabaseConfig, supabase } from '../lib/supabase.js';
 
-function resumeFilename(path) {
-  if (!path) return '';
-  const parts = path.split('/');
+function resumeFilename(resumePath) {
+  if (!resumePath) return '';
+  const parts = resumePath.split('/');
   return parts[parts.length - 1] || 'resume.pdf';
 }
 
-function QuickApplyModal({ job, onClose, onApplicationSubmitted }) {
+function QuickApplyModal({ listing, onClose, onApplicationSubmitted }) {
   const { user, profile } = useAuth();
-  const [form, setForm] = useState({ coverNote: '' });
-  const [resumePath, setResumePath] = useState('');
-  const [resumePreviewUrl, setResumePreviewUrl] = useState('');
+  const fileInputRef = useRef(null);
+  const [resumePath, setResumePath] = useState(profile?.resume_url || profile?.resume_path || '');
+  const [form, setForm] = useState({
+    name: profile?.name || user?.user_metadata?.name || '',
+    email: user?.email || profile?.email || '',
+    coverNote: '',
+  });
   const [status, setStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
 
-  const applicantName = profile?.name || user?.user_metadata?.name || '';
-  const applicantEmail = profile?.email || user?.email || '';
-
   useEffect(() => {
-    if (!hasSupabaseConfig || !user?.id) return;
-
-    let active = true;
-
-    supabase
-      .from('profiles')
-      .select('resume_url,resume_path')
-      .eq('id', user.id)
-      .maybeSingle()
-      .then(async ({ data, error }) => {
-        if (!active || error) return;
-
-        const path = data?.resume_url || data?.resume_path || '';
-        setResumePath(path);
-
-        if (path) {
-          const signedUrl = await getResumeUrl(path);
-          if (active) setResumePreviewUrl(signedUrl || '');
-        }
-      })
-      .catch((error) => console.warn(error));
-
-    return () => {
-      active = false;
-    };
-  }, [user?.id]);
+    setForm((current) => ({
+      ...current,
+      name: profile?.name || user?.user_metadata?.name || current.name,
+      email: user?.email || profile?.email || current.email,
+    }));
+    setResumePath(profile?.resume_url || profile?.resume_path || '');
+  }, [profile, user]);
 
   function updateField(event) {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
   }
 
-  async function handleResumeUpload(event) {
+  async function handleResumeSelect(event) {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -65,11 +46,9 @@ function QuickApplyModal({ job, onClose, onApplicationSubmitted }) {
 
     try {
       const nextProfile = await uploadResume(file);
-      const path = nextProfile.resume_url || nextProfile.resume_path || '';
-      setResumePath(path);
-      const signedUrl = await getResumeUrl(path);
-      setResumePreviewUrl(signedUrl || '');
-      setStatus('Resume attached.');
+      const nextPath = nextProfile.resume_url || nextProfile.resume_path;
+      setResumePath(nextPath);
+      setStatus('Resume uploaded and ready to attach.');
     } catch (error) {
       setStatus(error.message || 'Could not upload resume.');
     } finally {
@@ -85,9 +64,9 @@ function QuickApplyModal({ job, onClose, onApplicationSubmitted }) {
 
     try {
       const application = await submitApplication({
-        jobId: job.id,
-        coverNote: form.coverNote.trim(),
+        jobId: listing.id,
         resumeUrl: resumePath,
+        coverNote: form.coverNote.trim(),
       });
       onApplicationSubmitted?.(application);
       setStatus('Application submitted.');
@@ -99,6 +78,8 @@ function QuickApplyModal({ job, onClose, onApplicationSubmitted }) {
     }
   }
 
+  const attachedResumeName = resumeFilename(resumePath);
+
   return (
     <div className="chat-backdrop" role="presentation">
       <section className="payment-modal" role="dialog" aria-modal="true" aria-label="Quick apply">
@@ -106,7 +87,7 @@ function QuickApplyModal({ job, onClose, onApplicationSubmitted }) {
           <div>
             <span className="eyebrow">Quick apply</span>
             <h2>Submit Application</h2>
-            <p>{job.title}</p>
+            <p>{listing.title}</p>
           </div>
           <button type="button" className="chat-close" onClick={onClose} aria-label="Close quick apply modal">
             <X size={20} />
@@ -115,36 +96,49 @@ function QuickApplyModal({ job, onClose, onApplicationSubmitted }) {
         <form className="payment-form" onSubmit={handleSubmit}>
           <label>
             Name
-            <input type="text" value={applicantName} readOnly />
+            <input name="name" value={form.name} onChange={updateField} readOnly />
           </label>
           <label>
             Email
-            <input type="email" value={applicantEmail} readOnly />
+            <input name="email" type="email" value={form.email} onChange={updateField} readOnly />
           </label>
-          <label>
-            Resume
-            {resumePath ? (
-              <div className="quick-apply-resume-row">
-                <span>{resumeFilename(resumePath)}</span>
-                {resumePreviewUrl && (
-                  <a className="text-link" href={resumePreviewUrl} target="_blank" rel="noreferrer">
-                    Preview
-                  </a>
-                )}
+          <div className="quick-apply-resume-field">
+            <span>Resume</span>
+            {attachedResumeName ? (
+              <div className="quick-apply-resume-attached">
+                <FileText size={18} />
+                <span>{attachedResumeName}</span>
+                <button
+                  type="button"
+                  className="secondary-detail-button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingResume}
+                >
+                  {uploadingResume ? 'Uploading...' : 'Replace'}
+                </button>
               </div>
             ) : (
-              <p className="detail-note">No resume on file yet. Upload one below to apply.</p>
+              <div className="quick-apply-resume-empty">
+                <p className="detail-note">No resume on file. Upload a PDF to apply.</p>
+                <button
+                  type="button"
+                  className="secondary-detail-button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingResume}
+                >
+                  {uploadingResume ? 'Uploading...' : 'Upload Resume PDF'}
+                </button>
+              </div>
             )}
             <input
+              ref={fileInputRef}
               type="file"
               accept="application/pdf"
-              onChange={handleResumeUpload}
-              disabled={uploadingResume}
+              onChange={handleResumeSelect}
+              hidden
             />
-            <span className="detail-note">
-              {uploadingResume ? 'Uploading...' : 'PDF only, 5MB max. Replaces your profile resume.'}
-            </span>
-          </label>
+            <span className="detail-note">PDF only, 5MB max.</span>
+          </div>
           <label>
             Cover note (optional)
             <textarea

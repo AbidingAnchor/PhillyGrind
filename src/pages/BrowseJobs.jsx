@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import CategoryFilters from '../components/CategoryFilters.jsx';
 import ListingCard from '../components/ListingCard.jsx';
 import QuickApplyModal from '../components/QuickApplyModal.jsx';
@@ -27,6 +27,7 @@ const CATEGORY_MAP = {
 
 function BrowseJobs() {
   console.log('BrowseJobs component mounted');
+  const navigate = useNavigate();
   const { isLoggedIn, user } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [category, setCategory] = useState('All');
@@ -199,8 +200,14 @@ function BrowseJobs() {
                 <ListingCard
                   key={job.id}
                   listing={job}
-                  showQuickApply={usingFallback && isLoggedIn && job.user_id !== user?.id}
-                  onQuickApply={setQuickApplyJob}
+                  showQuickApply={usingFallback && job.user_id && !job.apply_url && (!isLoggedIn || job.user_id !== user?.id)}
+                  onQuickApply={(selectedJob) => {
+                    if (!isLoggedIn) {
+                      navigate('/login', { state: { from: `/jobs/${selectedJob.id}` } });
+                      return;
+                    }
+                    setQuickApplyJob(selectedJob);
+                  }}
                 />
               )
             ))}
@@ -211,7 +218,7 @@ function BrowseJobs() {
     </section>
     {quickApplyJob && (
       <QuickApplyModal
-        job={quickApplyJob}
+        listing={quickApplyJob}
         onClose={() => setQuickApplyJob(null)}
       />
     )}

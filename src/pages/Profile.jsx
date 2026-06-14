@@ -239,6 +239,7 @@ function Profile() {
       } : current);
       const nextUrl = await getResumeUrl(getProfileResumePath(nextProfile));
       setResumeUrl(nextUrl);
+      await refreshProfile();
       setProfileStatus('Resume uploaded.');
     } catch (err) {
       setProfileStatus(err.message || 'Could not upload resume.');
@@ -301,6 +302,8 @@ function Profile() {
   }
 
   const profile = profileData?.profile;
+  const resumeStoragePath = getProfileResumePath(profile);
+  const resumeDisplayName = resumeFilename(resumeStoragePath);
 
   function isActiveAcceptedBid(bid) {
     return Boolean(
@@ -431,6 +434,42 @@ function Profile() {
             </section>
           )}
 
+          {isOwnProfile && (
+            <section className="profile-section-card">
+              <div className="profile-section-heading">
+                <span className="eyebrow">Career</span>
+                <h2>Resume</h2>
+              </div>
+              {resumeStoragePath ? (
+                <div className="resume-upload-card">
+                  <div>
+                    <strong>{resumeDisplayName || 'resume.pdf'}</strong>
+                    <p className="detail-note">Private PDF stored in your profile. Attached automatically when you Quick Apply.</p>
+                  </div>
+                  <div className="resume-upload-actions">
+                    {resumeUrl && (
+                      <a className="text-link" href={resumeUrl} target="_blank" rel="noreferrer">
+                        View resume
+                      </a>
+                    )}
+                    <label className="secondary-detail-button resume-replace-button">
+                      Replace
+                      <input type="file" accept="application/pdf" onChange={handleResumeUpload} hidden />
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <div className="resume-upload-card">
+                  <p className="detail-note">Upload a PDF resume to use Quick Apply on job listings.</p>
+                  <label className="primary-button resume-upload-button">
+                    Upload Resume PDF
+                    <input type="file" accept="application/pdf" onChange={handleResumeUpload} hidden />
+                  </label>
+                </div>
+              )}
+            </section>
+          )}
+
           {editing && isOwnProfile && (
             <section className="profile-section-card">
               <div className="profile-section-heading">
@@ -456,42 +495,8 @@ function Profile() {
                   </select>
                 </label>
                 <TagEditor label="Neighborhoods served" placeholder="South Philly, Fishtown..." tags={form.neighborhoods} onChange={(neighborhoods) => setForm((current) => ({ ...current, neighborhoods }))} />
-                <label>
-                  Resume PDF
-                  <input type="file" accept="application/pdf" onChange={handleResumeUpload} />
-                  <span className="detail-note">PDF only, 5MB max. Private storage, visible only to you.</span>
-                </label>
-                {resumeUrl && <a className="text-link" href={resumeUrl} target="_blank" rel="noreferrer">View uploaded resume</a>}
                 <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Profile'}</button>
               </form>
-            </section>
-          )}
-
-          {isOwnProfile && (
-            <section className="profile-section-card">
-              <div className="profile-section-heading">
-                <span className="eyebrow">Quick apply</span>
-                <h2>Resume</h2>
-              </div>
-              {getProfileResumePath(profile) ? (
-                <>
-                  <p className="detail-note">
-                    On file: <strong>{resumeFilename(getProfileResumePath(profile))}</strong>
-                  </p>
-                  {resumeUrl && (
-                    <a className="text-link" href={resumeUrl} target="_blank" rel="noreferrer">
-                      View resume
-                    </a>
-                  )}
-                </>
-              ) : (
-                <p className="empty-state">No resume uploaded yet. Add one to use Quick Apply on job listings.</p>
-              )}
-              <label className="resume-replace-label">
-                {getProfileResumePath(profile) ? 'Replace resume' : 'Upload resume'}
-                <input type="file" accept="application/pdf" onChange={handleResumeUpload} disabled={saving} />
-                <span className="detail-note">PDF only, 5MB max. Private storage, visible only to you and employers you apply to.</span>
-              </label>
             </section>
           )}
 
@@ -514,7 +519,6 @@ function Profile() {
                   <div className="profile-pill-row">{profile.neighborhoods.map((neighborhood) => <span className="neighborhood-pill" key={neighborhood}>{neighborhood}</span>)}</div>
                 </div>
               )}
-              {isOwnProfile && resumeUrl && <a className="text-link" href={resumeUrl} target="_blank" rel="noreferrer">View private resume</a>}
             </section>
           )}
 

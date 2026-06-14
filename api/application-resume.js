@@ -33,11 +33,6 @@ export default async function handler(req, res) {
       return;
     }
 
-    if (!application.resume_url) {
-      sendJson(res, 404, { error: 'No resume attached to this application.' });
-      return;
-    }
-
     const isApplicant = application.applicant_id === viewer.id;
     let isJobPoster = false;
 
