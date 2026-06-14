@@ -1032,6 +1032,47 @@ main {
   gap: 14px;
 }
 
+.applicants-list {
+  display: grid;
+  gap: 14px;
+}
+
+.applicants-panel {
+  margin-top: 24px;
+}
+
+.quick-apply-resume-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f9fafb;
+}
+
+.listing-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.listing-quick-apply-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  font-size: 0.92rem;
+}
+
+.resume-replace-label {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
 .bid-card {
   display: grid;
   gap: 12px;

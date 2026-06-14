@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, Gavel, MapPin, MessageCircle, Pencil, Tags, Trash2 } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Gavel, MapPin, MessageCircle, Pencil, Tags, Trash2, Zap } from 'lucide-react';
 import { deleteListing, getListing, setListingBoostPending } from '../lib/listingsApi.js';
 import ChatModal from '../components/ChatModal.jsx';
 import EditListingModal from '../components/EditListingModal.jsx';
 import DeleteConfirmModal from '../components/DeleteConfirmModal.jsx';
 import PaymentModal from '../components/PaymentModal.jsx';
 import BidModal from '../components/BidModal.jsx';
+import QuickApplyModal from '../components/QuickApplyModal.jsx';
 import ReviewForm from '../components/ReviewForm.jsx';
 import StarRating from '../components/StarRating.jsx';
 import { useAuth } from '../lib/auth.jsx';
@@ -22,6 +23,7 @@ import {
 import { createBoostCheckout } from '../lib/boostsApi.js';
 import { getProfileRating } from '../lib/reviewsApi.js';
 import { getBidsForListing, updateBidStatus } from '../lib/bidsApi.js';
+import { getApplicationsForJob, getApplicationResumeUrl } from '../lib/applicationsApi.js';
 import { gigCategories, jobCategories } from '../data/listings.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -42,11 +44,14 @@ function ListingDetail({ type }) {
   const [chatReceiverId, setChatReceiverId] = useState(null);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [bidOpen, setBidOpen] = useState(false);
+  const [quickApplyOpen, setQuickApplyOpen] = useState(false);
   const [acceptedBidForPayment, setAcceptedBidForPayment] = useState(null);
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [bids, setBids] = useState([]);
   const [bidsLoading, setBidsLoading] = useState(false);
+  const [applications, setApplications] = useState([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -78,6 +83,7 @@ function ListingDetail({ type }) {
   const checkingRestrictedGigAccess = Boolean(restrictedGigStatus && isLoggedIn && (bidsLoading || ordersLoading));
   const activeBidCount = isSeekingGig ? (listing?.bidCount ?? bids.filter((bid) => bid.status !== 'rejected').length) : 0;
   const canSubmitBid = Boolean(isLoggedIn && isSeekingGig && listing?.user_id && listing.user_id !== user?.id && !hasActiveOrder && listing.status === 'open');
+  const canQuickApply = Boolean(isLoggedIn && type === 'job' && listing?.user_id && listing.user_id !== user?.id);
   const canMessagePoster = Boolean(isLoggedIn && listing?.user_id && listing.user_id !== user?.id && !hasApplyUrl && (type !== 'gig' || isSeekingGig || isAcceptedGigWorker));
   const boostCancelled = searchParams.get('boost') === 'cancelled';
   const cancelledBoostTier = ['basic', 'pro'].includes(searchParams.get('tier')) ? searchParams.get('tier') : null;
@@ -142,6 +148,20 @@ function ListingDetail({ type }) {
       .catch((err) => console.warn(err))
       .finally(() => setBidsLoading(false));
   }, [id, isLoggedIn, type]);
+
+  useEffect(() => {
+    if (!isLoggedIn || type !== 'job' || !id || !isOwner) {
+      setApplications([]);
+      setApplicationsLoading(false);
+      return;
+    }
+
+    setApplicationsLoading(true);
+    getApplicationsForJob(id)
+      .then(setApplications)
+      .catch((err) => console.warn(err))
+      .finally(() => setApplicationsLoading(false));
+  }, [id, isLoggedIn, isOwner, type]);
 
   useEffect(() => {
     const shouldOpenChat = searchParams.get('openChat') === 'true';
@@ -369,6 +389,17 @@ function ListingDetail({ type }) {
     }
   }
 
+  async function handleViewApplicationResume(applicationId) {
+    setActionStatus('');
+
+    try {
+      const signedUrl = await getApplicationResumeUrl(applicationId);
+      window.open(signedUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      setActionStatus(error.message || 'Could not open resume.');
+    }
+  }
+
   async function handleBidStatus(bid, status) {
     setActionStatus('');
 
@@ -440,10 +471,16 @@ function ListingDetail({ type }) {
           <p>{listing.description}</p>
         </div>
         <div className="detail-actions">
+          {canQuickApply && (
+            <button className="primary-button" type="button" onClick={() => setQuickApplyOpen(true)}>
+              <Zap size={18} />
+              Quick Apply
+            </button>
+          )}
           {hasApplyUrl && (
-            <a className="primary-button" href={listing.apply_url} target="_blank" rel="noreferrer">
+            <a className={canQuickApply ? 'secondary-detail-button' : 'primary-button'} href={listing.apply_url} target="_blank" rel="noreferrer">
               <ExternalLink size={18} />
-              Apply Now
+              Apply Externally
             </a>
           )}
           {isOfferingGig && isLoggedIn && listing.user_id !== user?.id && !hasActiveOrder && (
@@ -475,7 +512,12 @@ function ListingDetail({ type }) {
           {!isLoggedIn && !hasApplyUrl && (
             <Link className="primary-button" to="/login" state={{ from: `/${plural}/${listing.id}` }}>
               <MessageCircle size={18} />
-              {isOfferingGig ? 'Login to Contact / Hire' : type === 'gig' ? 'Login to Place a Bid' : 'Login to Message Poster'}
+              {isOfferingGig ? 'Login to Contact / Hire' : type === 'gig' ? 'Login to Place a Bid' : type === 'job' ? 'Login to Quick Apply' : 'Login to Message Poster'}
+            </Link>
+          )}
+          {!isLoggedIn && hasApplyUrl && type === 'job' && (
+            <Link className="secondary-detail-button" to="/login" state={{ from: `/${plural}/${listing.id}` }}>
+              Login to Quick Apply
             </Link>
           )}
           {isLoggedIn && !listing.user_id && (
@@ -583,6 +625,41 @@ function ListingDetail({ type }) {
             )}
           </div>
         )}
+        {isOwner && type === 'job' && (
+          <section className="bids-panel applicants-panel">
+            <div className="profile-section-heading">
+              <span className="eyebrow">Applications</span>
+              <h2>Applicants</h2>
+            </div>
+            {applicationsLoading && <p className="empty-state">Loading applications...</p>}
+            {!applicationsLoading && applications.length === 0 && <p className="empty-state">No applications yet.</p>}
+            {!applicationsLoading && applications.length > 0 && (
+              <div className="applicants-list">
+                {applications.map((application) => (
+                  <article className="bid-card applicant-card" key={application.id}>
+                    <div className="bid-card-header">
+                      <div>
+                        <Link className="poster-name-link" to={`/profile/${application.applicant_id}`}>
+                          {application.applicantName}
+                        </Link>
+                        <span>{new Date(application.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <span className={`bid-status ${application.status}`}>{application.status}</span>
+                    </div>
+                    {application.cover_note && <p>{application.cover_note}</p>}
+                    <button
+                      className="text-link"
+                      type="button"
+                      onClick={() => handleViewApplicationResume(application.id)}
+                    >
+                      View resume
+                    </button>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
         {isOwner && type === 'gig' && isSeekingGig && (
           <section className="bids-panel">
             <div className="profile-section-heading">
@@ -673,6 +750,15 @@ function ListingDetail({ type }) {
           onBidSubmitted={(bid) => {
             setBids((current) => [{ ...bid, workerName: 'You' }, ...current.filter((item) => item.id !== bid.id)]);
             setListing((current) => current ? { ...current, bidCount: (current.bidCount || 0) + 1 } : current);
+          }}
+        />
+      )}
+      {quickApplyOpen && type === 'job' && (
+        <QuickApplyModal
+          job={listing}
+          onClose={() => setQuickApplyOpen(false)}
+          onApplicationSubmitted={(application) => {
+            setApplications((current) => [{ ...application, applicantName: 'You' }, ...current.filter((item) => item.id !== application.id)]);
           }}
         />
       )}

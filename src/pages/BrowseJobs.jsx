@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import CategoryFilters from '../components/CategoryFilters.jsx';
 import ListingCard from '../components/ListingCard.jsx';
+import QuickApplyModal from '../components/QuickApplyModal.jsx';
 import { jobCategories } from '../data/listings.js';
 import { getListings } from '../lib/listingsApi.js';
 import { attachPosterRatings } from '../lib/reviewsApi.js';
+import { useAuth } from '../lib/auth.jsx';
 
 // Helper function to format salary in thousands
 const formatSalary = (num) => {
@@ -24,6 +27,7 @@ const CATEGORY_MAP = {
 
 function BrowseJobs() {
   console.log('BrowseJobs component mounted');
+  const { isLoggedIn, user } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [category, setCategory] = useState('All');
   const [keyword, setKeyword] = useState('');
@@ -31,6 +35,7 @@ function BrowseJobs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [usingFallback, setUsingFallback] = useState(false);
+  const [quickApplyJob, setQuickApplyJob] = useState(null);
 
   useEffect(() => {
     const timeoutId = setTimeout(async () => {
@@ -191,7 +196,12 @@ function BrowseJobs() {
                   <a href={job.url} target="_blank" rel="noopener noreferrer" className="primary-button">View Job</a>
                 </div>
               ) : (
-                <ListingCard key={job.id} listing={job} />
+                <ListingCard
+                  key={job.id}
+                  listing={job}
+                  showQuickApply={usingFallback && isLoggedIn && job.user_id !== user?.id}
+                  onQuickApply={setQuickApplyJob}
+                />
               )
             ))}
           </div>
@@ -199,6 +209,12 @@ function BrowseJobs() {
         </>
       )}
     </section>
+    {quickApplyJob && (
+      <QuickApplyModal
+        job={quickApplyJob}
+        onClose={() => setQuickApplyJob(null)}
+      />
+    )}
     </>
   );
 }

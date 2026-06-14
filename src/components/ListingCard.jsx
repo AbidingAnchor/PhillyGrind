@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Gavel, MapPin } from 'lucide-react';
+import { ArrowRight, Gavel, MapPin, Zap } from 'lucide-react';
 import StarRating from './StarRating.jsx';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -10,7 +10,7 @@ function safeDisplayName(value, fallback = 'PhillyGrind user') {
   return trimmed;
 }
 
-function ListingCard({ listing }) {
+function ListingCard({ listing, onQuickApply, showQuickApply = false }) {
   const detailPath = listing.type === 'gig' ? `/gigs/${listing.id}` : `/jobs/${listing.id}`;
   const profilePath = listing.user_id ? `/profile/${listing.user_id}` : '';
   const posterName = safeDisplayName(listing.posterName || listing.company);
@@ -65,9 +65,25 @@ function ListingCard({ listing }) {
         <strong>{listing.pay}</strong>
       </div>
       <p className="listing-description">{listing.description}</p>
-      <Link to={detailPath} className="text-link">
-        View details <ArrowRight size={16} />
-      </Link>
+      <div className="listing-card-actions">
+        {listing.type === 'job' && showQuickApply && onQuickApply && (
+          <button
+            className="primary-button listing-quick-apply-button"
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onQuickApply(listing);
+            }}
+          >
+            <Zap size={16} />
+            Quick Apply
+          </button>
+        )}
+        <Link to={detailPath} className="text-link">
+          View details <ArrowRight size={16} />
+        </Link>
+      </div>
     </article>
   );
 }

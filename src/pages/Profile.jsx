@@ -14,6 +14,16 @@ import { useAuth } from '../lib/auth.jsx';
 const availabilityOptions = ['Available Now', 'Weekends Only', 'Evenings Only', 'Not Available'];
 const activeGigStatuses = new Set(['in progress', 'in_progress']);
 
+function resumeFilename(path) {
+  if (!path) return '';
+  const parts = path.split('/');
+  return parts[parts.length - 1] || 'resume.pdf';
+}
+
+function getProfileResumePath(profile) {
+  return profile?.resume_url || profile?.resume_path || '';
+}
+
 function getInitials(name) {
   return (name || 'PhillyGrind user')
     .split(/\s+/)
@@ -156,12 +166,13 @@ function Profile() {
   }, [viewedUserId]);
 
   useEffect(() => {
-    if (!isOwnProfile || !profileData?.profile?.resume_path) {
+    const resumeRef = getProfileResumePath(profileData?.profile);
+    if (!isOwnProfile || !resumeRef) {
       setResumeUrl('');
       return;
     }
 
-    getResumeUrl(profileData.profile.resume_path)
+    getResumeUrl(resumeRef)
       .then(setResumeUrl)
       .catch((err) => console.warn(err));
   }, [isOwnProfile, profileData]);
@@ -226,7 +237,7 @@ function Profile() {
         ...current,
         profile: nextProfile,
       } : current);
-      const nextUrl = await getResumeUrl(nextProfile.resume_path);
+      const nextUrl = await getResumeUrl(getProfileResumePath(nextProfile));
       setResumeUrl(nextUrl);
       setProfileStatus('Resume uploaded.');
     } catch (err) {
@@ -453,6 +464,34 @@ function Profile() {
                 {resumeUrl && <a className="text-link" href={resumeUrl} target="_blank" rel="noreferrer">View uploaded resume</a>}
                 <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Profile'}</button>
               </form>
+            </section>
+          )}
+
+          {isOwnProfile && (
+            <section className="profile-section-card">
+              <div className="profile-section-heading">
+                <span className="eyebrow">Quick apply</span>
+                <h2>Resume</h2>
+              </div>
+              {getProfileResumePath(profile) ? (
+                <>
+                  <p className="detail-note">
+                    On file: <strong>{resumeFilename(getProfileResumePath(profile))}</strong>
+                  </p>
+                  {resumeUrl && (
+                    <a className="text-link" href={resumeUrl} target="_blank" rel="noreferrer">
+                      View resume
+                    </a>
+                  )}
+                </>
+              ) : (
+                <p className="empty-state">No resume uploaded yet. Add one to use Quick Apply on job listings.</p>
+              )}
+              <label className="resume-replace-label">
+                {getProfileResumePath(profile) ? 'Replace resume' : 'Upload resume'}
+                <input type="file" accept="application/pdf" onChange={handleResumeUpload} disabled={saving} />
+                <span className="detail-note">PDF only, 5MB max. Private storage, visible only to you and employers you apply to.</span>
+              </label>
             </section>
           )}
 

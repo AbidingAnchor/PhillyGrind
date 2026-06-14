@@ -2,7 +2,7 @@ import { hasSupabaseConfig, supabase } from './supabase.js';
 
 const resumePathFor = (userId) => `${userId}/resume.pdf`;
 const avatarExtensionFor = (file) => (file.type === 'image/png' ? 'png' : 'jpg');
-const profileSelect = 'id,name,bio,skills,availability,neighborhoods,resume_path,avatar_url,created_at';
+const profileSelect = 'id,name,bio,skills,availability,neighborhoods,resume_path,resume_url,avatar_url,created_at';
 
 export async function updateProfile({ bio, skills, availability, neighborhoods }) {
   if (!hasSupabaseConfig) {
@@ -62,7 +62,7 @@ export async function uploadResume(file) {
 
   const { data, error } = await supabase
     .from('profiles')
-    .update({ resume_path: path })
+    .update({ resume_path: path, resume_url: path })
     .eq('id', userData.user.id)
     .select(profileSelect)
     .single();
