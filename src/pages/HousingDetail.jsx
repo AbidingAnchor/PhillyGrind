@@ -5,8 +5,8 @@ import {
   ArrowLeft,
   Bath,
   BedDouble,
+  Building2,
   Calendar,
-  Camera,
   MapPin,
   MessageCircle,
   PawPrint,
@@ -167,12 +167,13 @@ function HousingDetail() {
 
       <article className="detail-card housing-detail-card">
         <div className="housing-detail-gallery">
-          <div className="housing-detail-main-photo">
+          <div className={`housing-detail-main-photo${images.length ? '' : ' no-image'}`}>
             {images.length ? (
               <img src={images[activeImage]} alt={listing.title} />
             ) : (
-              <div className="housing-card-photo-placeholder">
-                <Camera size={40} />
+              <div className="housing-detail-photo-empty" aria-hidden="true">
+                <Building2 size={48} strokeWidth={1.5} />
+                <span>No photos yet</span>
               </div>
             )}
           </div>
@@ -184,6 +185,8 @@ function HousingDetail() {
                   type="button"
                   className={activeImage === index ? 'housing-thumb active' : 'housing-thumb'}
                   onClick={() => setActiveImage(index)}
+                  aria-label={`View photo ${index + 1}`}
+                  aria-pressed={activeImage === index}
                 >
                   <img src={image} alt={`${listing.title} photo ${index + 1}`} />
                 </button>
@@ -192,74 +195,82 @@ function HousingDetail() {
           )}
         </div>
 
-        <div className="housing-detail-header">
-          <span className="pill">{listing.neighborhood}</span>
-          <h1>{listing.title}</h1>
-          <p className="housing-detail-price">${Number(listing.monthly_rent).toLocaleString()}/month</p>
-        </div>
+        <div className="housing-detail-body">
+          <header className="housing-detail-header">
+            <p className="housing-detail-price">
+              <span className="housing-detail-price-amount">
+                ${Number(listing.monthly_rent).toLocaleString()}
+              </span>
+              <span className="housing-detail-price-period">/month</span>
+            </p>
+            <span className="pill">{listing.neighborhood}</span>
+            <h1>{listing.title}</h1>
+          </header>
 
-        <div className="detail-meta housing-detail-meta">
-          <span><BedDouble size={18} /> {listing.bedrooms} bedrooms</span>
-          <span><Bath size={18} /> {listing.bathrooms} bathrooms</span>
-          <span><MapPin size={18} /> {listing.address}</span>
-          <span><Calendar size={18} /> {formatAvailableDate(listing.available_date)}</span>
-          <span><PawPrint size={18} /> {listing.pets_allowed ? 'Pets allowed' : 'No pets'}</span>
-          <span><Zap size={18} /> {listing.utilities_included ? 'Utilities included' : 'Utilities not included'}</span>
-        </div>
+          <div className="housing-detail-pills">
+            <span className="housing-detail-pill"><BedDouble size={18} /> {listing.bedrooms} bedrooms</span>
+            <span className="housing-detail-pill"><Bath size={18} /> {listing.bathrooms} bathrooms</span>
+            <span className="housing-detail-pill"><MapPin size={18} /> {listing.address}</span>
+            <span className="housing-detail-pill"><Calendar size={18} /> {formatAvailableDate(listing.available_date)}</span>
+            <span className="housing-detail-pill"><PawPrint size={18} /> {listing.pets_allowed ? 'Pets allowed' : 'No pets'}</span>
+            <span className="housing-detail-pill"><Zap size={18} /> {listing.utilities_included ? 'Utilities included' : 'Utilities not included'}</span>
+          </div>
 
-        <div className="detail-body">
-          <h2>About this rental</h2>
-          <p>{listing.description}</p>
-        </div>
+          <section className="housing-detail-about">
+            <h2>About this rental</h2>
+            <p>{listing.description}</p>
+          </section>
 
-        <div className="housing-landlord-card">
-          <div className="housing-landlord-avatar">
-            {listing.landlordAvatarUrl ? (
-              <img src={listing.landlordAvatarUrl} alt={`${listing.landlordName} avatar`} />
-            ) : (
-              <User size={28} />
+          <div className="housing-landlord-card">
+            <div className="housing-landlord-avatar">
+              {listing.landlordAvatarUrl ? (
+                <img src={listing.landlordAvatarUrl} alt={`${listing.landlordName} avatar`} />
+              ) : (
+                <User size={28} />
+              )}
+            </div>
+            <div>
+              <span className="eyebrow">Landlord</span>
+              <h3>
+                {listing.landlordName}
+                <LandlordBadge verified={listing.landlordVerified} warning={listing.landlordWarning} large />
+              </h3>
+              <p>Member since {formatMemberSince(listing.landlordMemberSince)}</p>
+            </div>
+          </div>
+
+          <div className="housing-detail-actions">
+            {canContact && (
+              <button className="primary-button" type="button" onClick={() => setChatOpen(true)}>
+                <MessageCircle size={18} />
+                Contact Landlord
+              </button>
+            )}
+            {isLoggedIn && !isOwner && (
+              <button className="secondary-detail-button" type="button" onClick={() => setReportOpen(true)}>
+                <AlertTriangle size={18} />
+                Report this Listing
+              </button>
+            )}
+            {!isLoggedIn && (
+              <Link className="primary-button" to="/login" state={{ from: `/housing/${listing.id}` }}>
+                <MessageCircle size={18} />
+                Login to Contact Landlord
+              </Link>
             )}
           </div>
-          <div>
-            <span className="eyebrow">Landlord</span>
-            <h3>
-              {listing.landlordName}
-              <LandlordBadge verified={listing.landlordVerified} warning={listing.landlordWarning} large />
-            </h3>
-            <p>Member since {formatMemberSince(listing.landlordMemberSince)}</p>
-          </div>
         </div>
 
-        <div className="detail-actions">
-          {canContact && (
-            <button className="primary-button" type="button" onClick={() => setChatOpen(true)}>
-              <MessageCircle size={18} />
-              Contact Landlord
+        {isOwner && (
+          <footer className="housing-detail-owner-footer">
+            <p className="detail-note">You posted this rental.</p>
+            <button className="danger-button" type="button" onClick={() => setDeleteOpen(true)} disabled={deleting}>
+              <Trash2 size={18} />
+              Delete Listing
             </button>
-          )}
-          {isLoggedIn && !isOwner && (
-            <button className="secondary-detail-button" type="button" onClick={() => setReportOpen(true)}>
-              <AlertTriangle size={18} />
-              Report this Listing
-            </button>
-          )}
-          {isOwner && (
-            <>
-              <p className="detail-note">You posted this rental.</p>
-              <button className="danger-button" type="button" onClick={() => setDeleteOpen(true)} disabled={deleting}>
-                <Trash2 size={18} />
-                Delete Listing
-              </button>
-            </>
-          )}
-          {deleteStatus && <p className="form-status error-text">{deleteStatus}</p>}
-          {!isLoggedIn && (
-            <Link className="primary-button" to="/login" state={{ from: `/housing/${listing.id}` }}>
-              <MessageCircle size={18} />
-              Login to Contact Landlord
-            </Link>
-          )}
-        </div>
+            {deleteStatus && <p className="form-status error-text">{deleteStatus}</p>}
+          </footer>
+        )}
       </article>
 
       {chatOpen && (

@@ -4981,13 +4981,19 @@ body {
   cursor: pointer;
 }
 
+.housing-detail-page {
+  display: grid;
+  gap: 28px;
+  max-width: 960px;
+}
+
 .housing-detail-page .housing-flag-banner {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 16px 0;
-  padding: 12px 16px;
-  border-radius: 10px;
+  margin: 0;
+  padding: 14px 20px;
+  border-radius: 12px;
   background: #fef3c7;
   border: 1px solid #fcd34d;
   color: #92400e;
@@ -4997,51 +5003,88 @@ body {
 .housing-detail-card {
   overflow: hidden;
   padding: 0;
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(17, 24, 39, 0.12);
 }
 
 .housing-detail-gallery {
-  background: #f3f4f6;
+  display: grid;
+  gap: 12px;
+  padding: 20px 20px 0;
+  background: transparent;
 }
 
 .housing-detail-main-photo {
-  height: 360px;
+  width: 100%;
+  height: 480px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #ecfdf5 0%, #f0fdf4 50%, #e8f8ed 100%);
 }
 
 .housing-detail-main-photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 12px;
 }
 
-.housing-detail-main-photo.placeholder {
+.housing-detail-main-photo.no-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.housing-detail-photo-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  color: #9ca3af;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  color: var(--green-dark);
+}
+
+.housing-detail-photo-empty svg {
+  opacity: 0.55;
+}
+
+.housing-detail-photo-empty span {
+  font-size: 0.95rem;
+  font-weight: 750;
+  color: var(--muted);
 }
 
 .housing-detail-thumbs {
   display: flex;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 10px;
+  padding: 16px 0 4px;
   overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .housing-thumb {
   flex: 0 0 auto;
-  width: 72px;
-  height: 72px;
+  width: 80px;
+  height: 64px;
   padding: 0;
   border: 2px solid transparent;
   border-radius: 8px;
   overflow: hidden;
+  background: #fff;
   cursor: pointer;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.housing-thumb:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(17, 24, 39, 0.12);
 }
 
 .housing-thumb.active {
   border-color: var(--green);
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.18);
 }
 
 .housing-thumb img {
@@ -5051,14 +5094,189 @@ body {
 }
 
 .housing-detail-body {
-  padding: 24px;
+  display: grid;
+  gap: 32px;
+  padding: 36px clamp(24px, 4vw, 40px) 40px;
+}
+
+.housing-detail-header {
+  display: grid;
+  gap: 14px;
+}
+
+.housing-detail-header h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
 }
 
 .housing-detail-price {
-  margin: 0 0 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 0;
+  line-height: 1;
+}
+
+.housing-detail-price-amount {
   color: var(--green);
-  font-size: 2rem;
+  font-family: Syne, Inter, sans-serif;
+  font-size: clamp(2.4rem, 5vw, 3.25rem);
   font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.housing-detail-price-period {
+  color: var(--muted);
+  font-size: 1.15rem;
+  font-weight: 750;
+}
+
+.housing-detail-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.housing-detail-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--navy);
+  font-size: 0.92rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.housing-detail-pill svg {
+  flex-shrink: 0;
+  color: var(--green);
+}
+
+.housing-detail-about {
+  padding: 32px 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.housing-detail-about h2 {
+  margin: 0 0 16px;
+  color: var(--navy);
+  font-family: Syne, Inter, sans-serif;
+  font-size: clamp(1.35rem, 2.5vw, 1.65rem);
+  letter-spacing: -0.02em;
+}
+
+.housing-detail-about p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.06rem;
+  line-height: 1.75;
+}
+
+.housing-landlord-card {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  margin: 0;
+  padding: 24px 28px;
+  border: 1px solid rgba(22, 163, 74, 0.14);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 36px rgba(17, 24, 39, 0.08);
+}
+
+.housing-landlord-card h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  color: var(--navy);
+  font-family: Syne, Inter, sans-serif;
+  font-size: 1.25rem;
+}
+
+.housing-landlord-avatar {
+  display: flex;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--mint);
+  color: var(--green-dark);
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.18);
+}
+
+.housing-landlord-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.housing-landlord-card p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.housing-detail-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-top: 8px;
+}
+
+.housing-detail-owner-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px 18px;
+  padding: 20px clamp(24px, 4vw, 40px);
+  border-top: 1px solid var(--line);
+  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
+}
+
+.housing-detail-owner-footer .detail-note {
+  margin: 0;
+  flex: 1 1 200px;
+}
+
+.housing-detail-owner-footer .form-status {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.housing-detail-owner-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 18px 36px;
+  border-top: 1px solid var(--line);
+  background: #f9fafb;
+}
+
+.housing-detail-owner-note {
+  margin: 0;
+  flex: 1;
+  min-width: 180px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 750;
+}
+
+.housing-detail-delete-status {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 .housing-detail-meta {
@@ -5080,40 +5298,6 @@ body {
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 18px;
-}
-
-.housing-landlord-card {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  margin: 20px 0;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #f9fafb;
-}
-
-.housing-landlord-avatar {
-  display: flex;
-  width: 56px;
-  height: 56px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: var(--mint);
-  color: var(--green-dark);
-  overflow: hidden;
-}
-
-.housing-landlord-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.housing-landlord-card p {
-  margin: 4px 0 0;
-  color: var(--muted);
 }
 
 .housing-report-modal {
@@ -5192,6 +5376,34 @@ body {
   }
 
   .housing-post-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .housing-detail-gallery {
+    padding: 14px 14px 0;
+  }
+
+  .housing-detail-main-photo {
+    height: 280px;
+  }
+
+  .housing-detail-content {
+    gap: 24px;
+    padding: 24px 20px 28px;
+  }
+
+  .housing-detail-pill {
+    white-space: normal;
+  }
+
+  .housing-detail-owner-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 20px;
+  }
+
+  .housing-detail-owner-bar .danger-button {
     width: 100%;
     justify-content: center;
   }
