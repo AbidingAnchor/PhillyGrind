@@ -22,6 +22,16 @@ function safeDisplayName(value, fallback = 'Landlord') {
   return trimmed;
 }
 
+export function getHousingImagePublicUrl(path) {
+  if (!path) return '';
+  const trimmed = String(path).trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (!hasSupabaseConfig) return trimmed;
+
+  const { data } = supabase.storage.from('housing-images').getPublicUrl(trimmed);
+  return data.publicUrl;
+}
+
 function normalizeListing(listing) {
   const profile = listing.profiles || listing.profile || {};
   const landlordName = safeDisplayName(profile.name || listing.landlordName);
@@ -34,7 +44,7 @@ function normalizeListing(listing) {
     landlordWarning: Boolean(profile.landlord_warning),
     landlordAvatarUrl: profile.avatar_url || '',
     landlordMemberSince: profile.created_at || listing.created_at,
-    images: listing.images ?? [],
+    images: (listing.images ?? []).map(getHousingImagePublicUrl).filter(Boolean),
   };
 }
 
@@ -249,4 +259,27 @@ export async function createHousingListing(listing, photoFiles = []) {
 
   const [normalized] = await attachLandlordInfo([data]);
   return normalized;
+}
+
+export async function deleteHousingListing(id) {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw new Error('Please log in to delete this listing.');
+  }
+
+  const { data: deleted, error } = await supabase
+    .from('housing_listings')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userData.user.id)
+    .select('id');
+
+  if (error) throw error;
+  if (!deleted?.length) {
+    throw new Error('Listing was not deleted. Please try again.');
+  }
 }

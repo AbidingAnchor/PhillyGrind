@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Home, MapPin, PlusCircle } from 'lucide-react';
-import { getHousingListings, HOUSING_NEIGHBORHOODS } from '../lib/housingApi.js';
+import { getHousingImagePublicUrl, getHousingListings, HOUSING_NEIGHBORHOODS } from '../lib/housingApi.js';
 import { useAuth } from '../lib/auth.jsx';
 
 function withTimeout(promise, milliseconds, message) {
@@ -169,7 +169,7 @@ function Housing() {
                   <article className="housing-card">
                     <div className="housing-card-photo">
                       {listing.images?.length ? (
-                        <img src={listing.images[0]} alt={listing.title} />
+                        <img src={getHousingImagePublicUrl(listing.images[0])} alt={listing.title} />
                       ) : (
                         <div className="housing-card-photo-placeholder">
                           <Home size={32} />

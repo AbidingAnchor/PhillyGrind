@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -10,13 +10,17 @@ import {
   MapPin,
   MessageCircle,
   PawPrint,
+  Trash2,
   User,
   X,
   Zap,
 } from 'lucide-react';
 import ChatModal from '../components/ChatModal.jsx';
+import DeleteConfirmModal from '../components/DeleteConfirmModal.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import {
+  deleteHousingListing,
+  getHousingImagePublicUrl,
   getHousingListing,
   getLandlordReportCount,
   submitLandlordReport,
@@ -51,12 +55,16 @@ function formatMemberSince(value) {
 
 function HousingDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { isLoggedIn, user } = useAuth();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeImage, setActiveImage] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteStatus, setDeleteStatus] = useState('');
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState(REPORT_REASONS[0]);
   const [reportDetails, setReportDetails] = useState('');
@@ -65,7 +73,9 @@ function HousingDetail() {
   const [reportCount, setReportCount] = useState(0);
 
   const isOwner = isLoggedIn && listing?.user_id === user?.id;
-  const images = listing?.images?.length ? listing.images : [];
+  const images = listing?.images?.length
+    ? listing.images.map(getHousingImagePublicUrl)
+    : [];
   const canContact = Boolean(isLoggedIn && listing?.user_id && !isOwner);
 
   useEffect(() => {
@@ -87,6 +97,22 @@ function HousingDetail() {
       .catch((err) => setError(err.message || 'Could not load this rental.'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteStatus('');
+
+    try {
+      await deleteHousingListing(listing.id);
+      setDeleteOpen(false);
+      navigate('/housing');
+    } catch (err) {
+      setDeleteStatus(err.message || 'Could not delete this listing.');
+      setDeleteOpen(false);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function handleReportSubmit(event) {
     event.preventDefault();
@@ -217,7 +243,16 @@ function HousingDetail() {
               Report this Listing
             </button>
           )}
-          {isOwner && <p className="detail-note">You posted this rental.</p>}
+          {isOwner && (
+            <>
+              <p className="detail-note">You posted this rental.</p>
+              <button className="danger-button" type="button" onClick={() => setDeleteOpen(true)} disabled={deleting}>
+                <Trash2 size={18} />
+                Delete Listing
+              </button>
+            </>
+          )}
+          {deleteStatus && <p className="form-status error-text">{deleteStatus}</p>}
           {!isLoggedIn && (
             <Link className="primary-button" to="/login" state={{ from: `/housing/${listing.id}` }}>
               <MessageCircle size={18} />
@@ -232,6 +267,14 @@ function HousingDetail() {
           listing={listing}
           receiverLabel={listing.landlordName}
           onClose={() => setChatOpen(false)}
+        />
+      )}
+
+      {deleteOpen && (
+        <DeleteConfirmModal
+          deleting={deleting}
+          onCancel={() => setDeleteOpen(false)}
+          onConfirm={handleDelete}
         />
       )}
 
