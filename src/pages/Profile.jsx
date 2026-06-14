@@ -444,7 +444,7 @@ function Profile() {
                 <div className="resume-upload-card">
                   <div>
                     <strong>{resumeDisplayName || 'resume.pdf'}</strong>
-                    <p className="detail-note">Private PDF stored in your profile. Attached automatically when you Quick Apply.</p>
+                    <p className="detail-note">Private resume stored in your profile. Attached automatically when you Quick Apply.</p>
                   </div>
                   <div className="resume-upload-actions">
                     {resumeUrl && (
@@ -454,16 +454,16 @@ function Profile() {
                     )}
                     <label className="secondary-detail-button resume-replace-button">
                       Replace
-                      <input type="file" accept="application/pdf" onChange={handleResumeUpload} hidden />
+                      <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleResumeUpload} hidden />
                     </label>
                   </div>
                 </div>
               ) : (
                 <div className="resume-upload-card">
-                  <p className="detail-note">Upload a PDF resume to use Quick Apply on job listings.</p>
+                  <p className="detail-note">Upload a PDF or Word resume to use Quick Apply on job listings. PDF or Word document (.pdf, .doc, .docx), 5MB max.</p>
                   <label className="primary-button resume-upload-button">
-                    Upload Resume PDF
-                    <input type="file" accept="application/pdf" onChange={handleResumeUpload} hidden />
+                    Upload Resume
+                    <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleResumeUpload} hidden />
                   </label>
                 </div>
               )}

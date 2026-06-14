@@ -11,12 +11,38 @@ import {
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const profileSelect = 'id,name,bio,skills,availability,neighborhoods,resume_path,resume_url,avatar_url,created_at';
 
-const resumePathFor = (userId) => `${userId}/resume.pdf`;
+const ALLOWED_RESUME_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/x-pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]);
+
+const MIME_TO_EXTENSION = {
+  'application/pdf': 'pdf',
+  'application/x-pdf': 'pdf',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+};
+
+const resumePathFor = (userId, extension) => `${userId}/resume.${extension}`;
 
 function getUploadedFile(files) {
   const candidate = files.file ?? files.resume;
   if (!candidate) return null;
   return Array.isArray(candidate) ? candidate[0] : candidate;
+}
+
+function extensionForResume(uploadedFile) {
+  const mimeType = uploadedFile.mimetype || '';
+  const fromMime = MIME_TO_EXTENSION[mimeType];
+  if (fromMime) return fromMime;
+
+  const name = uploadedFile.originalFilename || '';
+  const extension = name.split('.').pop()?.toLowerCase();
+  if (['pdf', 'doc', 'docx'].includes(extension)) return extension;
+
+  return null;
 }
 
 function parseMultipart(req) {
@@ -59,13 +85,15 @@ export default async function handler(req, res) {
   }
 
   if (!uploadedFile) {
-    sendJson(res, 400, { error: 'A PDF resume file is required.' });
+    sendJson(res, 400, { error: 'A resume file is required (.pdf, .doc, or .docx).' });
     return;
   }
 
   const mimeType = uploadedFile.mimetype || '';
-  if (mimeType !== 'application/pdf' && mimeType !== 'application/x-pdf') {
-    sendJson(res, 400, { error: 'Resume must be a PDF.' });
+  const extension = extensionForResume(uploadedFile);
+
+  if (!ALLOWED_RESUME_MIME_TYPES.has(mimeType) || !extension) {
+    sendJson(res, 400, { error: 'Resume must be a PDF or Word document (.pdf, .doc, .docx).' });
     return;
   }
 
@@ -74,7 +102,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const path = resumePathFor(user.id);
+  const path = resumePathFor(user.id, extension);
 
   try {
     const fileBuffer = await fs.readFile(uploadedFile.filepath);
@@ -82,7 +110,7 @@ export default async function handler(req, res) {
       .from('resumes')
       .upload(path, fileBuffer, {
         cacheControl: '3600',
-        contentType: 'application/pdf',
+        contentType: mimeType,
         upsert: true,
       });
 

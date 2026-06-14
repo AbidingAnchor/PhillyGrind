@@ -71,11 +71,25 @@ create policy "Applicants can submit applications"
 -- ---------------------------------------------------------------------------
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('resumes', 'resumes', false, 5242880, array['application/pdf'])
+values (
+  'resumes',
+  'resumes',
+  false,
+  5242880,
+  array[
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]
+)
 on conflict (id) do update
   set public = false,
       file_size_limit = 5242880,
-      allowed_mime_types = array['application/pdf'];
+      allowed_mime_types = array[
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ];
 
 drop policy if exists "Job posters can read applicant resumes" on storage.objects;
 create policy "Job posters can read applicant resumes"

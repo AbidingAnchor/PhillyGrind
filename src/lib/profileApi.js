@@ -2,6 +2,11 @@ import { hasSupabaseConfig, supabase } from './supabase.js';
 
 const avatarExtensionFor = (file) => (file.type === 'image/png' ? 'png' : 'jpg');
 const profileSelect = 'id,name,bio,skills,availability,neighborhoods,resume_path,resume_url,avatar_url,created_at';
+const ALLOWED_RESUME_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
 
 export async function updateProfile({ bio, skills, availability, neighborhoods }) {
   if (!hasSupabaseConfig) {
@@ -40,8 +45,8 @@ export async function uploadResume(file) {
     throw new Error('Please log in before uploading a resume.');
   }
 
-  if (file.type !== 'application/pdf') {
-    throw new Error('Resume must be a PDF.');
+  if (!ALLOWED_RESUME_TYPES.includes(file.type)) {
+    throw new Error('Resume must be a PDF or Word document (.pdf, .doc, .docx).');
   }
 
   if (file.size > 5 * 1024 * 1024) {

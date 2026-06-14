@@ -119,25 +119,25 @@ function QuickApplyModal({ listing, onClose, onApplicationSubmitted }) {
               </div>
             ) : (
               <div className="quick-apply-resume-empty">
-                <p className="detail-note">No resume on file. Upload a PDF to apply.</p>
+                <p className="detail-note">No resume on file. Upload a PDF or Word document to apply.</p>
                 <button
                   type="button"
                   className="secondary-detail-button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingResume}
                 >
-                  {uploadingResume ? 'Uploading...' : 'Upload Resume PDF'}
+                  {uploadingResume ? 'Uploading...' : 'Upload Resume'}
                 </button>
               </div>
             )}
             <input
               ref={fileInputRef}
               type="file"
-              accept="application/pdf"
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               onChange={handleResumeSelect}
               hidden
             />
-            <span className="detail-note">PDF only, 5MB max.</span>
+            <span className="detail-note">PDF or Word document (.pdf, .doc, .docx), 5MB max.</span>
           </div>
           <label>
             Cover note (optional)

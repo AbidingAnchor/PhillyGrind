@@ -361,11 +361,11 @@ alter table bids enable row level security;
 alter table applications enable row level security;
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('resumes', 'resumes', false, 5242880, array['application/pdf'])
+values ('resumes', 'resumes', false, 5242880, array['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
 on conflict (id) do update
   set public = false,
       file_size_limit = 5242880,
-      allowed_mime_types = array['application/pdf'];
+      allowed_mime_types = array['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('avatars', 'avatars', true, 2097152, array['image/jpeg', 'image/png'])

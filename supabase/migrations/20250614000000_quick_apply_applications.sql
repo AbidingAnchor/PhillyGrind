@@ -98,7 +98,17 @@ create policy "Job posters can update application status"
 -- ---------------------------------------------------------------------------
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('resumes', 'resumes', false, 5242880, array['application/pdf'])
+values (
+  'resumes',
+  'resumes',
+  false,
+  5242880,
+  array[
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]
+)
 on conflict (id) do nothing;
 
 drop policy if exists "Users can read own resumes" on storage.objects;
