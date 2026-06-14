@@ -180,7 +180,7 @@ export default function AdminDisputes() {
 
   if (selectedId) {
     return (
-      <section className="page-section admin-disputes-page">
+      <div className="admin-page admin-disputes-page">
         <DisputeDetail
           disputeId={selectedId}
           onBack={() => setSelectedId(null)}
@@ -189,12 +189,12 @@ export default function AdminDisputes() {
             loadDisputes();
           }}
         />
-      </section>
+      </div>
     );
   }
 
   return (
-    <section className="page-section admin-disputes-page">
+    <div className="admin-page admin-disputes-page">
       <header className="admin-page-header">
         <Shield size={28} />
         <div>
@@ -244,6 +244,6 @@ export default function AdminDisputes() {
           </button>
         ))}
       </div>
-    </section>
+    </div>
   );
 }

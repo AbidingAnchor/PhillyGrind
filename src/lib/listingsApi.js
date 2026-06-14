@@ -1,6 +1,7 @@
 import { fallbackGigs, fallbackJobs } from '../data/listings.js';
 import { hasSupabaseConfig, supabase } from './supabase.js';
 import { attachPosterRatings, getProfileRating, getProfileRatings } from './reviewsApi.js';
+import { createListingWithModeration } from './adminApi.js';
 
 const tableFor = (type) => (type === 'gig' ? 'gigs' : 'jobs');
 const fallbackFor = (type) => (type === 'gig' ? fallbackGigs : fallbackJobs);
@@ -229,6 +230,7 @@ export async function getListings(type, filters = {}) {
     .from(tableFor(type))
     .select('*')
     .eq('boost_pending', false)
+    .eq('moderation_status', 'approved')
     .order('created_at', { ascending: false });
 
   if (type === 'gig') {
@@ -328,6 +330,7 @@ export async function getFeaturedWorkers(limit = 4) {
     .eq('boost_pending', false)
     .eq('post_type', 'offering')
     .eq('status', 'open')
+    .eq('moderation_status', 'approved')
     .gt('boost_expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -414,15 +417,7 @@ export async function createListing(type, listing, options = {}) {
     throw new Error('You must be logged in to post a listing.');
   }
 
-  const { data, error } = await supabase
-    .from(tableFor(type))
-    .insert({ ...payload, ...boostFields, user_id: userData.user.id })
-    .select()
-    .single();
-
-  if (error) {
-    throw error;
-  }
+  const { listing: data } = await createListingWithModeration(type, payload, { boostTier });
 
   return { ...data, type };
 }

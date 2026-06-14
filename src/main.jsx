@@ -22,6 +22,12 @@ import Profile from './pages/Profile.jsx';
 import PublicProfile from './pages/PublicProfile.jsx';
 import AdminDisputes from './pages/AdminDisputes.jsx';
 import AdminRoute from './components/AdminRoute.jsx';
+import AdminLayout from './components/AdminLayout.jsx';
+import AdminOverview from './pages/admin/AdminOverview.jsx';
+import AdminUsers from './pages/admin/AdminUsers.jsx';
+import AdminListings from './pages/admin/AdminListings.jsx';
+import AdminReports from './pages/admin/AdminReports.jsx';
+import AdminVerifications from './pages/admin/AdminVerifications.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AuthProvider } from './lib/auth.jsx';
 import './styles.css';
@@ -49,7 +55,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
             <Route path="/post-gig" element={<ProtectedRoute><PostGig /></ProtectedRoute>} />
             <Route path="/marketplace/post" element={<ProtectedRoute><PostMarketplaceListing /></ProtectedRoute>} />
-            <Route path="/admin/disputes" element={<AdminRoute><AdminDisputes /></AdminRoute>} />
+            <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+              <Route index element={<AdminOverview />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="listings" element={<AdminListings />} />
+              <Route path="disputes" element={<AdminDisputes />} />
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="verifications" element={<AdminVerifications />} />
+            </Route>
             <Route path="/jobs/:id" element={<ListingDetail type="job" />} />
             <Route path="/gigs/:id" element={<ListingDetail type="gig" />} />
             <Route path="*" element={<Navigate to="/" replace />} />

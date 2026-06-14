@@ -15,7 +15,7 @@ export default function AdminRoute({ children }) {
   }
 
   if (!isLoggedIn) {
-    return <Navigate to="/login" replace state={{ from: '/admin/disputes' }} />;
+    return <Navigate to="/login" replace state={{ from: '/admin' }} />;
   }
 
   const email = user?.email?.toLowerCase() || '';

@@ -1,5 +1,6 @@
 import { fallbackMarketplace } from '../data/listings.js';
 import { hasSupabaseConfig, supabase } from './supabase.js';
+import { createListingWithModeration } from './adminApi.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -81,6 +82,7 @@ export async function getMarketplaceListings(filters = {}) {
     .from('marketplace_listings')
     .select('*')
     .eq('status', 'active')
+    .eq('moderation_status', 'approved')
     .order('created_at', { ascending: false });
 
   if (category && category !== 'All') {
@@ -196,13 +198,15 @@ export async function createMarketplaceListing(listing, photoFiles = []) {
     throw new Error('You must be logged in to post a listing.');
   }
 
-  const { data, error } = await supabase
-    .from('marketplace_listings')
-    .insert({ ...payload, user_id: userData.user.id })
-    .select()
-    .single();
-
-  if (error) throw error;
+  const { listing: data } = await createListingWithModeration('marketplace', {
+    title: payload.title,
+    description: payload.description,
+    price: payload.price,
+    category: payload.category,
+    condition: payload.condition,
+    location: payload.location,
+    payment_type: payload.payment_type,
+  });
 
   if (photoFiles.length) {
     const photoUrls = await Promise.all(

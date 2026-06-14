@@ -1,7 +1,8 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Menu, PlusCircle } from 'lucide-react';
+import { Menu, PlusCircle, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from './lib/auth.jsx';
+import { isAdminUser } from './lib/adminApi.js';
 import NotificationBell from './components/NotificationBell.jsx';
 import OnboardingModal from './components/OnboardingModal.jsx';
 import GrindBot from './components/GrindBot.jsx';
@@ -18,9 +19,10 @@ const navItems = [
 function App() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { isLoggedIn, profile, signOut } = useAuth();
+  const { isLoggedIn, profile, signOut, user } = useAuth();
   const location = useLocation();
   const displayName = profile?.name || 'My Profile';
+  const showAdminLink = isAdminUser(user);
   const shouldShowOnboarding = Boolean(isLoggedIn && profile && profile.onboarding_complete === false && location.pathname === '/');
 
   useEffect(() => {
@@ -86,6 +88,12 @@ function App() {
           {isLoggedIn && (
             <div className="nav-user">
               <NotificationBell />
+              {showAdminLink && (
+                <NavLink to="/admin" id="nav-admin" onClick={() => setOpen(false)}>
+                  <Shield size={16} />
+                  Admin
+                </NavLink>
+              )}
               <Link className="nav-profile-link" to="/profile" id="nav-profile" data-tour="profile" onClick={() => setOpen(false)}>
                 {displayName}
               </Link>
