@@ -4930,6 +4930,26 @@ body {
   flex-wrap: wrap;
 }
 
+.housing-post-form .form-toggle-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 13px 14px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.housing-post-form .form-toggle-row input[type='checkbox'] {
+  width: auto;
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
 .housing-photo-upload {
   display: grid;
   gap: 12px;

@@ -113,11 +113,11 @@ function PostHousing() {
           Available Date
           <input name="available_date" type="date" value={form.available_date} onChange={updateField} required />
         </label>
-        <label className="housing-toggle-field">
+        <label className="form-toggle-row">
           <span>Pets allowed</span>
           <input name="pets_allowed" type="checkbox" checked={form.pets_allowed} onChange={updateField} />
         </label>
-        <label className="housing-toggle-field">
+        <label className="form-toggle-row">
           <span>Utilities included</span>
           <input name="utilities_included" type="checkbox" checked={form.utilities_included} onChange={updateField} />
         </label>
