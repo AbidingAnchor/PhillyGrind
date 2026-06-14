@@ -200,6 +200,31 @@ function Home() {
         </div>
       </section>
 
+      <section className="home-features-section page-section">
+        <div className="home-features-grid">
+          <Link className="home-feature-card" to="/jobs">
+            <span className="home-feature-icon">💼</span>
+            <strong>Jobs</strong>
+            <p>Full-time, part-time, and shift roles from Philly employers.</p>
+          </Link>
+          <Link className="home-feature-card" to="/gigs">
+            <span className="home-feature-icon">⚡</span>
+            <strong>Gigs</strong>
+            <p>One-time tasks, same-day help, and neighborhood side work.</p>
+          </Link>
+          <Link className="home-feature-card" to="/marketplace">
+            <span className="home-feature-icon">🛒</span>
+            <strong>Marketplace</strong>
+            <p>Buy and sell furniture, tools, and more with neighbors.</p>
+          </Link>
+          <Link className="home-feature-card" to="/housing">
+            <span className="home-feature-icon">🏠</span>
+            <strong>Housing</strong>
+            <p>Find apartments and rooms across Philadelphia neighborhoods.</p>
+          </Link>
+        </div>
+      </section>
+
       <section className="split-section home-jobs-section">
         <div className="section-heading">
           <h2>Find a Job</h2>
@@ -218,6 +243,39 @@ function Home() {
           </p>
         )}
         <Link className="section-link" to="/jobs">Browse all jobs <ArrowRight size={17} /></Link>
+      </section>
+
+      <section className="split-section home-features-section">
+        <div className="section-heading">
+          <h2>Explore PhillyGrind</h2>
+          <p>Jobs, gigs, marketplace deals, and neighborhood rentals — all in one place.</p>
+        </div>
+        <div className="home-features-grid">
+          <Link className="home-feature-card" to="/jobs">
+            <span className="home-feature-icon">💼</span>
+            <span className="eyebrow">Jobs</span>
+            <strong>Find steady work</strong>
+            <p>Restaurant, retail, warehouse, and office roles across Philadelphia.</p>
+          </Link>
+          <Link className="home-feature-card" to="/gigs">
+            <span className="home-feature-icon">⚡</span>
+            <span className="eyebrow">Gigs</span>
+            <strong>Pick up quick tasks</strong>
+            <p>Moving, cleaning, handyman help, and same-day neighborhood work.</p>
+          </Link>
+          <Link className="home-feature-card" to="/marketplace">
+            <span className="home-feature-icon">🛒</span>
+            <span className="eyebrow">Marketplace</span>
+            <strong>Buy and sell locally</strong>
+            <p>Furniture, electronics, tools, and more from Philly neighbors.</p>
+          </Link>
+          <Link className="home-feature-card" to="/housing">
+            <span className="home-feature-icon">🏠</span>
+            <span className="eyebrow">Housing</span>
+            <strong>Find a rental</strong>
+            <p>Browse apartments and homes by neighborhood, rent, and pet policy.</p>
+          </Link>
+        </div>
       </section>
 
       {Boolean(featuredWorkers.length) && (

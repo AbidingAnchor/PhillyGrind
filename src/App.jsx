@@ -12,6 +12,7 @@ const navItems = [
   { to: '/gigs', label: 'Browse Gigs', tour: 'browse-gigs', id: 'nav-browse-gigs' },
   { to: '/marketplace', label: 'Marketplace', tour: 'marketplace', id: 'nav-marketplace' },
   { to: '/hiring-events', label: 'Hiring Events', tour: 'hiring-events', id: 'nav-hiring-events' },
+  { to: '/housing', label: 'Housing', tour: 'housing', id: 'nav-housing' },
   { to: '/post-job', label: 'Post a Job', tour: 'post-job', id: 'nav-post-job' },
   { to: '/post-gig', label: 'Post a Gig', tour: 'post-gig', id: 'nav-post-gig' },
 ];
@@ -125,6 +126,7 @@ function App() {
           <Link to="/jobs">Browse Jobs</Link>
           <Link to="/gigs">Browse Gigs</Link>
           <Link to="/marketplace">Marketplace</Link>
+          <Link to="/housing">Housing</Link>
           <Link to="/post-job">Post a Job</Link>
           <Link to="/post-gig">Post a Gig</Link>
           <Link to="/terms">Terms</Link>

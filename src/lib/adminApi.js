@@ -89,6 +89,24 @@ export async function adminDeleteListing(listingId, listingType) {
   });
 }
 
+export async function getAdminHousing() {
+  return adminRequest('admin-housing', { method: 'GET' });
+}
+
+export async function adminDeactivateHousing(listingId) {
+  return adminRequest('admin-deactivate-housing', {
+    method: 'POST',
+    body: { listing_id: listingId },
+  });
+}
+
+export async function adminVerifyLandlord(userId) {
+  return adminRequest('admin-verify-landlord', {
+    method: 'POST',
+    body: { user_id: userId },
+  });
+}
+
 export async function createListingWithModeration(listingType, listing, options = {}) {
   return listingRequest('create-listing', {
     listing_type: listingType,

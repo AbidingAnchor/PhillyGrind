@@ -188,27 +188,49 @@ async function handleAdminUsers(req, res) {
 
   const { data: profiles, error } = await supabaseAdmin
     .from('profiles')
-    .select('id,name,email,created_at')
+    .select('id,name,email,created_at,landlord_verified,landlord_warning')
     .order('created_at', { ascending: false });
 
   if (error) throw error;
 
   const userIds = (profiles ?? []).map((profile) => profile.id);
-  const [jobsResult, gigsResult, marketplaceResult, suspensionsResult] = await Promise.all([
+  const [jobsResult, gigsResult, marketplaceResult, housingResult, suspensionsResult, housingListingsResult, reportsResult] = await Promise.all([
     supabaseAdmin.from('jobs').select('user_id').in('user_id', userIds),
     supabaseAdmin.from('gigs').select('user_id').in('user_id', userIds),
     supabaseAdmin.from('marketplace_listings').select('user_id').in('user_id', userIds),
+    supabaseAdmin.from('housing_listings').select('user_id').in('user_id', userIds),
     supabaseAdmin.from('suspended_users').select('*').in('user_id', userIds).is('lifted_at', null),
+    supabaseAdmin.from('housing_listings').select('id,user_id').in('user_id', userIds),
+    supabaseAdmin.from('landlord_reports').select('listing_id'),
   ]);
 
   if (jobsResult.error) throw jobsResult.error;
   if (gigsResult.error) throw gigsResult.error;
   if (marketplaceResult.error) throw marketplaceResult.error;
+  if (housingResult.error) throw housingResult.error;
   if (suspensionsResult.error) throw suspensionsResult.error;
+  if (housingListingsResult.error) throw housingListingsResult.error;
+  if (reportsResult.error) throw reportsResult.error;
 
   const listingCounts = {};
-  for (const row of [...(jobsResult.data ?? []), ...(gigsResult.data ?? []), ...(marketplaceResult.data ?? [])]) {
+  for (const row of [
+    ...(jobsResult.data ?? []),
+    ...(gigsResult.data ?? []),
+    ...(marketplaceResult.data ?? []),
+    ...(housingResult.data ?? []),
+  ]) {
     listingCounts[row.user_id] = (listingCounts[row.user_id] || 0) + 1;
+  }
+
+  const listingOwnerById = Object.fromEntries(
+    (housingListingsResult.data ?? []).map((row) => [row.id, row.user_id]),
+  );
+  const reportCounts = {};
+  for (const report of reportsResult.data ?? []) {
+    const ownerId = listingOwnerById[report.listing_id];
+    if (ownerId) {
+      reportCounts[ownerId] = (reportCounts[ownerId] || 0) + 1;
+    }
   }
 
   const suspensionByUser = Object.fromEntries(
@@ -219,6 +241,7 @@ async function handleAdminUsers(req, res) {
     users: (profiles ?? []).map((profile) => ({
       ...profile,
       listingCount: listingCounts[profile.id] || 0,
+      report_count: reportCounts[profile.id] || 0,
       suspension: suspensionByUser[profile.id] || null,
     })),
   });
@@ -468,8 +491,84 @@ async function handleAdminReportAction(req, res, admin) {
   sendJson(res, 200, { ok: true });
 }
 
-const adminGetActions = new Set(['admin-overview', 'admin-users', 'admin-listings', 'admin-reports']);
-const adminPostActions = new Set(['admin-suspend-user', 'admin-lift-suspension', 'admin-report-action']);
+async function handleAdminHousing(req, res) {
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
+
+  const { data: listings, error } = await supabaseAdmin
+    .from('housing_listings')
+    .select('id,title,monthly_rent,status,created_at,user_id')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  const userIds = [...new Set((listings ?? []).map((listing) => listing.user_id).filter(Boolean))];
+  const { data: profiles, error: profilesError } = userIds.length
+    ? await supabaseAdmin.from('profiles').select('id,name').in('id', userIds)
+    : { data: [], error: null };
+
+  if (profilesError) throw profilesError;
+
+  const profilesById = Object.fromEntries((profiles ?? []).map((profile) => [profile.id, profile]));
+
+  sendJson(res, 200, {
+    listings: (listings ?? []).map((listing) => ({
+      ...listing,
+      landlordName: profilesById[listing.user_id]?.name || 'Unknown',
+    })),
+  });
+}
+
+async function handleAdminDeactivateHousing(req, res) {
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
+
+  const { listing_id: listingId } = req.body ?? {};
+  if (!listingId) {
+    sendJson(res, 400, { error: 'listing_id is required.' });
+    return;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('housing_listings')
+    .update({ status: 'inactive' })
+    .eq('id', listingId)
+    .select('id,status')
+    .single();
+
+  if (error) throw error;
+  sendJson(res, 200, { listing: data });
+}
+
+async function handleAdminVerifyLandlord(req, res) {
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
+
+  const { user_id: userId } = req.body ?? {};
+  if (!userId) {
+    sendJson(res, 400, { error: 'user_id is required.' });
+    return;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .update({ landlord_verified: true })
+    .eq('id', userId)
+    .select('id,landlord_verified')
+    .single();
+
+  if (error) throw error;
+  sendJson(res, 200, { profile: data });
+}
+
+const adminGetActions = new Set(['admin-overview', 'admin-users', 'admin-listings', 'admin-reports', 'admin-housing']);
+const adminPostActions = new Set([
+  'admin-suspend-user',
+  'admin-lift-suspension',
+  'admin-report-action',
+  'admin-deactivate-housing',
+  'admin-verify-landlord',
+]);
 
 export default async function handler(req, res) {
   try {
@@ -497,6 +596,9 @@ export default async function handler(req, res) {
         case 'admin-reports':
           await handleAdminReports(req, res);
           break;
+        case 'admin-housing':
+          await handleAdminHousing(req, res);
+          break;
         default:
           sendJson(res, 400, { error: 'Unknown admin action.' });
       }
@@ -516,6 +618,12 @@ export default async function handler(req, res) {
           break;
         case 'admin-report-action':
           await handleAdminReportAction(req, res, admin);
+          break;
+        case 'admin-deactivate-housing':
+          await handleAdminDeactivateHousing(req, res, admin);
+          break;
+        case 'admin-verify-landlord':
+          await handleAdminVerifyLandlord(req, res, admin);
           break;
         default:
           sendJson(res, 400, { error: 'Unknown admin action.' });

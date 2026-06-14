@@ -7,12 +7,14 @@ import {
   ShoppingBag,
   Users,
   BadgeCheck,
+  Home,
 } from 'lucide-react';
 
 const navItems = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/listings', label: 'Listings', icon: ShoppingBag },
+  { to: '/admin/housing', label: 'Housing', icon: Home },
   { to: '/admin/disputes', label: 'Disputes', icon: AlertTriangle },
   { to: '/admin/reports', label: 'Reports', icon: ClipboardList },
   { to: '/admin/verifications', label: 'Verifications', icon: BadgeCheck },

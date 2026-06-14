@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Loader2, ShieldOff, ShieldBan, ShieldCheck, Users } from 'lucide-react';
-import { getAdminUsers, liftSuspension, suspendUser } from '../../lib/adminApi.js';
+import { Loader2, ShieldOff, ShieldBan, ShieldCheck, Users, BadgeCheck } from 'lucide-react';
+import { adminVerifyLandlord, getAdminUsers, liftSuspension, suspendUser } from '../../lib/adminApi.js';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -56,6 +56,19 @@ export default function AdminUsers() {
     }
   }
 
+  async function handleVerifyLandlord(userId) {
+    setActionUserId(userId);
+    setError('');
+    try {
+      await adminVerifyLandlord(userId);
+      await loadUsers();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActionUserId('');
+    }
+  }
+
   return (
     <div className="admin-page">
       <header className="admin-page-header">
@@ -89,6 +102,7 @@ export default function AdminUsers() {
                 <th>Email</th>
                 <th>Joined</th>
                 <th>Listings</th>
+                <th>Reports</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -103,6 +117,7 @@ export default function AdminUsers() {
                     <td>{user.email}</td>
                     <td>{new Date(user.created_at).toLocaleDateString()}</td>
                     <td>{user.listingCount}</td>
+                    <td>{user.report_count ?? 0}</td>
                     <td>
                       {suspension ? (
                         <span className={`admin-status-badge ${suspension.action_type}`}>
@@ -113,6 +128,17 @@ export default function AdminUsers() {
                       )}
                     </td>
                     <td className="admin-table-actions">
+                      {!user.landlord_verified && (
+                        <button
+                          type="button"
+                          className="admin-table-btn"
+                          disabled={busy}
+                          onClick={() => handleVerifyLandlord(user.id)}
+                        >
+                          {busy ? <Loader2 size={14} className="spin" /> : <BadgeCheck size={14} />}
+                          Verify Landlord
+                        </button>
+                      )}
                       {suspension ? (
                         <button
                           type="button"
