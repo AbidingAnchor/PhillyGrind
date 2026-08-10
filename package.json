@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "vercel dev --listen 3001",
+    "dev:full": "node dev-with-api.cjs",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -23,6 +25,10 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
+    "body-parser": "^2.3.0",
+    "concurrently": "^10.0.4",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "vite": "^5.4.8"
   }
 }

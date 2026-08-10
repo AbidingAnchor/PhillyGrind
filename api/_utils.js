@@ -16,6 +16,15 @@ export const serverSupabaseUrl = process.env.SUPABASE_URL;
 export const hasValidServerSupabaseUrl = isValidSupabaseUrl(serverSupabaseUrl);
 export const hasServerSupabaseConfig = Boolean(hasValidServerSupabaseUrl && process.env.SUPABASE_SERVICE_ROLE_KEY);
 
+// Add logging for environment variables
+if (!hasServerSupabaseConfig) {
+  console.error('[API] Missing Supabase configuration:', {
+    hasUrl: !!serverSupabaseUrl,
+    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    urlValid: hasValidServerSupabaseUrl
+  });
+}
+
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2024-06-20',
 });

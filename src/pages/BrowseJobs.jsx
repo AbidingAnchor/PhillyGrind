@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import CategoryFilters from '../components/CategoryFilters.jsx';
 import ListingCard from '../components/ListingCard.jsx';
@@ -15,6 +15,97 @@ const formatSalary = (num) => {
   return `$${k}K`;
 };
 
+const HOURS_PER_YEAR = 2080;
+
+function toHourlyRate(annualSalary) {
+  return Math.round(annualSalary / HOURS_PER_YEAR);
+}
+
+function formatJobSalary(min, max, { contract_time, salary_is_predicted } = {}) {
+  if (!min) return 'Salary not specified';
+
+  const minNum = Number(min);
+  const maxNum = Number(max);
+  const isPredicted = salary_is_predicted === 1 || salary_is_predicted === '1';
+  const estimatedSuffix = isPredicted ? ' (est.)' : '';
+  const contractTime = (contract_time || '').toLowerCase();
+  const isHourlyContract = contractTime === 'part_time' || contractTime === 'contract';
+
+  if (isHourlyContract) {
+    if (maxNum) {
+      return `~$${toHourlyRate(minNum)}-$${toHourlyRate(maxNum)}/hr${estimatedSuffix}`;
+    }
+    return `~$${toHourlyRate(minNum)}/hr${estimatedSuffix}`;
+  }
+
+  if (maxNum) {
+    return `${formatSalary(minNum)}-${formatSalary(maxNum)}/yr${estimatedSuffix}`;
+  }
+
+  return `${formatSalary(minNum)}/yr${estimatedSuffix}`;
+}
+
+const GREATER_PHILLY_COUNTIES = [
+  'Delaware County',
+  'Montgomery County',
+  'Gloucester County',
+  'Burlington County',
+  'Camden County',
+];
+
+const NJ_METRO_COUNTIES = [
+  'Gloucester County',
+  'Burlington County',
+  'Camden County',
+];
+
+function isGreaterPhillyArea(loc) {
+  if (!loc || loc.trim() === '') return true;
+
+  if (GREATER_PHILLY_COUNTIES.some((county) => loc.includes(county))) {
+    return true;
+  }
+
+  if (loc.includes('Philadelphia')) {
+    return true;
+  }
+
+  if (loc.includes(', PA') || loc.includes('Pennsylvania')) {
+    return true;
+  }
+
+  if (loc.includes(', NJ') || loc.includes('New Jersey')) {
+    return NJ_METRO_COUNTIES.some((county) => loc.includes(county));
+  }
+
+  return false;
+}
+
+function deriveJobType(job) {
+  if (job.job_type) return job.job_type;
+  const text = `${job.title || ''} ${job.description || ''} ${job.snippet || ''}`.toLowerCase();
+  if (/\bhybrid\b/.test(text)) return 'Hybrid';
+  if (/\bremote\b|\bwork from home\b|\bwfh\b/.test(text)) return 'Remote';
+  return 'In-person';
+}
+
+function applyClientFilters(jobs, { jobType, salaryMin, hideNoSalary }) {
+  let result = jobs;
+  if (jobType !== 'All') {
+    result = result.filter((job) => job.job_type === jobType);
+  }
+  if (salaryMin) {
+    const minSalary = Number(salaryMin);
+    if (Number.isFinite(minSalary)) {
+      result = result.filter((job) => job.salary_min >= minSalary);
+    }
+  }
+  if (hideNoSalary) {
+    result = result.filter((job) => job.salary !== 'Salary not specified');
+  }
+  return result;
+}
+
 // Map PhillyGrind categories to Adzuna category slugs or keywords
 const CATEGORY_MAP = {
   Restaurant: { category: 'hospitality-catering-jobs', keyword: 'restaurant' },
@@ -29,10 +120,13 @@ function BrowseJobs() {
   console.log('BrowseJobs component mounted');
   const navigate = useNavigate();
   const { isLoggedIn, user } = useAuth();
-  const [jobs, setJobs] = useState([]);
+  const [fetchedJobs, setFetchedJobs] = useState([]);
   const [category, setCategory] = useState('All');
   const [keyword, setKeyword] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
+  const [jobType, setJobType] = useState('All');
+  const [salaryMin, setSalaryMin] = useState('');
+  const [hideNoSalary, setHideNoSalary] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [usingFallback, setUsingFallback] = useState(false);
@@ -69,17 +163,10 @@ function BrowseJobs() {
         const normalizeJob = (job) => {
           const min = job.salary_min;
           const max = job.salary_max;
-          let salary = 'Salary not specified';
-          
-          if (min && max) {
-            if (Math.abs(max - min) <= 1000) {
-              salary = `Est. ${formatSalary(min)}`;
-            } else {
-              salary = `${formatSalary(min)} - ${formatSalary(max)}`;
-            }
-          } else if (min) {
-            salary = `Est. ${formatSalary(min)}`;
-          }
+          const salary = formatJobSalary(min, max, {
+            contract_time: job.contract_time,
+            salary_is_predicted: job.salary_is_predicted,
+          });
 
           return {
             id: job.id || crypto.randomUUID(),
@@ -87,6 +174,8 @@ function BrowseJobs() {
             company: job.company?.display_name || job.company || 'Unknown Company',
             location: job.location?.display_name || job.location || 'Philadelphia, PA',
             salary,
+            salary_min: min || 0,
+            job_type: deriveJobType(job),
             description: job.description || job.snippet || 'No description available',
             url: job.redirect_url || job.url,
             isAdzuna: job.source === 'adzuna',
@@ -105,13 +194,7 @@ function BrowseJobs() {
           return true;
         });
 
-        // Filter to only show jobs in Philadelphia or PA, exclude NJ
-        const isPhilly = (loc) => {
-          if (!loc || loc.trim() === '') return true;
-          if (loc.includes('New Jersey') || loc.includes(', NJ')) return false;
-          return loc.includes('Philadelphia') || loc.includes(', PA');
-        };
-
+        // Filter to Greater Philadelphia metro area jobs
         const selectedCat = CATEGORY_MAP[category];
         const isKeywordBased = selectedCat?.keyword && !selectedCat?.category;
         const isSecurity = category === 'Security';
@@ -120,7 +203,7 @@ function BrowseJobs() {
 
         const filteredJobs = deduplicatedJobs.filter(job => {
           if (isKeywordBased || isSecurity) return true;
-          return isPhilly(job.location || '');
+          return isGreaterPhillyArea(job.location || '');
         });
 
         if (filteredJobs.length === 0) {
@@ -129,7 +212,7 @@ function BrowseJobs() {
         }
 
         console.log('Setting filtered jobs from all APIs:', filteredJobs.length);
-        setJobs(filteredJobs);
+        setFetchedJobs(filteredJobs);
         setLoading(false);
       } catch (err) {
         console.log('External APIs fetch failed, falling back to Supabase:', err.message);
@@ -139,7 +222,13 @@ function BrowseJobs() {
           .then(attachPosterRatings)
           .then((supabaseJobs) => {
             console.log('Supabase fallback jobs:', supabaseJobs);
-            setJobs(supabaseJobs);
+            const normalizedSupabaseJobs = supabaseJobs.map((job) => ({
+              ...job,
+              salary: job.salary || (job.pay ? job.pay : 'Salary not specified'),
+              salary_min: job.salary_min || 0,
+              job_type: deriveJobType(job),
+            }));
+            setFetchedJobs(normalizedSupabaseJobs);
             setLoading(false);
           })
           .catch((supabaseErr) => {
@@ -152,6 +241,11 @@ function BrowseJobs() {
 
     return () => clearTimeout(timeoutId);
   }, [category, keyword, neighborhood]);
+
+  const jobs = useMemo(
+    () => applyClientFilters(fetchedJobs, { jobType, salaryMin, hideNoSalary }),
+    [fetchedJobs, jobType, salaryMin, hideNoSalary],
+  );
 
   return (
     <>
@@ -178,6 +272,36 @@ function BrowseJobs() {
             placeholder="South Philly, Fishtown, Center City..."
           />
         </label>
+        <label>
+          Job Type
+          <select value={jobType} onChange={(event) => setJobType(event.target.value)}>
+            <option value="All">All</option>
+            <option value="Remote">Remote</option>
+            <option value="Hybrid">Hybrid</option>
+            <option value="In-person">In-person</option>
+          </select>
+        </label>
+        <label>
+          Minimum Salary
+          <input
+            type="number"
+            value={salaryMin}
+            onChange={(event) => setSalaryMin(event.target.value)}
+            placeholder="e.g. 40000"
+            min="0"
+          />
+        </label>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: '600' }}>
+            <input
+              type="checkbox"
+              style={{ width: 'auto' }}
+              checked={hideNoSalary}
+              onChange={(e) => setHideNoSalary(e.target.checked)}
+            />
+            Hide jobs with no salary
+          </label>
+        </div>
       </div>
       <CategoryFilters categories={jobCategories} activeCategory={category} onChange={setCategory} />
       {loading && <p className="empty-state">Loading jobs...</p>}

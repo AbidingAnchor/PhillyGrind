@@ -8,6 +8,7 @@ import {
   Users,
   BadgeCheck,
   Home,
+  MessageSquare,
 } from 'lucide-react';
 
 const navItems = [
@@ -15,6 +16,7 @@ const navItems = [
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/listings', label: 'Listings', icon: ShoppingBag },
   { to: '/admin/housing', label: 'Housing', icon: Home },
+  { to: '/admin/community', label: 'Community', icon: MessageSquare },
   { to: '/admin/disputes', label: 'Disputes', icon: AlertTriangle },
   { to: '/admin/reports', label: 'Reports', icon: ClipboardList },
   { to: '/admin/verifications', label: 'Verifications', icon: BadgeCheck },

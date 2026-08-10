@@ -29,9 +29,11 @@ import AdminListings from './pages/admin/AdminListings.jsx';
 import AdminReports from './pages/admin/AdminReports.jsx';
 import AdminVerifications from './pages/admin/AdminVerifications.jsx';
 import AdminHousing from './pages/admin/AdminHousing.jsx';
+import AdminCommunity from './pages/admin/AdminCommunity.jsx';
 import Housing from './pages/Housing.jsx';
 import PostHousing from './pages/PostHousing.jsx';
 import HousingDetail from './pages/HousingDetail.jsx';
+import Community from './pages/Community.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AuthProvider } from './lib/auth.jsx';
 import './styles.css';
@@ -51,6 +53,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="/housing" element={<Housing />} />
             <Route path="/housing/post" element={<ProtectedRoute><PostHousing /></ProtectedRoute>} />
             <Route path="/housing/:id" element={<HousingDetail />} />
+            <Route path="/community" element={<Community />} />
             <Route path="/post-hiring-event" element={<PostHiringEvent />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
@@ -70,6 +73,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="reports" element={<AdminReports />} />
               <Route path="verifications" element={<AdminVerifications />} />
               <Route path="housing" element={<AdminHousing />} />
+              <Route path="community" element={<AdminCommunity />} />
             </Route>
             <Route path="/jobs/:id" element={<ListingDetail type="job" />} />
             <Route path="/gigs/:id" element={<ListingDetail type="gig" />} />

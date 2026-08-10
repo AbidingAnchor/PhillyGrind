@@ -5,6 +5,46 @@ const ADZUNA_ENDPOINT = 'https://api.adzuna.com/v1/api/jobs/us/search/1';
 const DEFAULT_APP_ID = '99927e9b';
 const DEFAULT_APP_KEY = 'd379aca384a966fd906906f2323ea9d6';
 
+const GREATER_PHILLY_COUNTIES = [
+  'Delaware County',
+  'Montgomery County',
+  'Gloucester County',
+  'Burlington County',
+  'Camden County',
+];
+
+const NJ_METRO_COUNTIES = [
+  'Gloucester County',
+  'Burlington County',
+  'Camden County',
+];
+
+function getJobLocation(job) {
+  return job.location?.display_name || job.location || '';
+}
+
+function isGreaterPhillyArea(loc) {
+  if (!loc || loc.trim() === '') return true;
+
+  if (GREATER_PHILLY_COUNTIES.some((county) => loc.includes(county))) {
+    return true;
+  }
+
+  if (loc.includes('Philadelphia')) {
+    return true;
+  }
+
+  if (loc.includes(', PA') || loc.includes('Pennsylvania')) {
+    return true;
+  }
+
+  if (loc.includes(', NJ') || loc.includes('New Jersey')) {
+    return NJ_METRO_COUNTIES.some((county) => loc.includes(county));
+  }
+
+  return false;
+}
+
 async function handleBidCounts(req, res) {
   const listingIds = [...new Set((req.body?.listing_ids ?? []).filter(Boolean))];
   if (!listingIds.length) {
@@ -60,7 +100,8 @@ export default async function handler(req, res) {
   console.log('USAJobs results:', usajobsJobs.length);
 
     const allJobs = [...adzunaJobs, ...usajobsJobs, ...joobleJobs];
-    sendJson(res, 200, { results: allJobs, count: adzunaData.count || 0 });
+    const metroJobs = allJobs.filter((job) => isGreaterPhillyArea(getJobLocation(job)));
+    sendJson(res, 200, { results: metroJobs, count: adzunaData.count || 0 });
   } catch (error) {
     sendJson(res, 500, { error: error.message || 'Jobs request failed.' });
   }
@@ -128,6 +169,8 @@ async function fetchAdzuna(keyword, category, location) {
     location: { display_name: job.location?.display_name || job.location || 'Philadelphia, PA' },
     salary_min: job.salary_min || 0,
     salary_max: job.salary_max || 0,
+    contract_time: job.contract_time || null,
+    salary_is_predicted: job.salary_is_predicted ?? 0,
     description: job.description || job.snippet || 'No description available',
     redirect_url: job.redirect_url || job.url,
     source: 'adzuna',

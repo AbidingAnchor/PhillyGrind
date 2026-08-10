@@ -561,13 +561,111 @@ async function handleAdminVerifyLandlord(req, res) {
   sendJson(res, 200, { profile: data });
 }
 
-const adminGetActions = new Set(['admin-overview', 'admin-users', 'admin-listings', 'admin-reports', 'admin-housing']);
+async function handleAdminCommunityPosts(req, res) {
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
+
+  const [postsResult, reportsResult] = await Promise.all([
+    supabaseAdmin
+      .from('community_posts')
+      .select('id,content,neighborhood,like_count,created_at,user_id')
+      .order('created_at', { ascending: false }),
+    supabaseAdmin
+      .from('community_reports')
+      .select('id,reason,details,created_at,post_id,reporter_id')
+      .order('created_at', { ascending: false }),
+  ]);
+
+  if (postsResult.error) throw postsResult.error;
+  if (reportsResult.error) throw reportsResult.error;
+
+  const posts = postsResult.data ?? [];
+  const reports = reportsResult.data ?? [];
+
+  // Get author info for posts
+  const postUserIds = [...new Set(posts.map((post) => post.user_id).filter(Boolean))];
+  const { data: postProfiles, error: postProfilesError } = postUserIds.length
+    ? await supabaseAdmin.from('profiles').select('id,name').in('id', postUserIds)
+    : { data: [], error: null };
+
+  if (postProfilesError) throw postProfilesError;
+
+  const postProfilesById = Object.fromEntries((postProfiles ?? []).map((profile) => [profile.id, profile]));
+
+  // Get reporter info for reports
+  const reporterIds = [...new Set(reports.map((report) => report.reporter_id).filter(Boolean))];
+  const { data: reporterProfiles, error: reporterProfilesError } = reporterIds.length
+    ? await supabaseAdmin.from('profiles').select('id,name').in('id', reporterIds)
+    : { data: [], error: null };
+
+  if (reporterProfilesError) throw reporterProfilesError;
+
+  const reporterProfilesById = Object.fromEntries((reporterProfiles ?? []).map((profile) => [profile.id, profile]));
+
+  // Get post content for reports
+  const postIds = [...new Set(reports.map((report) => report.post_id).filter(Boolean))];
+  const { data: reportPosts, error: reportPostsError } = postIds.length
+    ? await supabaseAdmin.from('community_posts').select('id,content').in('id', postIds)
+    : { data: [], error: null };
+
+  if (reportPostsError) throw reportPostsError;
+
+  const reportPostsById = Object.fromEntries((reportPosts ?? []).map((post) => [post.id, post]));
+
+  sendJson(res, 200, {
+    posts: posts.map((post) => ({
+      ...post,
+      authorName: postProfilesById[post.user_id]?.name || 'Unknown',
+    })),
+    reports: reports.map((report) => ({
+      ...report,
+      reporterName: reporterProfilesById[report.reporter_id]?.name || 'Unknown',
+      postContent: reportPostsById[report.post_id]?.content || '',
+    })),
+  });
+}
+
+async function handleAdminDeleteCommunityPost(req, res, admin) {
+  const { post_id: postId } = req.body ?? {};
+  if (!postId) {
+    sendJson(res, 400, { error: 'post_id is required.' });
+    return;
+  }
+
+  const { error } = await supabaseAdmin
+    .from('community_posts')
+    .delete()
+    .eq('id', postId);
+
+  if (error) throw error;
+  sendJson(res, 200, { ok: true });
+}
+
+async function handleAdminDismissCommunityReport(req, res, admin) {
+  const { report_id: reportId } = req.body ?? {};
+  if (!reportId) {
+    sendJson(res, 400, { error: 'report_id is required.' });
+    return;
+  }
+
+  const { error } = await supabaseAdmin
+    .from('community_reports')
+    .delete()
+    .eq('id', reportId);
+
+  if (error) throw error;
+  sendJson(res, 200, { ok: true });
+}
+
+const adminGetActions = new Set(['admin-overview', 'admin-users', 'admin-listings', 'admin-reports', 'admin-housing', 'admin-community-posts']);
 const adminPostActions = new Set([
   'admin-suspend-user',
   'admin-lift-suspension',
   'admin-report-action',
   'admin-deactivate-housing',
   'admin-verify-landlord',
+  'admin-delete-community-post',
+  'admin-dismiss-community-report',
 ]);
 
 export default async function handler(req, res) {
@@ -599,6 +697,9 @@ export default async function handler(req, res) {
         case 'admin-housing':
           await handleAdminHousing(req, res);
           break;
+        case 'admin-community-posts':
+          await handleAdminCommunityPosts(req, res);
+          break;
         default:
           sendJson(res, 400, { error: 'Unknown admin action.' });
       }
@@ -624,6 +725,12 @@ export default async function handler(req, res) {
           break;
         case 'admin-verify-landlord':
           await handleAdminVerifyLandlord(req, res, admin);
+          break;
+        case 'admin-delete-community-post':
+          await handleAdminDeleteCommunityPost(req, res);
+          break;
+        case 'admin-dismiss-community-report':
+          await handleAdminDismissCommunityReport(req, res);
           break;
         default:
           sendJson(res, 400, { error: 'Unknown admin action.' });

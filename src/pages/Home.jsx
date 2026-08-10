@@ -222,6 +222,11 @@ function Home() {
             <strong>Housing</strong>
             <p>Find apartments and rooms across Philadelphia neighborhoods.</p>
           </Link>
+          <Link className="home-feature-card" to="/community">
+            <span className="home-feature-icon">👥</span>
+            <strong>Community</strong>
+            <p>Connect with your neighborhood and share local updates.</p>
+          </Link>
         </div>
       </section>
 

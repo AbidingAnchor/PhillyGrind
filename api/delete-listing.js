@@ -12,9 +12,20 @@ import {
   MODERATION_REJECT_MESSAGE,
 } from './_utils/moderation.js';
 
+// Add error logging middleware
+function logError(context, error) {
+  console.error(`[API Error] ${context}:`, {
+    message: error.message,
+    stack: error.stack,
+    code: error.code,
+    details: error.details
+  });
+}
+
 const tableFor = (type) => {
   if (type === 'gig') return 'gigs';
   if (type === 'marketplace') return 'marketplace_listings';
+  if (type === 'community') return 'community_posts';
   return 'jobs';
 };
 
@@ -54,7 +65,7 @@ async function createModerationReport({
 async function handleCreateListing(req, res, user) {
   const { listing_type: listingType, listing, boost_tier: boostTier } = req.body ?? {};
 
-  if (!['job', 'gig', 'marketplace'].includes(listingType)) {
+  if (!['job', 'gig', 'marketplace', 'community'].includes(listingType)) {
     sendJson(res, 400, { error: 'A valid listing type is required.' });
     return;
   }
@@ -68,6 +79,8 @@ async function handleCreateListing(req, res, user) {
 
   const textFields = listingType === 'marketplace'
     ? { title: listing.title, description: listing.description, location: listing.location }
+    : listingType === 'community'
+    ? { content: listing.content, neighborhood: listing.neighborhood }
     : {
       title: listing.title,
       description: listing.description,
@@ -119,6 +132,44 @@ async function handleCreateListing(req, res, user) {
     }
 
     sendJson(res, 200, { listing: { ...data, type: 'marketplace' }, moderationStatus });
+    return;
+  }
+
+  if (listingType === 'community') {
+    console.log('[API] Creating community post:', { user_id: user.id, content: listing.content, neighborhood: listing.neighborhood });
+
+    const payload = {
+      content: listing.content.trim(),
+      neighborhood: listing.neighborhood,
+      photo_url: null,
+      like_count: 0,
+      user_id: user.id,
+    };
+
+    const { data, error } = await supabaseAdmin
+      .from('community_posts')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[API] Community post creation error:', error);
+      throw error;
+    }
+
+    console.log('[API] Community post created successfully:', data.id);
+
+    if (moderation.action === 'flag') {
+      await createModerationReport({
+        reportedType: 'listing',
+        reportedId: data.id,
+        listingType: 'community',
+        reason: `Auto-flagged for review (${moderation.flaggedCategories.join(', ')})`,
+        scores: moderation.scores,
+      });
+    }
+
+    sendJson(res, 200, { listing: { ...data, type: 'community' }, moderationStatus });
     return;
   }
 
@@ -267,7 +318,15 @@ async function handleUserDeleteListing(req, res, user) {
 
 export default async function handler(req, res) {
   try {
+    console.log('[API] Request received:', {
+      method: req.method,
+      action: req.query.action,
+      url: req.url,
+      hasAuth: !!req.headers.authorization
+    });
+
     if (!hasServerSupabaseConfig) {
+      console.error('[API] Missing Supabase configuration');
       sendJson(res, 500, { error: 'Server Supabase configuration is missing.' });
       return;
     }
@@ -287,6 +346,7 @@ export default async function handler(req, res) {
         sendJson(res, 401, { error: 'Authentication required.' });
         return;
       }
+      console.log('[API] Creating listing for user:', user.id);
       await handleCreateListing(req, res, user);
       return;
     }
@@ -317,6 +377,7 @@ export default async function handler(req, res) {
 
     await handleUserDeleteListing(req, res, user);
   } catch (error) {
+    logError('Handler error', error);
     sendJson(res, 500, { error: error.message || 'Could not process listing request.' });
   }
 }

@@ -107,6 +107,24 @@ export async function adminVerifyLandlord(userId) {
   });
 }
 
+export async function getAdminCommunityPosts() {
+  return adminRequest('admin-community-posts', { method: 'GET' });
+}
+
+export async function adminDeleteCommunityPost(postId) {
+  return adminRequest('admin-delete-community-post', {
+    method: 'POST',
+    body: { post_id: postId },
+  });
+}
+
+export async function adminDismissCommunityReport(reportId) {
+  return adminRequest('admin-dismiss-community-report', {
+    method: 'POST',
+    body: { report_id: reportId },
+  });
+}
+
 export async function createListingWithModeration(listingType, listing, options = {}) {
   return listingRequest('create-listing', {
     listing_type: listingType,
