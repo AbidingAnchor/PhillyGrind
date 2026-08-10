@@ -171,6 +171,23 @@ export async function getCommunityLikeCount(postId) {
   return count ?? 0;
 }
 
+export async function getUserReaction(postId) {
+  if (!hasSupabaseConfig) return null;
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) return null;
+
+  const { data, error } = await supabase
+    .from('community_post_likes')
+    .select('reaction_type')
+    .eq('post_id', postId)
+    .eq('user_id', userData.user.id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data?.reaction_type || null;
+}
+
 export async function getUserLikeStatus(postId) {
   if (!hasSupabaseConfig) return false;
 
@@ -353,6 +370,63 @@ export async function createCommunityComment(postId, content) {
   return data;
 }
 
+export async function toggleCommunityPostReaction(postId, reactionType = 'like') {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw new Error('You must be logged in to react to posts.');
+  }
+
+  // Check if already reacted
+  const { data: existingLike } = await supabase
+    .from('community_post_likes')
+    .select('id, reaction_type')
+    .eq('post_id', postId)
+    .eq('user_id', userData.user.id)
+    .maybeSingle();
+
+  if (existingLike) {
+    // If same reaction, remove it. If different, update it.
+    if (existingLike.reaction_type === reactionType) {
+      const { error: deleteError } = await supabase
+        .from('community_post_likes')
+        .delete()
+        .eq('id', existingLike.id);
+
+      if (deleteError) throw deleteError;
+
+      await supabase.rpc('decrement_community_post_like_count', { post_id: postId });
+      return null;
+    } else {
+      const { error: updateError } = await supabase
+        .from('community_post_likes')
+        .update({ reaction_type: reactionType })
+        .eq('id', existingLike.id);
+
+      if (updateError) throw updateError;
+
+      return reactionType;
+    }
+  } else {
+    // Add new reaction
+    const { error: insertError } = await supabase
+      .from('community_post_likes')
+      .insert({
+        post_id: postId,
+        user_id: userData.user.id,
+        reaction_type: reactionType,
+      });
+
+    if (insertError) throw insertError;
+
+    await supabase.rpc('increment_community_post_like_count', { post_id: postId });
+    return reactionType;
+  }
+}
+
 export async function toggleCommunityPostLike(postId) {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
@@ -391,6 +465,7 @@ export async function toggleCommunityPostLike(postId) {
       .insert({
         post_id: postId,
         user_id: userData.user.id,
+        reaction_type: 'like',
       });
 
     if (insertError) throw insertError;

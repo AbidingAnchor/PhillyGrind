@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, MessageCircle, MoreHorizontal, Upload, X, Flag, ThumbsUp } from 'lucide-react';
-import { getCommunityPosts, getCommunityComments, getUserLikeStatus, toggleCommunityPostLike, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl } from '../lib/communityApi.js';
+import { MessageCircle, MoreHorizontal, Upload, X, Flag, ThumbsUp, Share2 } from 'lucide-react';
+import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl } from '../lib/communityApi.js';
 import { useAuth } from '../lib/auth.jsx';
 
 function withTimeout(promise, milliseconds, message) {
@@ -80,8 +80,22 @@ function ReportModal({ isOpen, onClose, onSubmit }) {
   );
 }
 
+function Toast({ message, onClose }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 2000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className="toast-notification">
+      {message}
+    </div>
+  );
+}
+
 function PostCard({ post, currentUser, onLike, onDelete }) {
   const [liked, setLiked] = useState(false);
+  const [userReaction, setUserReaction] = useState(null);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
@@ -89,26 +103,62 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   const [showReportModal, setShowReportModal] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const REACTIONS = [
+    { emoji: '👍', type: 'like', label: 'Like' },
+    { emoji: '❤️', type: 'love', label: 'Love' },
+    { emoji: '😂', type: 'haha', label: 'Haha' },
+    { emoji: '😮', type: 'wow', label: 'Wow' },
+    { emoji: '😢', type: 'sad', label: 'Sad' },
+    { emoji: '😡', type: 'angry', label: 'Angry' },
+  ];
 
   useEffect(() => {
-    async function loadLikeStatus() {
+    async function loadReactionStatus() {
       try {
-        const isLiked = await getUserLikeStatus(post.id);
-        setLiked(isLiked);
+        const reaction = await getUserReaction(post.id);
+        setUserReaction(reaction);
+        setLiked(!!reaction);
       } catch (error) {
-        console.error('Failed to load like status:', error);
+        console.error('Failed to load reaction status:', error);
       }
     }
-    loadLikeStatus();
+    loadReactionStatus();
   }, [post.id]);
 
   async function handleLike() {
     try {
-      const newLiked = await toggleCommunityPostLike(post.id);
-      setLiked(newLiked);
-      onLike(post.id, newLiked);
+      const newReaction = await toggleCommunityPostReaction(post.id, 'like');
+      setUserReaction(newReaction);
+      setLiked(!!newReaction);
+      onLike(post.id, !!newReaction);
     } catch (error) {
       alert(error.message);
+    }
+  }
+
+  async function handleReactionSelect(reactionType) {
+    try {
+      const newReaction = await toggleCommunityPostReaction(post.id, reactionType);
+      setUserReaction(newReaction);
+      setLiked(!!newReaction);
+      setShowReactionPicker(false);
+      onLike(post.id, !!newReaction);
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+
+  async function handleShare() {
+    const postUrl = `${window.location.origin}/community/post/${post.id}`;
+    try {
+      await navigator.clipboard.writeText(postUrl);
+      setToastMessage('Link copied!');
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      setToastMessage('Failed to copy link');
     }
   }
 
@@ -165,6 +215,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   }
 
   const isOwnPost = currentUser?.id === post.authorId;
+  const currentReaction = REACTIONS.find(r => r.type === userReaction);
 
   return (
     <article className="feed-post-card">
@@ -229,14 +280,39 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       
       {post.photo_url ? (
         <div className="feed-post-photo-actions">
-          <button
-            type="button"
-            className={`feed-post-photo-action-btn ${liked ? 'liked' : ''}`}
-            onClick={handleLike}
-          >
-            <ThumbsUp size={16} />
-            <span>{post.like_count || 0}</span>
-          </button>
+          <div className="feed-post-reaction-wrapper">
+            <button
+              type="button"
+              className={`feed-post-photo-action-btn ${liked ? 'liked' : ''}`}
+              onClick={handleLike}
+              onMouseEnter={() => setShowReactionPicker(true)}
+              onMouseLeave={() => setShowReactionPicker(false)}
+              onTouchStart={() => setShowReactionPicker(true)}
+              onTouchEnd={() => setTimeout(() => setShowReactionPicker(false), 200)}
+            >
+              {currentReaction ? (
+                <span className="reaction-emoji">{currentReaction.emoji}</span>
+              ) : (
+                <ThumbsUp size={16} />
+              )}
+              <span>{post.like_count || 0}</span>
+            </button>
+            {showReactionPicker && (
+              <div className="feed-post-reaction-picker">
+                {REACTIONS.map((reaction) => (
+                  <button
+                    key={reaction.type}
+                    type="button"
+                    className="reaction-option"
+                    onClick={() => handleReactionSelect(reaction.type)}
+                    title={reaction.label}
+                  >
+                    <span className="reaction-emoji-lg">{reaction.emoji}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             type="button"
             className="feed-post-photo-action-btn"
@@ -245,19 +321,52 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
             <MessageCircle size={16} />
             <span>{comments.length}</span>
           </button>
+          <button
+            type="button"
+            className="feed-post-photo-action-btn"
+            onClick={handleShare}
+            title="Share post"
+          >
+            <Share2 size={16} />
+          </button>
         </div>
       ) : (
         <>
           <div className="feed-post-divider" />
           <div className="feed-post-actions">
-            <button
-              type="button"
-              className={`feed-post-action-btn ${liked ? 'liked' : ''}`}
-              onClick={handleLike}
-            >
-              <ThumbsUp size={18} />
-              <span>{post.like_count || 0}</span>
-            </button>
+            <div className="feed-post-reaction-wrapper">
+              <button
+                type="button"
+                className={`feed-post-action-btn ${liked ? 'liked' : ''}`}
+                onClick={handleLike}
+                onMouseEnter={() => setShowReactionPicker(true)}
+                onMouseLeave={() => setShowReactionPicker(false)}
+                onTouchStart={() => setShowReactionPicker(true)}
+                onTouchEnd={() => setTimeout(() => setShowReactionPicker(false), 200)}
+              >
+                {currentReaction ? (
+                  <span className="reaction-emoji">{currentReaction.emoji}</span>
+                ) : (
+                  <ThumbsUp size={18} />
+                )}
+                <span>{post.like_count || 0}</span>
+              </button>
+              {showReactionPicker && (
+                <div className="feed-post-reaction-picker">
+                  {REACTIONS.map((reaction) => (
+                    <button
+                      key={reaction.type}
+                      type="button"
+                      className="reaction-option"
+                      onClick={() => handleReactionSelect(reaction.type)}
+                      title={reaction.label}
+                    >
+                      <span className="reaction-emoji-lg">{reaction.emoji}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               type="button"
               className="feed-post-action-btn"
@@ -265,6 +374,14 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
             >
               <MessageCircle size={18} />
               <span>{comments.length}</span>
+            </button>
+            <button
+              type="button"
+              className="feed-post-action-btn"
+              onClick={handleShare}
+              title="Share post"
+            >
+              <Share2 size={18} />
             </button>
           </div>
         </>
@@ -332,6 +449,10 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         onClose={() => setShowReportModal(false)}
         onSubmit={handleReportSubmit}
       />
+
+      {toastMessage && (
+        <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
+      )}
     </article>
   );
 }
