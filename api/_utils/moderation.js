@@ -13,52 +13,63 @@ export async function moderateText(text) {
     return { action: 'approve', scores: {}, flaggedCategories: [], skipped: true };
   }
 
-  const response = await fetch('https://api.openai.com/v1/moderations', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ input }),
-  });
+  try {
+    const response = await fetch('https://api.openai.com/v1/moderations', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ input }),
+    });
 
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.error?.message || 'Content moderation request failed.');
-  }
-
-  const result = payload.results?.[0];
-  if (!result) {
-    return { action: 'approve', scores: {}, flaggedCategories: [] };
-  }
-
-  const scores = result.category_scores || {};
-  const categories = result.categories || {};
-
-  const hardFlagged = REJECT_CATEGORIES.filter((category) => categories[category]);
-  if (hardFlagged.length > 0 || result.flagged) {
-    const rejectCategories = hardFlagged.length
-      ? hardFlagged
-      : REJECT_CATEGORIES.filter((category) => (scores[category] || 0) >= 0.8);
-
-    if (rejectCategories.length || result.flagged) {
-      return {
-        action: 'reject',
-        scores,
-        flaggedCategories: rejectCategories.length ? rejectCategories : ['policy'],
-      };
+    if (response.status === 429) {
+      console.error('[Moderation] Rate limit hit, approving post with warning');
+      return { action: 'approve', scores: {}, flaggedCategories: [], rateLimited: true };
     }
+
+    const payload = await response.json();
+    if (!response.ok) {
+      console.error('[Moderation] API error:', response.status, payload);
+      throw new Error(payload.error?.message || 'Content moderation request failed.');
+    }
+
+    const result = payload.results?.[0];
+    if (!result) {
+      return { action: 'approve', scores: {}, flaggedCategories: [] };
+    }
+
+    const scores = result.category_scores || {};
+    const categories = result.categories || {};
+
+    const hardFlagged = REJECT_CATEGORIES.filter((category) => categories[category]);
+    if (hardFlagged.length > 0 || result.flagged) {
+      const rejectCategories = hardFlagged.length
+        ? hardFlagged
+        : REJECT_CATEGORIES.filter((category) => (scores[category] || 0) >= 0.8);
+
+      if (rejectCategories.length || result.flagged) {
+        return {
+          action: 'reject',
+          scores,
+          flaggedCategories: rejectCategories.length ? rejectCategories : ['policy'],
+        };
+      }
+    }
+
+    const borderlineCategories = Object.entries(scores)
+      .filter(([, score]) => score >= 0.5 && score < 0.8)
+      .map(([category]) => category);
+
+    if (borderlineCategories.length) {
+      return { action: 'flag', scores, flaggedCategories: borderlineCategories };
+    }
+
+    return { action: 'approve', scores, flaggedCategories: [] };
+  } catch (error) {
+    console.error('[Moderation] Unexpected error, approving post:', error);
+    return { action: 'approve', scores: {}, flaggedCategories: [], error: error.message };
   }
-
-  const borderlineCategories = Object.entries(scores)
-    .filter(([, score]) => score >= 0.5 && score < 0.8)
-    .map(([category]) => category);
-
-  if (borderlineCategories.length) {
-    return { action: 'flag', scores, flaggedCategories: borderlineCategories };
-  }
-
-  return { action: 'approve', scores, flaggedCategories: [] };
 }
 
 export function buildModerationText(fields) {
