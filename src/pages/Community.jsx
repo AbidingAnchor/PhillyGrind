@@ -230,8 +230,10 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   }
 
   async function handleReactionSelect(reactionType) {
+    console.log('[handleReactionSelect] Reaction type:', reactionType);
     try {
       const newReaction = await toggleCommunityPostReaction(post.id, reactionType);
+      console.log('[handleReactionSelect] API response:', newReaction);
       setUserReaction(newReaction);
       setLiked(!!newReaction);
       setShowReactionPicker(false);
@@ -242,6 +244,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       
       onLike(post.id, !!newReaction);
     } catch (error) {
+      console.error('[handleReactionSelect] Error:', error);
       alert(error.message);
     }
   }
@@ -389,7 +392,12 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
             <button
               type="button"
               className={`feed-post-photo-action-btn ${liked ? 'liked' : ''}`}
-              onClick={handleLikeClick}
+              onClick={(e) => {
+                // Don't trigger like if picker is visible
+                if (!showReactionPicker) {
+                  handleLikeClick(e);
+                }
+              }}
               onMouseDown={handleLikeMouseDown}
               onMouseUp={handleLikeMouseUp}
               onMouseMove={handleLikeMouseMove}
@@ -413,6 +421,8 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
                     className="reaction-option"
                     onClick={(e) => {
                       e.stopPropagation();
+                      e.preventDefault();
+                      console.log('[Reaction button clicked] Type:', reaction.type, 'Emoji:', reaction.emoji);
                       handleReactionSelect(reaction.type);
                     }}
                     title={reaction.label}
@@ -452,7 +462,12 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
               <button
                 type="button"
                 className={`feed-post-action-btn ${liked ? 'liked' : ''}`}
-                onClick={handleLikeClick}
+                onClick={(e) => {
+                  // Don't trigger like if picker is visible
+                  if (!showReactionPicker) {
+                    handleLikeClick(e);
+                  }
+                }}
                 onMouseDown={handleLikeMouseDown}
                 onMouseUp={handleLikeMouseUp}
                 onMouseMove={handleLikeMouseMove}
@@ -468,7 +483,12 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
                 <span>{post.like_count || 0}</span>
               </button>
               {showReactionPicker && (
-                <div className="feed-post-reaction-picker">
+                <div 
+                  className="feed-post-reaction-picker"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onMouseUp={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {REACTIONS.map((reaction) => (
                     <button
                       key={reaction.type}
@@ -476,6 +496,8 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
                       className="reaction-option"
                       onClick={(e) => {
                         e.stopPropagation();
+                        e.preventDefault();
+                        console.log('[Reaction button clicked] Type:', reaction.type, 'Emoji:', reaction.emoji);
                         handleReactionSelect(reaction.type);
                       }}
                       title={reaction.label}

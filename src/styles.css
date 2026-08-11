@@ -6309,6 +6309,7 @@ body {
 .feed-post-reaction-wrapper {
   position: relative;
   display: inline-block;
+  width: fit-content;
 }
 
 .feed-post-reaction-picker {
@@ -6322,9 +6323,15 @@ body {
   background: rgba(6, 21, 36, 0.95);
   border-radius: 50px;
   box-shadow: 0 8px 24px rgba(6, 21, 36, 0.25);
-  z-index: 20;
+  z-index: 100;
   animation: fadeInUp 0.2s ease;
   backdrop-filter: blur(8px);
+  width: max-content;
+  max-width: none;
+  overflow: visible;
+  white-space: nowrap;
+  pointer-events: auto;
+  min-width: 0;
 }
 
 @keyframes fadeInUp {
