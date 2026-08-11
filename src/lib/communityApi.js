@@ -408,7 +408,7 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
     .maybeSingle();
 
   if (existingLike) {
-    // If same reaction, remove it. If different, update it.
+    // If same reaction, remove it (toggle off)
     if (existingLike.reaction_type === reactionType) {
       const { error: deleteError } = await supabase
         .from('community_post_likes')
@@ -420,6 +420,7 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
       await supabase.rpc('decrement_community_post_like_count', { post_id: postId });
       return null;
     } else {
+      // If different reaction, update it (no count change since it's a replacement)
       const { error: updateError } = await supabase
         .from('community_post_likes')
         .update({ reaction_type: reactionType })
@@ -439,7 +440,38 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
         reaction_type: reactionType,
       });
 
-    if (insertError) throw insertError;
+    if (insertError) {
+      // Handle unique constraint violation (race condition or duplicate)
+      if (insertError.code === '23505') {
+        // This shouldn't happen with the check above, but handle it gracefully
+        const { data: retryExisting } = await supabase
+          .from('community_post_likes')
+          .select('id, reaction_type')
+          .eq('post_id', postId)
+          .eq('user_id', userData.user.id)
+          .maybeSingle();
+        
+        if (retryExisting) {
+          if (retryExisting.reaction_type === reactionType) {
+            // Already has this reaction, remove it
+            await supabase
+              .from('community_post_likes')
+              .delete()
+              .eq('id', retryExisting.id);
+            await supabase.rpc('decrement_community_post_like_count', { post_id: postId });
+            return null;
+          } else {
+            // Update to new reaction (no count change)
+            await supabase
+              .from('community_post_likes')
+              .update({ reaction_type: reactionType })
+              .eq('id', retryExisting.id);
+            return reactionType;
+          }
+        }
+      }
+      throw insertError;
+    }
 
     await supabase.rpc('increment_community_post_like_count', { post_id: postId });
     return reactionType;

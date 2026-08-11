@@ -11,6 +11,9 @@ alter table community_post_likes
 add constraint check_reaction_type 
 check (reaction_type in ('like', 'love', 'haha', 'wow', 'sad', 'angry'));
 
+-- The unique constraint on (post_id, user_id) already exists from the original schema
+-- so we don't need to add it again
+
 -- Create index for reaction_type
 create index if not exists community_post_likes_reaction_type_idx 
 on community_post_likes(reaction_type);

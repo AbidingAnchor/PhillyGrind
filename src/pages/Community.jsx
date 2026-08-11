@@ -225,6 +225,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       
       onLike(post.id, !!newReaction);
     } catch (error) {
+      console.error('[handleLike] Error:', error);
       alert(error.message);
     }
   }
@@ -315,11 +316,14 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   const isOwnPost = currentUser?.id === post.authorId;
   const currentReaction = REACTIONS.find(r => r.type === userReaction);
   
-  // Get top reaction for display
+  // Get top reaction for display when user hasn't reacted
   const topReactionType = Object.keys(reactionBreakdown).reduce((a, b) => 
-    reactionBreakdown[a] > reactionBreakdown[b] ? a : b, userReaction || 'like'
+    reactionBreakdown[a] > reactionBreakdown[b] ? a : b, 'like'
   );
   const topReaction = REACTIONS.find(r => r.type === topReactionType);
+  
+  // Show user's own reaction if they have one, otherwise show top reaction
+  const displayReaction = currentReaction || topReaction;
 
   return (
     <article className="feed-post-card">
@@ -405,8 +409,8 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
               onTouchEnd={handleLikeMouseUp}
               onTouchMove={handleLikeMouseMove}
             >
-              {topReaction && post.like_count > 0 ? (
-                <span className="reaction-emoji reaction-emoji-colored" data-reaction={topReaction.type}>{topReaction.emoji}</span>
+              {displayReaction && post.like_count > 0 ? (
+                <span className="reaction-emoji reaction-emoji-colored" data-reaction={displayReaction.type}>{displayReaction.emoji}</span>
               ) : (
                 <ThumbsUp size={16} />
               )}
@@ -475,8 +479,8 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
                 onTouchEnd={handleLikeMouseUp}
                 onTouchMove={handleLikeMouseMove}
               >
-                {topReaction && post.like_count > 0 ? (
-                  <span className="reaction-emoji reaction-emoji-colored" data-reaction={topReaction.type}>{topReaction.emoji}</span>
+                {displayReaction && post.like_count > 0 ? (
+                  <span className="reaction-emoji reaction-emoji-colored" data-reaction={displayReaction.type}>{displayReaction.emoji}</span>
                 ) : (
                   <ThumbsUp size={18} />
                 )}
