@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MessageCircle, MoreHorizontal, Upload, X, Flag, ThumbsUp, Share2 } from 'lucide-react';
-import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl } from '../lib/communityApi.js';
+import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl, getReactionBreakdown } from '../lib/communityApi.js';
 import { useAuth } from '../lib/auth.jsx';
 
 function withTimeout(promise, milliseconds, message) {
@@ -105,6 +105,9 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   const [loadingComments, setLoadingComments] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const [longPressTimer, setLongPressTimer] = useState(null);
+  const [hasMoved, setHasMoved] = useState(false);
+  const [reactionBreakdown, setReactionBreakdown] = useState({});
 
   const REACTIONS = [
     { emoji: '👍', type: 'like', label: 'Like' },
@@ -121,12 +124,57 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         const reaction = await getUserReaction(post.id);
         setUserReaction(reaction);
         setLiked(!!reaction);
+        
+        const breakdown = await getReactionBreakdown(post.id);
+        setReactionBreakdown(breakdown);
       } catch (error) {
         console.error('Failed to load reaction status:', error);
       }
     }
     loadReactionStatus();
   }, [post.id]);
+
+  // Cleanup long press timer on unmount
+  useEffect(() => {
+    return () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+      }
+    };
+  }, [longPressTimer]);
+
+  const handleLikeMouseDown = (e) => {
+    setHasMoved(false);
+    setLongPressTimer(
+      setTimeout(() => {
+        setShowReactionPicker(true);
+      }, 500)
+    );
+  };
+
+  const handleLikeMouseUp = (e) => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+    
+    if (!showReactionPicker && !hasMoved) {
+      handleLike();
+    }
+    setShowReactionPicker(false);
+  };
+
+  const handleLikeMouseMove = () => {
+    setHasMoved(true);
+  };
+
+  const handleLikeMouseLeave = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+    setShowReactionPicker(false);
+  };
 
   async function handleLike() {
     try {
@@ -145,6 +193,11 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       setUserReaction(newReaction);
       setLiked(!!newReaction);
       setShowReactionPicker(false);
+      
+      // Refresh reaction breakdown
+      const breakdown = await getReactionBreakdown(post.id);
+      setReactionBreakdown(breakdown);
+      
       onLike(post.id, !!newReaction);
     } catch (error) {
       alert(error.message);
@@ -216,6 +269,12 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
 
   const isOwnPost = currentUser?.id === post.authorId;
   const currentReaction = REACTIONS.find(r => r.type === userReaction);
+  
+  // Get top reaction for display
+  const topReactionType = Object.keys(reactionBreakdown).reduce((a, b) => 
+    reactionBreakdown[a] > reactionBreakdown[b] ? a : b, userReaction || 'like'
+  );
+  const topReaction = REACTIONS.find(r => r.type === topReactionType);
 
   return (
     <article className="feed-post-card">
@@ -284,14 +343,16 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
             <button
               type="button"
               className={`feed-post-photo-action-btn ${liked ? 'liked' : ''}`}
-              onClick={handleLike}
-              onMouseEnter={() => setShowReactionPicker(true)}
-              onMouseLeave={() => setShowReactionPicker(false)}
-              onTouchStart={() => setShowReactionPicker(true)}
-              onTouchEnd={() => setTimeout(() => setShowReactionPicker(false), 200)}
+              onMouseDown={handleLikeMouseDown}
+              onMouseUp={handleLikeMouseUp}
+              onMouseMove={handleLikeMouseMove}
+              onMouseLeave={handleLikeMouseLeave}
+              onTouchStart={handleLikeMouseDown}
+              onTouchEnd={handleLikeMouseUp}
+              onTouchMove={handleLikeMouseMove}
             >
-              {currentReaction ? (
-                <span className="reaction-emoji">{currentReaction.emoji}</span>
+              {topReaction && post.like_count > 0 ? (
+                <span className="reaction-emoji reaction-emoji-colored" data-reaction={topReaction.type}>{topReaction.emoji}</span>
               ) : (
                 <ThumbsUp size={16} />
               )}
@@ -338,14 +399,16 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
               <button
                 type="button"
                 className={`feed-post-action-btn ${liked ? 'liked' : ''}`}
-                onClick={handleLike}
-                onMouseEnter={() => setShowReactionPicker(true)}
-                onMouseLeave={() => setShowReactionPicker(false)}
-                onTouchStart={() => setShowReactionPicker(true)}
-                onTouchEnd={() => setTimeout(() => setShowReactionPicker(false), 200)}
+                onMouseDown={handleLikeMouseDown}
+                onMouseUp={handleLikeMouseUp}
+                onMouseMove={handleLikeMouseMove}
+                onMouseLeave={handleLikeMouseLeave}
+                onTouchStart={handleLikeMouseDown}
+                onTouchEnd={handleLikeMouseUp}
+                onTouchMove={handleLikeMouseMove}
               >
-                {currentReaction ? (
-                  <span className="reaction-emoji">{currentReaction.emoji}</span>
+                {topReaction && post.like_count > 0 ? (
+                  <span className="reaction-emoji reaction-emoji-colored" data-reaction={topReaction.type}>{topReaction.emoji}</span>
                 ) : (
                   <ThumbsUp size={18} />
                 )}

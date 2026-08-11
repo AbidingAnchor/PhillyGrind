@@ -171,6 +171,25 @@ export async function getCommunityLikeCount(postId) {
   return count ?? 0;
 }
 
+export async function getReactionBreakdown(postId) {
+  if (!hasSupabaseConfig) return {};
+
+  const { data, error } = await supabase
+    .from('community_post_likes')
+    .select('reaction_type')
+    .eq('post_id', postId);
+
+  if (error) throw error;
+
+  const breakdown = {};
+  (data || []).forEach((like) => {
+    const type = like.reaction_type || 'like';
+    breakdown[type] = (breakdown[type] || 0) + 1;
+  });
+
+  return breakdown;
+}
+
 export async function getUserReaction(postId) {
   if (!hasSupabaseConfig) return null;
 

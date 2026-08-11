@@ -6236,7 +6236,7 @@ body {
 /* Photo Actions (Nextdoor-style pills below image) */
 .feed-post-photo-actions {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   margin: 12px 0 16px;
   padding: 0 20px;
 }
@@ -6245,27 +6245,24 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: var(--card);
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
   color: var(--muted);
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .feed-post-photo-action-btn:hover {
-  background: var(--background);
+  background: rgba(6, 21, 36, 0.05);
   color: var(--ink);
-  border-color: var(--muted);
 }
 
 .feed-post-photo-action-btn.liked {
-  background: var(--mint);
   color: var(--green);
-  border-color: var(--green);
 }
 
 /* Updated Action Bar - Full Width */
@@ -6291,7 +6288,7 @@ body {
   border-radius: 0;
   font-size: 0.9rem;
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   border-right: 1px solid var(--line);
 }
 
@@ -6300,16 +6297,12 @@ body {
 }
 
 .feed-post-action-btn:hover {
-  background: var(--background);
+  background: rgba(6, 21, 36, 0.05);
   color: var(--ink);
 }
 
 .feed-post-action-btn.liked {
   color: var(--green);
-}
-
-.feed-post-action-btn.liked:hover {
-  background: var(--mint);
 }
 
 /* Reaction Picker */
@@ -6324,13 +6317,14 @@ body {
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 4px;
-  padding: 8px 12px;
-  background: var(--card);
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(6, 21, 36, 0.95);
   border-radius: 50px;
-  box-shadow: 0 8px 24px rgba(6, 21, 36, 0.15);
+  box-shadow: 0 8px 24px rgba(6, 21, 36, 0.25);
   z-index: 20;
   animation: fadeInUp 0.2s ease;
+  backdrop-filter: blur(8px);
 }
 
 @keyframes fadeInUp {
@@ -6345,8 +6339,8 @@ body {
 }
 
 .reaction-option {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -6354,13 +6348,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  font-size: 1.3rem;
+  transition: transform 0.2s ease;
+  font-size: 1.4rem;
 }
 
 .reaction-option:hover {
-  transform: scale(1.3);
-  background: var(--background);
+  transform: scale(1.25);
 }
 
 .reaction-emoji {
@@ -6369,8 +6362,48 @@ body {
 }
 
 .reaction-emoji-lg {
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   line-height: 1;
+}
+
+/* Colored reaction backgrounds */
+.reaction-emoji-colored {
+  position: relative;
+  padding: 4px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reaction-emoji-colored[data-reaction="like"] {
+  background: rgba(59, 89, 152, 0.2);
+  color: #3b5998;
+}
+
+.reaction-emoji-colored[data-reaction="love"] {
+  background: rgba(214, 66, 68, 0.2);
+  color: #d64244;
+}
+
+.reaction-emoji-colored[data-reaction="haha"] {
+  background: rgba(244, 186, 46, 0.2);
+  color: #f4ba2e;
+}
+
+.reaction-emoji-colored[data-reaction="wow"] {
+  background: rgba(244, 186, 46, 0.2);
+  color: #f4ba2e;
+}
+
+.reaction-emoji-colored[data-reaction="sad"] {
+  background: rgba(214, 66, 68, 0.2);
+  color: #d64244;
+}
+
+.reaction-emoji-colored[data-reaction="angry"] {
+  background: rgba(236, 90, 70, 0.2);
+  color: #ec5a46;
 }
 
 /* Toast Notification */
