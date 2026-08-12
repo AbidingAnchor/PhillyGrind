@@ -6457,45 +6457,44 @@ body {
 
 /* Reaction Display */
 .reaction-display {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.reaction-display-item {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px 2px 4px;
-  background: rgba(6, 21, 36, 0.05);
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  gap: 6px;
 }
 
-.reaction-display-count {
-  color: var(--muted);
-  font-size: 0.82rem;
-  line-height: 1;
+.reaction-display-stack {
+  display: inline-flex;
+  align-items: center;
 }
 
-.reaction-display-more {
-  padding: 2px 8px;
-  background: rgba(6, 21, 36, 0.05);
-  border-radius: 999px;
-  font-size: 0.8rem;
-  color: var(--muted);
-  font-weight: 500;
+.reaction-display-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(6, 21, 36, 0.06);
+  box-sizing: border-box;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.reaction-display-badge + .reaction-display-badge {
+  margin-left: -6px;
+}
+
+.reaction-display-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .reaction-display-total {
-  margin-left: 2px;
-  padding-left: 8px;
-  border-left: 1px solid var(--line);
   font-size: 0.85rem;
   color: var(--muted);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
 }
 

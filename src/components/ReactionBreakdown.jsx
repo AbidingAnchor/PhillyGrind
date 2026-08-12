@@ -7,18 +7,21 @@ export default function ReactionBreakdown({ breakdown, totalCount, maxTypes = 3,
   if (items.length === 0) return null;
 
   const total = totalCount ?? items.reduce((sum, { count }) => sum + count, 0);
+  const visibleTypes = items.slice(0, maxTypes);
 
   return (
     <div className={`reaction-display ${className}`.trim()} aria-label={`${total} reactions`}>
-      {items.slice(0, maxTypes).map(({ type, count }) => (
-        <span key={type} className="reaction-display-item">
-          <ReactionIcon type={type} size={18} className="reaction-display-icon" />
-          <span className="reaction-display-count">{count}</span>
-        </span>
-      ))}
-      {items.length > maxTypes && (
-        <span className="reaction-display-more">+{items.length - maxTypes}</span>
-      )}
+      <div className="reaction-display-stack" aria-hidden="true">
+        {visibleTypes.map(({ type }, index) => (
+          <span
+            key={type}
+            className="reaction-display-badge"
+            style={{ zIndex: index + 1 }}
+          >
+            <ReactionIcon type={type} size={16} className="reaction-display-icon" />
+          </span>
+        ))}
+      </div>
       <span className="reaction-display-total">{total}</span>
     </div>
   );
