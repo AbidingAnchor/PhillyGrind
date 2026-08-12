@@ -49,11 +49,26 @@ async function apiRequest(action, { method = 'POST', body, query = {} } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload.error || 'Request failed.');
+    const text = await response.text();
+    try {
+      const payload = JSON.parse(text);
+      throw new Error(payload.error || 'Request failed.');
+    } catch {
+      throw new Error(text || `Request failed (${response.status})`);
+    }
   }
-  return payload;
+
+  const text = await response.text();
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
 }
 
 export async function markHandoff(orderId, photoPath) {

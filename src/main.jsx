@@ -2,8 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import App from './App.jsx';
-import BrowseJobs from './pages/BrowseJobs.jsx';
-import BrowseGigs from './pages/BrowseGigs.jsx';
+import Jobs from './pages/Jobs.jsx';
+import Gigs from './pages/Gigs.jsx';
 import BrowseMarketplace from './pages/BrowseMarketplace.jsx';
 import MarketplaceDetail from './pages/MarketplaceDetail.jsx';
 import PostJob from './pages/PostJob.jsx';
@@ -47,8 +47,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route element={<App />}>
               <Route path="/" element={<Community />} />
               <Route path="/community" element={<Navigate to="/" replace />} />
-              <Route path="/jobs" element={<BrowseJobs />} />
-              <Route path="/gigs" element={<BrowseGigs />} />
+              <Route path="/jobs" element={<Jobs />} />
+              <Route path="/gigs" element={<Gigs />} />
               <Route path="/marketplace" element={<BrowseMarketplace />} />
               <Route path="/marketplace/:id" element={<MarketplaceDetail />} />
               <Route path="/hiring-events" element={<BrowseHiringEvents />} />
@@ -63,8 +63,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/profile/:userId" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
               <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-              <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
-              <Route path="/post-gig" element={<ProtectedRoute><PostGig /></ProtectedRoute>} />
+              <Route path="/post-job" element={<Navigate to="/jobs?tab=post" replace />} />
+              <Route path="/post-gig" element={<Navigate to="/gigs?tab=post" replace />} />
+              <Route path="/browse-jobs" element={<Navigate to="/jobs" replace />} />
+              <Route path="/browse-gigs" element={<Navigate to="/gigs" replace />} />
               <Route path="/marketplace/post" element={<ProtectedRoute><PostMarketplaceListing /></ProtectedRoute>} />
               <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
                 <Route index element={<AdminOverview />} />

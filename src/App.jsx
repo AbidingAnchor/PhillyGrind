@@ -10,12 +10,10 @@ import GrindBot from './components/GrindBot.jsx';
 
 const navItems = [
   { to: '/', label: 'Community', tour: 'community', id: 'nav-community' },
-  { to: '/jobs', label: 'Browse Jobs', tour: 'browse-jobs', id: 'nav-browse-jobs' },
-  { to: '/gigs', label: 'Browse Gigs', tour: 'browse-gigs', id: 'nav-browse-gigs' },
+  { to: '/jobs', label: 'Jobs', tour: 'jobs', id: 'nav-jobs' },
+  { to: '/gigs', label: 'Gigs', tour: 'gigs', id: 'nav-gigs' },
   { to: '/marketplace', label: 'Marketplace', tour: 'marketplace', id: 'nav-marketplace' },
   { to: '/housing', label: 'Housing', tour: 'housing', id: 'nav-housing' },
-  { to: '/post-job', label: 'Post a Job', tour: 'post-job', id: 'nav-post-job' },
-  { to: '/post-gig', label: 'Post a Gig', tour: 'post-gig', id: 'nav-post-gig' },
 ];
 
 function App() {
@@ -77,7 +75,7 @@ function App() {
               Messages
             </NavLink>
           )}
-          <Link className="nav-cta" id="nav-post-now" to="/post-gig" onClick={() => setOpen(false)}>
+          <Link className="nav-cta" id="nav-post-now" to="/gigs?tab=post" onClick={() => setOpen(false)}>
             <PlusCircle size={18} />
             Post Now
           </Link>
@@ -120,12 +118,10 @@ function App() {
         </div>
         <nav className="footer-links" aria-label="Footer navigation">
           <Link to="/">Community</Link>
-          <Link to="/jobs">Browse Jobs</Link>
-          <Link to="/gigs">Browse Gigs</Link>
+          <Link to="/jobs">Jobs</Link>
+          <Link to="/gigs">Gigs</Link>
           <Link to="/marketplace">Marketplace</Link>
           <Link to="/housing">Housing</Link>
-          <Link to="/post-job">Post a Job</Link>
-          <Link to="/post-gig">Post a Gig</Link>
           <Link to="/terms">Terms</Link>
           <Link to="/privacy">Privacy</Link>
         </nav>
