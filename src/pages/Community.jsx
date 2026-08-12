@@ -140,7 +140,12 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         setLiked(!!reaction);
         
         const breakdown = await getReactionBreakdown(post.id);
-        setReactionBreakdown(breakdown);
+        // Convert back to object format for easier access
+        const breakdownObj = {};
+        breakdown.forEach(({ type, count }) => {
+          breakdownObj[type] = count;
+        });
+        setReactionBreakdown(breakdownObj);
       } catch (error) {
         console.error('Failed to load reaction status:', error);
       }
@@ -221,7 +226,11 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       
       // Refresh reaction breakdown
       const breakdown = await getReactionBreakdown(post.id);
-      setReactionBreakdown(breakdown);
+      const breakdownObj = {};
+      breakdown.forEach(({ type, count }) => {
+        breakdownObj[type] = count;
+      });
+      setReactionBreakdown(breakdownObj);
       
       onLike(post.id, !!newReaction);
     } catch (error) {
@@ -241,7 +250,11 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       
       // Refresh reaction breakdown
       const breakdown = await getReactionBreakdown(post.id);
-      setReactionBreakdown(breakdown);
+      const breakdownObj = {};
+      breakdown.forEach(({ type, count }) => {
+        breakdownObj[type] = count;
+      });
+      setReactionBreakdown(breakdownObj);
       
       onLike(post.id, !!newReaction);
     } catch (error) {
@@ -317,9 +330,9 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   const currentReaction = REACTIONS.find(r => r.type === userReaction);
   
   // Get top reaction for display when user hasn't reacted
-  const topReactionType = Object.keys(reactionBreakdown).reduce((a, b) => 
-    reactionBreakdown[a] > reactionBreakdown[b] ? a : b, 'like'
-  );
+  const topReactionType = reactionBreakdown.length > 0 
+    ? reactionBreakdown[0].type 
+    : 'like';
   const topReaction = REACTIONS.find(r => r.type === topReactionType);
   
   // Show user's own reaction if they have one, otherwise show top reaction
@@ -409,12 +422,25 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
               onTouchEnd={handleLikeMouseUp}
               onTouchMove={handleLikeMouseMove}
             >
-              {displayReaction && post.like_count > 0 ? (
-                <span className="reaction-emoji reaction-emoji-colored" data-reaction={displayReaction.type}>{displayReaction.emoji}</span>
+              {post.like_count > 0 ? (
+                <div className="reaction-display">
+                  {reactionBreakdown.slice(0, 3).map(({ type, count }) => {
+                    const reaction = REACTIONS.find(r => r.type === type);
+                    if (!reaction) return null;
+                    return (
+                      <span key={type} className="reaction-display-item">
+                        <span className="reaction-display-emoji">{reaction.emoji}</span>
+                        <span className="reaction-display-count">{count}</span>
+                      </span>
+                    );
+                  })}
+                  {reactionBreakdown.length > 3 && (
+                    <span className="reaction-display-more">+{reactionBreakdown.length - 3}</span>
+                  )}
+                </div>
               ) : (
                 <ThumbsUp size={16} />
               )}
-              <span>{post.like_count || 0}</span>
             </button>
             {showReactionPicker && (
               <div className="feed-post-reaction-picker">
@@ -479,12 +505,26 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
                 onTouchEnd={handleLikeMouseUp}
                 onTouchMove={handleLikeMouseMove}
               >
-                {displayReaction && post.like_count > 0 ? (
-                  <span className="reaction-emoji reaction-emoji-colored" data-reaction={displayReaction.type}>{displayReaction.emoji}</span>
-                ) : (
-                  <ThumbsUp size={18} />
-                )}
-                <span>{post.like_count || 0}</span>
+              {post.like_count > 0 ? (
+                <div className="reaction-display">
+                  {reactionBreakdown.slice(0, 3).map(({ type, count }) => {
+                    const reaction = REACTIONS.find(r => r.type === type);
+                    if (!reaction) return null;
+                    return (
+                      <span key={type} className="reaction-display-item">
+                        <span className="reaction-display-emoji">{reaction.emoji}</span>
+                        <span className="reaction-display-count">{count}</span>
+                      </span>
+                    );
+                  })}
+                  {reactionBreakdown.length > 3 && (
+                    <span className="reaction-display-more">+{reactionBreakdown.length - 3}</span>
+                  )}
+                </div>
+              ) : (
+                <ThumbsUp size={18} />
+              )}
+              <span>{post.like_count || 0}</span>
               </button>
               {showReactionPicker && (
                 <div 

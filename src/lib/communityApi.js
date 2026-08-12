@@ -187,7 +187,10 @@ export async function getReactionBreakdown(postId) {
     breakdown[type] = (breakdown[type] || 0) + 1;
   });
 
-  return breakdown;
+  // Sort by count (descending) and return as array of objects
+  return Object.entries(breakdown)
+    .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 export async function getUserReaction(postId) {

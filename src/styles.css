@@ -6413,6 +6413,44 @@ body {
   color: #ec5a46;
 }
 
+/* Reaction Display */
+.reaction-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.reaction-display-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  background: rgba(6, 21, 36, 0.05);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.reaction-display-emoji {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.reaction-display-count {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.reaction-display-more {
+  padding: 2px 6px;
+  background: rgba(6, 21, 36, 0.05);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
 /* Toast Notification */
 .toast-notification {
   position: fixed;
