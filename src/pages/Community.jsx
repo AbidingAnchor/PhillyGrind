@@ -145,10 +145,24 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   }, [post.id]);
 
   async function handleLike() {
+    console.log('[Community PostCard] handleLike called', { 
+      userReaction, 
+      hadReaction: !!userReaction,
+      requestedReaction: !!userReaction ? userReaction : 'like'
+    });
+    
     try {
       const hadReaction = !!userReaction;
-      const toggleResult = await toggleCommunityPostReaction(post.id, hadReaction ? userReaction : 'like');
-      console.log('[Community PostCard] toggleCommunityPostReaction returned:', toggleResult, 'requested:', hadReaction ? userReaction : 'like');
+      const requestedReaction = hadReaction ? userReaction : 'like';
+      
+      console.log('[Community PostCard] Calling toggleCommunityPostReaction with:', {
+        postId: post.id,
+        reactionType: requestedReaction,
+        path: hadReaction ? 'DELETE (toggle off)' : 'INSERT (new like)'
+      });
+      
+      const toggleResult = await toggleCommunityPostReaction(post.id, requestedReaction);
+      console.log('[Community PostCard] toggleCommunityPostReaction returned:', toggleResult, 'requested:', requestedReaction);
       
       // Use the return value from toggleCommunityPostReaction instead of re-fetching
       const newReaction = toggleResult;

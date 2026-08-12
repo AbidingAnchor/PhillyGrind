@@ -89,6 +89,13 @@ export default function PostReactionControl({
   };
 
   const handleClick = (event) => {
+    console.log('[PostReactionControl] handleClick fired', { 
+      hasReaction, 
+      userReaction, 
+      longPressTriggered: longPressTriggeredRef.current,
+      showReactionPicker 
+    });
+    
     if (longPressTriggeredRef.current) {
       event.preventDefault();
       event.stopPropagation();
@@ -102,8 +109,10 @@ export default function PostReactionControl({
 
     // Regular click behavior
     if (hasReaction) {
+      console.log('[PostReactionControl] Regular click: Has reaction, calling onLike to remove:', userReaction);
       onLike(); // This will toggle off the current reaction
     } else {
+      console.log('[PostReactionControl] Regular click: No reaction, setting to like');
       onReactionSelect('like');
     }
   };

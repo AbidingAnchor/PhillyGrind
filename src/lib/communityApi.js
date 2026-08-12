@@ -419,6 +419,13 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
   if (existingLike) {
     // If same reaction, remove it (toggle off)
     if (existingLike.reaction_type === reactionType) {
+      console.log('[toggleCommunityPostReaction] DELETE path (toggle off):', {
+        postId,
+        userId: userData.user.id,
+        reactionType,
+        existingLikeId: existingLike.id,
+      });
+      
       const { error: deleteError } = await supabase
         .from('community_post_likes')
         .delete()
@@ -430,6 +437,14 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
       return null;
     }
 
+    console.log('[toggleCommunityPostReaction] UPDATE path (switch reaction):', {
+      postId,
+      userId: userData.user.id,
+      from: existingLike.reaction_type,
+      to: reactionType,
+      existingLikeId: existingLike.id,
+    });
+
     const { error: updateError } = await supabase
       .from('community_post_likes')
       .update({ reaction_type: reactionType })
@@ -439,6 +454,12 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
 
     return reactionType;
   }
+
+  console.log('[toggleCommunityPostReaction] INSERT path (new reaction):', {
+    postId,
+    userId: userData.user.id,
+    reactionType,
+  });
 
   const { error: insertError } = await supabase
       .from('community_post_likes')
