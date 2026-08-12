@@ -419,13 +419,6 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
   if (existingLike) {
     // If same reaction, remove it (toggle off)
     if (existingLike.reaction_type === reactionType) {
-      console.log('[toggleCommunityPostReaction] write path: DELETE (toggle off)', {
-        postId,
-        userId: userData.user.id,
-        reactionType,
-        existingLikeId: existingLike.id,
-      });
-
       const { error: deleteError } = await supabase
         .from('community_post_likes')
         .delete()
@@ -455,104 +448,11 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
         reaction_type: reactionType,
       });
 
-    if (insertError) {
-      // Handle unique constraint violation (race condition or duplicate)
-      if (insertError.code === '23505') {
-        // This shouldn't happen with the check above, but handle it gracefully
-        const { data: retryExisting } = await supabase
-          .from('community_post_likes')
-          .select('id, reaction_type')
-          .eq('post_id', postId)
-          .eq('user_id', userData.user.id)
-          .maybeSingle();
-        
-        if (retryExisting) {
-          if (retryExisting.reaction_type === reactionType) {
-            console.log('[toggleCommunityPostReaction] write path: DELETE (retry toggle off)', {
-              postId,
-              userId: userData.user.id,
-              reactionType,
-              existingLikeId: retryExisting.id,
-            });
-
-            await supabase
-              .from('community_post_likes')
-              .delete()
-              .eq('id', retryExisting.id);
-            await supabase.rpc('decrement_community_post_like_count', { post_id: postId });
-            return null;
-          }
-
-          console.log('[toggleCommunityPostReaction] write path: UPDATE (retry switch reaction)', {
-            postId,
-            userId: userData.user.id,
-            from: retryExisting.reaction_type,
-            to: reactionType,
-            existingLikeId: retryExisting.id,
-          });
-
-          await supabase
-            .from('community_post_likes')
-            .update({ reaction_type: reactionType })
-            .eq('id', retryExisting.id);
-          return reactionType;
-        }
-      }
-      throw insertError;
-    }
+    if (insertError) throw insertError;
 
     await supabase.rpc('increment_community_post_like_count', { post_id: postId });
     return reactionType;
-}
-
-export async function toggleCommunityPostLike(postId) {
-  if (!hasSupabaseConfig) {
-    throw new Error('Supabase credentials are missing.');
   }
-
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) {
-    throw new Error('You must be logged in to like posts.');
-  }
-
-  // Check if already liked
-  const { data: existingLike } = await supabase
-    .from('community_post_likes')
-    .select('id')
-    .eq('post_id', postId)
-    .eq('user_id', userData.user.id)
-    .maybeSingle();
-
-  if (existingLike) {
-    // Unlike
-    const { error: deleteError } = await supabase
-      .from('community_post_likes')
-      .delete()
-      .eq('post_id', postId)
-      .eq('user_id', userData.user.id);
-
-    if (deleteError) throw deleteError;
-
-    // Decrement like count
-    await supabase.rpc('decrement_community_post_like_count', { post_id: postId });
-    return false;
-  } else {
-    // Like
-    const { error: insertError } = await supabase
-      .from('community_post_likes')
-      .insert({
-        post_id: postId,
-        user_id: userData.user.id,
-        reaction_type: 'like',
-      });
-
-    if (insertError) throw insertError;
-
-    // Increment like count
-    await supabase.rpc('increment_community_post_like_count', { post_id: postId });
-    return true;
-  }
-}
 
 export async function submitCommunityReport({ postId, reason, details }) {
   if (!hasSupabaseConfig) {

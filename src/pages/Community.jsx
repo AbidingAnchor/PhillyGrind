@@ -112,6 +112,11 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
 
   const reactionTotal = getReactionTotalCount(reactionBreakdown);
 
+  // Log when userReaction state changes
+  useEffect(() => {
+    console.log('[PostCard] userReaction state changed to:', userReaction);
+  }, [userReaction]);
+
   async function refreshReactionState() {
     const breakdown = await getReactionBreakdown(post.id);
     console.log('[PostCard] reaction breakdown for post', post.id, breakdown);
@@ -142,14 +147,13 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   async function handleLike() {
     try {
       const hadReaction = !!userReaction;
+      const toggleResult = await toggleCommunityPostReaction(post.id, hadReaction ? userReaction : 'like');
+      console.log('[Community PostCard] toggleCommunityPostReaction returned:', toggleResult, 'requested:', hadReaction ? userReaction : 'like');
       
-      if (hadReaction) {
-        await toggleCommunityPostReaction(post.id, userReaction);
-      } else {
-        await toggleCommunityPostReaction(post.id, 'like');
-      }
+      // Use the return value from toggleCommunityPostReaction instead of re-fetching
+      const newReaction = toggleResult;
+      console.log('[Community PostCard] Using toggle result as newReaction:', newReaction);
       
-      const newReaction = await getUserReaction(post.id);
       setUserReaction(newReaction);
       setLiked(!!newReaction);
       await refreshReactionState();
@@ -166,8 +170,14 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
     console.log('[Community PostCard] Selected:', reactionType, 'replacing:', userReaction);
     try {
       const hadReaction = !!userReaction;
-      await toggleCommunityPostReaction(post.id, reactionType);
-      const newReaction = await getUserReaction(post.id);
+      const toggleResult = await toggleCommunityPostReaction(post.id, reactionType);
+      console.log('[Community PostCard] toggleCommunityPostReaction returned:', toggleResult, 'requested:', reactionType);
+      
+      // Use the return value from toggleCommunityPostReaction instead of re-fetching
+      // to avoid read-after-write lag issues
+      const newReaction = toggleResult;
+      console.log('[Community PostCard] Using toggle result as newReaction:', newReaction);
+      
       setUserReaction(newReaction);
       setLiked(!!newReaction);
       await refreshReactionState();
@@ -315,6 +325,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       {post.photo_url ? (
         <div className="feed-post-photo-actions">
           <PostReactionControl
+            key={`reaction-control-${userReaction || 'none'}-${post.id}`}
             userReaction={userReaction}
             onLike={handleLike}
             onReactionSelect={handleReactionSelect}
@@ -345,6 +356,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
           <div className="feed-post-divider" />
           <div className="feed-post-actions">
             <PostReactionControl
+              key={`reaction-control-${userReaction || 'none'}-${post.id}`}
               userReaction={userReaction}
               onLike={handleLike}
               onReactionSelect={handleReactionSelect}
