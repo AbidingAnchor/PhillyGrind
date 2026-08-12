@@ -142,15 +142,23 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   }, [post.id]);
 
   async function handleLike() {
-    console.log('[Community PostCard] handleLike called');
+    console.log('[Community PostCard] handleLike called - toggle current reaction');
     console.log('[Community PostCard] Current userReaction:', userReaction);
     try {
       const hadReaction = !!userReaction;
       console.log('[Community PostCard] Had reaction before:', hadReaction);
       
-      console.log('[Community PostCard] Calling toggleCommunityPostReaction with: like');
-      const toggleResult = await toggleCommunityPostReaction(post.id, 'like');
-      console.log('[Community PostCard] toggleCommunityPostReaction result:', toggleResult);
+      if (hadReaction) {
+        // User has a reaction, remove it entirely
+        console.log('[Community PostCard] Removing existing reaction');
+        const toggleResult = await toggleCommunityPostReaction(post.id, userReaction);
+        console.log('[Community PostCard] toggleCommunityPostReaction result:', toggleResult);
+      } else {
+        // User has no reaction, set to 'like'
+        console.log('[Community PostCard] Setting reaction to like');
+        const toggleResult = await toggleCommunityPostReaction(post.id, 'like');
+        console.log('[Community PostCard] toggleCommunityPostReaction result:', toggleResult);
+      }
       
       console.log('[Community PostCard] Calling getUserReaction');
       const newReaction = await getUserReaction(post.id);
@@ -338,7 +346,6 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       {post.photo_url ? (
         <div className="feed-post-photo-actions">
           <PostReactionControl
-            liked={liked}
             userReaction={userReaction}
             onLike={handleLike}
             onReactionSelect={handleReactionSelect}
@@ -369,7 +376,6 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
           <div className="feed-post-divider" />
           <div className="feed-post-actions">
             <PostReactionControl
-              liked={liked}
               userReaction={userReaction}
               onLike={handleLike}
               onReactionSelect={handleReactionSelect}

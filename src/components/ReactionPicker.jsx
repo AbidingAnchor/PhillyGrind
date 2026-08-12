@@ -18,13 +18,14 @@ export default function ReactionPicker({ onSelect, className = '' }) {
           className="reaction-option"
           style={{ '--reaction-delay': `${index * 35}ms` }}
           onPointerDown={(e) => {
+            console.log('[ReactionPicker] onPointerDown for reaction:', reaction.type);
             e.preventDefault();
             e.stopPropagation();
           }}
           onClick={(e) => {
+            console.log('[ReactionPicker] onClick for reaction:', reaction.type, 'label:', reaction.label);
             e.stopPropagation();
             e.preventDefault();
-            console.log('[ReactionPicker] Button clicked for reaction:', reaction.type, 'from button:', reaction.label);
             onSelect(reaction.type);
           }}
           title={reaction.label}

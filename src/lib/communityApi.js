@@ -658,5 +658,8 @@ export async function deleteCommunityComment(id) {
 
   if (error) throw error;
 
+  // Decrement comment count
+  await supabase.rpc('decrement_community_post_comment_count', { post_id: comment.post_id });
+
   return comment.post_id;
 }
