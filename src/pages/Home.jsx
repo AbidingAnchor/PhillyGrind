@@ -4,6 +4,7 @@ import { ArrowRight, Search } from 'lucide-react';
 import ListingCard from '../components/ListingCard.jsx';
 import StarRating from '../components/StarRating.jsx';
 import { getFeaturedWorkers, getListings } from '../lib/listingsApi.js';
+import { getUserAvatarColor } from '../lib/reactions.js';
 
 const FALLBACK_OPPORTUNITY_COUNT = 1000;
 
@@ -302,7 +303,10 @@ function Home() {
 
               return (
                 <Link className="featured-worker-card" key={worker.id} to={`/gigs/${worker.id}`}>
-                  <span className="featured-worker-avatar">
+                  <span 
+                    className="featured-worker-avatar"
+                    style={!worker.posterAvatarUrl ? { backgroundColor: getUserAvatarColor(worker.user_id, worker.posterName) } : undefined}
+                  >
                     {worker.posterAvatarUrl ? <img src={worker.posterAvatarUrl} alt={`${worker.posterName} profile`} /> : initials}
                   </span>
                   <div>

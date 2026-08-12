@@ -8,6 +8,7 @@ import { jobCategories } from '../data/listings.js';
 import { getListings, getFeaturedWorkers } from '../lib/listingsApi.js';
 import { attachPosterRatings } from '../lib/reviewsApi.js';
 import { useAuth } from '../lib/auth.jsx';
+import { getUserAvatarColor } from '../lib/reactions.js';
 
 // Helper function to format salary in thousands
 const formatSalary = (num) => {
@@ -377,7 +378,10 @@ function BrowseJobs() {
 
             return (
               <Link className="featured-worker-card" key={worker.id} to={`/gigs/${worker.id}`}>
-                <span className="featured-worker-avatar">
+                <span 
+                  className="featured-worker-avatar"
+                  style={!worker.posterAvatarUrl ? { backgroundColor: getUserAvatarColor(worker.user_id, worker.posterName) } : undefined}
+                >
                   {worker.posterAvatarUrl ? <img src={worker.posterAvatarUrl} alt={`${worker.posterName} profile`} /> : initials}
                 </span>
                 <div>

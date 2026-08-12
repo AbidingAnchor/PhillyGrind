@@ -4,6 +4,7 @@ import { ArrowLeft, BriefcaseBusiness, Star } from 'lucide-react';
 import StarRating from '../components/StarRating.jsx';
 import { getPublicProfileStats } from '../lib/profileApi.js';
 import { getUserReviews } from '../lib/reviewsApi.js';
+import { getUserAvatarColor } from '../lib/reactions.js';
 
 function getInitials(name) {
   return (name || 'PhillyGrind user')
@@ -53,7 +54,10 @@ function PublicProfile() {
       {!loading && !error && profileData && (
         <>
           <div className="profile-header public-profile-header">
-            <span className="profile-avatar-large">
+            <span 
+              className="profile-avatar-large"
+              style={!profile?.avatar_url ? { backgroundColor: getUserAvatarColor(userId, profileData.profileName) } : undefined}
+            >
               {profile?.avatar_url ? <img src={profile.avatar_url} alt={`${profileData.profileName} profile`} /> : getInitials(profileData.profileName)}
             </span>
             <div>

@@ -10,6 +10,7 @@ import { getMyBids } from '../lib/bidsApi.js';
 import { createConnectAccount } from '../lib/ordersApi.js';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
+import { getUserAvatarColor } from '../lib/reactions.js';
 
 const availabilityOptions = ['Available Now', 'Weekends Only', 'Evenings Only', 'Not Available'];
 const activeGigStatuses = new Set(['in progress', 'in_progress']);
@@ -356,7 +357,10 @@ function Profile() {
       {!loading && !error && profileData && (
         <>
           <div className="profile-header">
-            <span className="profile-avatar-large">
+            <span 
+              className="profile-avatar-large"
+              style={!profile?.avatar_url ? { backgroundColor: getUserAvatarColor(viewedUserId, profileData.profileName) } : undefined}
+            >
               {profile?.avatar_url ? <img src={profile.avatar_url} alt={`${profileData.profileName} profile`} /> : getInitials(profileData.profileName)}
             </span>
             <div>

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward } from 'lucide-react';
 import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, removeCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl, getReactionBreakdown } from '../lib/communityApi.js';
 import { useAuth } from '../lib/auth.jsx';
-import { getReactionTotalCount } from '../lib/reactions.js';
+import { getReactionTotalCount, getUserAvatarColor } from '../lib/reactions.js';
 import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
 import PostReactionControl from '../components/PostReactionControl.jsx';
 
@@ -276,7 +276,12 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
           {post.authorAvatarUrl ? (
             <img src={post.authorAvatarUrl} alt={post.authorName} className="feed-post-avatar" />
           ) : (
-            <div className="feed-post-avatar-placeholder">{post.authorName.charAt(0)}</div>
+            <div 
+              className="feed-post-avatar-placeholder" 
+              style={{ backgroundColor: getUserAvatarColor(post.authorId, post.authorName) }}
+            >
+              {post.authorName.charAt(0)}
+            </div>
           )}
           <div className="feed-post-author-info">
             <span className="feed-post-author-name">{post.authorName}</span>
@@ -412,7 +417,12 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
                   {comment.authorAvatarUrl ? (
                     <img src={comment.authorAvatarUrl} alt={comment.authorName} className="feed-comment-avatar" />
                   ) : (
-                    <div className="feed-comment-avatar-placeholder">{comment.authorName.charAt(0)}</div>
+                    <div 
+                      className="feed-comment-avatar-placeholder"
+                      style={{ backgroundColor: getUserAvatarColor(comment.user_id, comment.authorName) }}
+                    >
+                      {comment.authorName.charAt(0)}
+                    </div>
                   )}
                   <div className="feed-comment-content">
                     <div className="feed-comment-header">
@@ -636,7 +646,12 @@ function Community() {
                 {user?.avatar_url ? (
                   <img src={user.avatar_url} alt="Your avatar" className="feed-composer-avatar" />
                 ) : (
-                  <div className="feed-composer-avatar-placeholder">{user?.name?.charAt(0) || 'Y'}</div>
+                  <div 
+                    className="feed-composer-avatar-placeholder"
+                    style={{ backgroundColor: getUserAvatarColor(user?.id, user?.name) }}
+                  >
+                    {user?.name?.charAt(0) || 'Y'}
+                  </div>
                 )}
                 
                 <input
@@ -686,10 +701,15 @@ function Community() {
                 <div className="feed-composer-expanded-wrapper">
                   <form onSubmit={handleSubmitPost} className="feed-composer-expanded">
                     <div className="feed-composer-header">
-                      {user?.avatarUrl ? (
+                      {user?.avatar_url ? (
                         <img src={user.avatar_url} alt="Your avatar" className="feed-composer-avatar-small" />
                       ) : (
-                        <div className="feed-composer-avatar-placeholder-small">{user?.name?.charAt(0) || 'Y'}</div>
+                        <div 
+                          className="feed-composer-avatar-placeholder-small"
+                          style={{ backgroundColor: getUserAvatarColor(user?.id, user?.name) }}
+                        >
+                          {user?.name?.charAt(0) || 'Y'}
+                        </div>
                       )}
                       <span className="feed-composer-user-name">{user?.name || 'You'}</span>
                     </div>

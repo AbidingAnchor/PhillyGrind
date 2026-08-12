@@ -18,6 +18,7 @@ import {
 import ChatModal from '../components/ChatModal.jsx';
 import DeleteConfirmModal from '../components/DeleteConfirmModal.jsx';
 import { useAuth } from '../lib/auth.jsx';
+import { getUserAvatarColor } from '../lib/reactions.js';
 import {
   deleteHousingListing,
   getHousingImagePublicUrl,
@@ -222,11 +223,14 @@ function HousingDetail() {
           </section>
 
           <div className="housing-landlord-card">
-            <div className="housing-landlord-avatar">
+            <div 
+              className="housing-landlord-avatar"
+              style={!listing.landlordAvatarUrl ? { backgroundColor: getUserAvatarColor(listing.landlordId, listing.landlordName) } : undefined}
+            >
               {listing.landlordAvatarUrl ? (
                 <img src={listing.landlordAvatarUrl} alt={`${listing.landlordName} avatar`} />
               ) : (
-                <User size={28} />
+                <span>{listing.landlordName?.charAt(0)?.toUpperCase() || '?'}</span>
               )}
             </div>
             <div>

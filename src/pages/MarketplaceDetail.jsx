@@ -9,6 +9,7 @@ import HandoffPhotoModal from '../components/HandoffPhotoModal.jsx';
 import DisputeFormModal from '../components/DisputeFormModal.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { createConnectAccount, parsePayToCents } from '../lib/ordersApi.js';
+import { getUserAvatarColor } from '../lib/reactions.js';
 import {
   confirmMarketplaceReceipt,
   formatCountdown,
@@ -508,7 +509,10 @@ function MarketplaceDetail() {
           <div className="mp-detail-right">
             <div className="mp-detail-sidebar-card">
               <div className="mp-detail-seller">
-                <div className="mp-detail-avatar">
+                <div 
+                  className="mp-detail-avatar"
+                  style={!listing.profiles?.avatar_url ? { backgroundColor: getUserAvatarColor(listing.user_id, posterName) } : undefined}
+                >
                   {listing.profiles?.avatar_url ? (
                     <img src={listing.profiles.avatar_url} alt={posterName} />
                   ) : (
@@ -971,6 +975,10 @@ function MarketplaceDetail() {
           width: 100%;
           height: 100%;
           object-fit: cover;
+        }
+
+        .mp-detail-avatar[style*="background"] {
+          /* Allow inline background color override */
         }
 
         .mp-detail-seller-info h3 {

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Gavel, MapPin, Zap } from 'lucide-react';
 import StarRating from './StarRating.jsx';
+import { getUserAvatarColor } from '../lib/reactions.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -35,7 +36,12 @@ function ListingCard({ listing, onQuickApply, showQuickApply = false }) {
   return (
     <article className={`listing-card ${listing.is_boosted ? `boosted ${listing.boost_tier}` : ''}`}>
       <div className="listing-card-top">
-        <span className="poster-avatar">{initials}</span>
+        <span 
+          className="poster-avatar"
+          style={{ backgroundColor: getUserAvatarColor(listing.user_id, posterName) }}
+        >
+          {initials}
+        </span>
         <div>
           <div className="listing-badge-row">
             <span className="pill">{listing.category}</span>

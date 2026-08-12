@@ -114,3 +114,34 @@ export function formatReactionCount(count) {
   const formatted = (value / 1_000_000).toFixed(1).replace(/\.0$/, '');
   return `${formatted}M`;
 }
+
+// Avatar color palette for consistent user identification
+const AVATAR_COLORS = [
+  '#061724', // Navy (PhillyGrind brand)
+  '#00c896', // Teal (PhillyGrind brand green)
+  '#2d6a4f', // Forest green
+  '#e76f51', // Warm orange
+  '#3a506b', // Slate blue
+  '#6b4c9a', // Plum
+  '#e85d04', // Vibrant orange
+  '#0077b6', // Ocean blue
+];
+
+// Simple hash function for consistent color assignment
+function stringToHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+}
+
+export function getUserAvatarColor(userId, userName) {
+  // Use userId if available, otherwise fall back to userName
+  const identifier = userId || userName || 'default';
+  const hash = stringToHash(String(identifier));
+  const colorIndex = hash % AVATAR_COLORS.length;
+  return AVATAR_COLORS[colorIndex];
+}
