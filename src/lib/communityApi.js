@@ -398,6 +398,47 @@ export async function createCommunityComment(postId, content) {
   return data;
 }
 
+export async function removeCommunityPostReaction(postId) {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw new Error('You must be logged in to remove reactions.');
+  }
+
+  console.log('[removeCommunityPostReaction] DELETE path (explicit remove):', {
+    postId,
+    userId: userData.user.id,
+  });
+
+  // Get existing reaction to delete
+  const { data: existingLike } = await supabase
+    .from('community_post_likes')
+    .select('id, reaction_type')
+    .eq('post_id', postId)
+    .eq('user_id', userData.user.id)
+    .maybeSingle();
+
+  if (!existingLike) {
+    console.log('[removeCommunityPostReaction] No existing reaction to remove');
+    return null;
+  }
+
+  console.log('[removeCommunityPostReaction] Deleting existing reaction:', existingLike.reaction_type);
+
+  const { error: deleteError } = await supabase
+    .from('community_post_likes')
+    .delete()
+    .eq('id', existingLike.id);
+
+  if (deleteError) throw deleteError;
+
+  await supabase.rpc('decrement_community_post_like_count', { post_id: postId });
+  return null;
+}
+
 export async function toggleCommunityPostReaction(postId, reactionType = 'like') {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');

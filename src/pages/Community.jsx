@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward } from 'lucide-react';
-import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl, getReactionBreakdown } from '../lib/communityApi.js';
+import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, removeCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl, getReactionBreakdown } from '../lib/communityApi.js';
 import { useAuth } from '../lib/auth.jsx';
 import { getReactionTotalCount } from '../lib/reactions.js';
 import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
@@ -148,32 +148,32 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
     console.log('[Community PostCard] handleLike called', { 
       userReaction, 
       hadReaction: !!userReaction,
-      requestedReaction: !!userReaction ? userReaction : 'like'
+      action: !!userReaction ? 'REMOVE reaction entirely' : 'SET like reaction'
     });
     
     try {
       const hadReaction = !!userReaction;
-      const requestedReaction = hadReaction ? userReaction : 'like';
       
-      console.log('[Community PostCard] Calling toggleCommunityPostReaction with:', {
-        postId: post.id,
-        reactionType: requestedReaction,
-        path: hadReaction ? 'DELETE (toggle off)' : 'INSERT (new like)'
-      });
-      
-      const toggleResult = await toggleCommunityPostReaction(post.id, requestedReaction);
-      console.log('[Community PostCard] toggleCommunityPostReaction returned:', toggleResult, 'requested:', requestedReaction);
-      
-      // Use the return value from toggleCommunityPostReaction instead of re-fetching
-      const newReaction = toggleResult;
-      console.log('[Community PostCard] Using toggle result as newReaction:', newReaction);
-      
-      setUserReaction(newReaction);
-      setLiked(!!newReaction);
-      await refreshReactionState();
-
-      const countDelta = hadReaction && !newReaction ? -1 : !hadReaction && newReaction ? 1 : 0;
-      onLike(post.id, countDelta);
+      if (hadReaction) {
+        // Explicitly remove the existing reaction
+        console.log('[Community PostCard] Calling removeCommunityPostReaction to delete:', userReaction);
+        await removeCommunityPostReaction(post.id);
+        setUserReaction(null);
+        setLiked(false);
+        await refreshReactionState();
+        onLike(post.id, -1);
+      } else {
+        // Set new like reaction
+        console.log('[Community PostCard] Calling toggleCommunityPostReaction to set like');
+        const toggleResult = await toggleCommunityPostReaction(post.id, 'like');
+        console.log('[Community PostCard] toggleCommunityPostReaction returned:', toggleResult);
+        
+        const newReaction = toggleResult;
+        setUserReaction(newReaction);
+        setLiked(!!newReaction);
+        await refreshReactionState();
+        onLike(post.id, 1);
+      }
     } catch (error) {
       console.error('[handleLike] Error:', error);
       alert(error.message);
