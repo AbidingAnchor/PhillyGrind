@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Home, MapPin, PlusCircle } from 'lucide-react';
 import { getHousingImagePublicUrl, getHousingListings, HOUSING_NEIGHBORHOODS } from '../lib/housingApi.js';
 import { useAuth } from '../lib/auth.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 
 function withTimeout(promise, milliseconds, message) {
   let timeoutId;
@@ -196,7 +197,13 @@ function Housing() {
                 </Link>
               ))}
             </div>
-            {!listings.length && <p className="empty-state">No rentals match those filters yet.</p>}
+            {!listings.length && (
+              <EmptyState
+                icon="housing"
+                title="No rentals match those filters yet"
+                message="Try adjusting your filters or check back later."
+              />
+            )}
           </>
         )}
 

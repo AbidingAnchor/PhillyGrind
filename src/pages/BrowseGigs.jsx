@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import CategoryFilters from '../components/CategoryFilters.jsx';
 import ListingCard from '../components/ListingCard.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 import { gigCategories } from '../data/listings.js';
 import { getListings } from '../lib/listingsApi.js';
 import { attachPosterRatings } from '../lib/reviewsApi.js';
@@ -106,7 +107,13 @@ function BrowseGigs() {
           <div className="listing-grid">
             {gigs.map((gig) => <ListingCard key={gig.id} listing={gig} />)}
           </div>
-          {!gigs.length && <p className="empty-state">No gigs match those filters yet.</p>}
+          {!gigs.length && (
+            <EmptyState
+              icon="jobs"
+              title="No gigs match those filters yet"
+              message="Try adjusting your filters or check back later."
+            />
+          )}
         </>
       )}
     </section>

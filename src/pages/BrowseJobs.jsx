@@ -4,6 +4,7 @@ import CategoryFilters from '../components/CategoryFilters.jsx';
 import ListingCard from '../components/ListingCard.jsx';
 import QuickApplyModal from '../components/QuickApplyModal.jsx';
 import StarRating from '../components/StarRating.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 import { jobCategories } from '../data/listings.js';
 import { getListings, getFeaturedWorkers } from '../lib/listingsApi.js';
 import { attachPosterRatings } from '../lib/reviewsApi.js';
@@ -353,7 +354,13 @@ function BrowseJobs() {
               )
             ))}
           </div>
-          {!jobs.length && <p className="empty-state">No jobs match those filters yet.</p>}
+          {!jobs.length && (
+            <EmptyState
+              icon="jobs"
+              title="No jobs match those filters yet"
+              message="Try adjusting your filters or check back later."
+            />
+          )}
         </>
       )}
     </section>

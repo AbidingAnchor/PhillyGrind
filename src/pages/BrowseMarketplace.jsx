@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { PlusCircle, Camera, MapPin, Package } from 'lucide-react';
+import { PlusCircle, Camera, MapPin } from 'lucide-react';
 
 import MarketplacePostModal from '../components/MarketplacePostModal.jsx';
 
 import ChatModal from '../components/ChatModal.jsx';
+
+import EmptyState from '../components/EmptyState.jsx';
 
 
 import { getMarketplaceListing, getMarketplaceListings } from '../lib/marketplaceApi.js';
@@ -312,15 +314,13 @@ function BrowseMarketplace() {
             </div>
 
             {!listings.length && (
-              <div className="marketplace-empty-state">
-                <Package size={64} />
-                <h3>No listings match those filters yet</h3>
-                <p>Be the first to post in this category!</p>
-                <button className="primary-button" type="button" onClick={handlePostClick}>
-                  <PlusCircle size={18} />
-                  Post a Listing
-                </button>
-              </div>
+              <EmptyState
+                icon="default"
+                title="No listings match those filters yet"
+                message="Be the first to post in this category!"
+                actionLabel="Post a Listing"
+                onAction={handlePostClick}
+              />
             )}
 
           </>
@@ -534,7 +534,7 @@ function BrowseMarketplace() {
   .marketplace-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
+    gap: 22px;
   }
   @media (max-width: 1024px) {
     .marketplace-grid { grid-template-columns: repeat(2, 1fr); }
@@ -580,7 +580,7 @@ function BrowseMarketplace() {
     background: #2a2a2a;
     color: #6b7280;
   }
-  .marketplace-card-content { padding: 1rem; }
+  .marketplace-card-content { padding: 1.5rem; }
   .marketplace-card-title {
     font-size: 1rem; font-weight: 700; color: #1a2332;
     margin: 0 0 0.5rem 0; line-height: 1.4;
@@ -609,18 +609,7 @@ function BrowseMarketplace() {
   [data-theme="dark"] .marketplace-card-location {
     color: #a3a3a3;
   }
-  .marketplace-empty-state {
-    text-align: center; padding: 4rem 2rem; color: #6b7280;
-  }
-  .marketplace-empty-state svg { color: #d1d5db; margin-bottom: 1.5rem; }
-  .marketplace-empty-state h3 { font-size: 1.25rem; color: #1a2332; margin: 0 0 0.5rem 0; }
-  .marketplace-empty-state p { margin: 0 0 1.5rem 0; }
-  .marketplace-empty-state .primary-button { background-color: #22c55e; border: none; display: flex; align-items: center; justify-content: center; gap: 4px; line-height: 1; margin: 0 auto; }
-  .marketplace-empty-state .primary-button svg { flex-shrink: 0; }
   .marketplace-login-hint { text-align: center; color: #6b7280; font-size: 14px; margin-top: 1rem; }
-  [data-theme="dark"] .marketplace-empty-state { color: #a3a3a3; }
-  [data-theme="dark"] .marketplace-empty-state svg:not(.primary-button svg) { color: #6b7280; }
-  [data-theme="dark"] .marketplace-empty-state h3 { color: var(--ink); }
   [data-theme="dark"] .marketplace-login-hint { color: #a3a3a3; }
   @media (max-width: 768px) {
     .marketplace-filter-top-row { flex-direction: column; }

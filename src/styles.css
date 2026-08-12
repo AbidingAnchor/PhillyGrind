@@ -322,35 +322,7 @@ main {
   color: var(--ink);
 }
 
-.search-bar button,
-.primary-button,
-.secondary-button {
-  border: 0;
-  border-radius: 8px;
-  padding: 13px 18px;
-  font-weight: 850;
-  cursor: pointer;
-}
 
-.search-bar button,
-.primary-button {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  background: var(--green);
-  color: #fff;
-}
-
-.primary-button:disabled {
-  cursor: wait;
-  opacity: 0.7;
-}
-
-.secondary-button {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-}
 
 .hero-actions {
   gap: 12px;
@@ -483,8 +455,8 @@ main {
 .listing-card {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 22px;
+  gap: 18px;
+  padding: 24px;
 }
 
 .listing-card h3 {
@@ -2182,10 +2154,8 @@ main {
 }
 
 .listing-card {
-  gap: 18px;
   border-color: rgba(216, 230, 223, 0.82);
   border-radius: var(--radius);
-  padding: 24px;
   box-shadow: var(--shadow-soft);
   transition: transform 190ms ease, box-shadow 190ms ease, border-color 190ms ease;
 }
@@ -2193,7 +2163,7 @@ main {
 .listing-card:hover {
   border-color: rgba(17, 184, 121, 0.36);
   box-shadow: 0 24px 58px rgba(6, 21, 36, 0.14);
-  transform: translateY(-5px);
+  transform: translateY(-4px);
 }
 
 [data-theme="dark"] .listing-card {
@@ -2861,22 +2831,6 @@ body {
   background: #16a34a;
 }
 
-.nav-cta,
-.auth-cta,
-.primary-button,
-.search-bar button {
-  background: #16a34a;
-  color: #fff !important;
-  box-shadow: 0 12px 26px rgba(22, 163, 74, 0.30);
-}
-
-.nav-cta:hover,
-.auth-cta:hover,
-.primary-button:hover,
-.search-bar button:hover {
-  background: #15803d;
-}
-
 .hero {
   min-height: calc(100vh - 64px);
   background:
@@ -2949,7 +2903,7 @@ body {
 .listing-card:hover,
 .conversation-card:hover {
   box-shadow: 0 28px 80px rgba(17, 24, 39, 0.24);
-  transform: translateY(-6px);
+  transform: translateY(-4px);
 }
 
 .listing-card.boosted.basic {
@@ -4640,6 +4594,54 @@ body {
   border-bottom: 1px solid #e5e7eb;
 }
 
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--muted);
+}
+
+.empty-state-icon {
+  color: #d1d5db;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+[data-theme="dark"] .empty-state-icon {
+  color: #6b7280;
+}
+
+.empty-state-title {
+  font-size: 1.25rem;
+  color: var(--navy);
+  margin: 0 0 0.5rem 0;
+}
+
+[data-theme="dark"] .empty-state-title {
+  color: var(--ink);
+}
+
+.empty-state-message {
+  margin: 0 0 1.5rem 0;
+}
+
+.empty-state-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 auto;
+}
+
+.empty-state.error-state {
+  color: #dc2626;
+}
+
+[data-theme="dark"] .empty-state.error-state {
+  color: #fca5a5;
+}
+
 /* Kebab Menu */
 .kebab-menu {
   position: relative;
@@ -5525,7 +5527,7 @@ body {
 .housing-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  gap: 22px;
 }
 
 .housing-card-link {
@@ -5542,7 +5544,7 @@ body {
 }
 
 .housing-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(7, 24, 39, 0.1);
 }
 
@@ -5568,7 +5570,7 @@ body {
 }
 
 .housing-card-content {
-  padding: 16px;
+  padding: 24px;
 }
 
 .housing-card-price {
@@ -6205,6 +6207,7 @@ body {
 
 .feed-post-card:hover {
   box-shadow: 0 6px 32px rgba(6, 21, 36, 0.08);
+  transform: translateY(-4px);
 }
 
 [data-theme="dark"] .feed-post-card {

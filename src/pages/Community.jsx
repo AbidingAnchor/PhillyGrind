@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { getReactionTotalCount, getUserAvatarColor } from '../lib/reactions.js';
 import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
 import PostReactionControl from '../components/PostReactionControl.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 
 function withTimeout(promise, milliseconds, message) {
   let timeoutId;
@@ -797,7 +798,13 @@ function Community() {
                     />
                   ))}
                 </div>
-                {!posts.length && <p className="empty-state">No posts in this neighborhood yet. Be the first to share!</p>}
+                {!posts.length && (
+                  <EmptyState
+                    icon="community"
+                    title="No posts in this neighborhood yet"
+                    message="Be the first to share with your community!"
+                  />
+                )}
               </>
             )}
 
