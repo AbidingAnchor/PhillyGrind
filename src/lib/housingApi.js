@@ -1,4 +1,5 @@
 import { hasSupabaseConfig, supabase } from './supabase.js';
+import { checkFairHousingCompliance } from './moderationService.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -214,6 +215,16 @@ export async function createHousingListing(listing, photoFiles = []) {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) {
     throw new Error('You must be logged in to post a rental.');
+  }
+
+  // Run Fair Housing compliance check
+  const moderationResult = await checkFairHousingCompliance(listing.description);
+  
+  if (moderationResult.violation) {
+    const flaggedPhrases = moderationResult.flagged_phrases?.join(', ') || 'certain phrases';
+    throw new Error(
+      `Your housing listing contains language that may violate Fair Housing law. Flagged: ${flaggedPhrases}. Please revise and resubmit.`
+    );
   }
 
   const payload = {
