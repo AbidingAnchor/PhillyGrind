@@ -140,12 +140,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         setLiked(!!reaction);
         
         const breakdown = await getReactionBreakdown(post.id);
-        // Convert back to object format for easier access
-        const breakdownObj = {};
-        breakdown.forEach(({ type, count }) => {
-          breakdownObj[type] = count;
-        });
-        setReactionBreakdown(breakdownObj);
+        setReactionBreakdown(breakdown);
       } catch (error) {
         console.error('Failed to load reaction status:', error);
       }
@@ -226,11 +221,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       
       // Refresh reaction breakdown
       const breakdown = await getReactionBreakdown(post.id);
-      const breakdownObj = {};
-      breakdown.forEach(({ type, count }) => {
-        breakdownObj[type] = count;
-      });
-      setReactionBreakdown(breakdownObj);
+      setReactionBreakdown(breakdown);
       
       onLike(post.id, !!newReaction);
     } catch (error) {
@@ -250,11 +241,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       
       // Refresh reaction breakdown
       const breakdown = await getReactionBreakdown(post.id);
-      const breakdownObj = {};
-      breakdown.forEach(({ type, count }) => {
-        breakdownObj[type] = count;
-      });
-      setReactionBreakdown(breakdownObj);
+      setReactionBreakdown(breakdown);
       
       onLike(post.id, !!newReaction);
     } catch (error) {
@@ -329,14 +316,8 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   const isOwnPost = currentUser?.id === post.authorId;
   const currentReaction = REACTIONS.find(r => r.type === userReaction);
   
-  // Get top reaction for display when user hasn't reacted
-  const topReactionType = reactionBreakdown.length > 0 
-    ? reactionBreakdown[0].type 
-    : 'like';
-  const topReaction = REACTIONS.find(r => r.type === topReactionType);
-  
   // Show user's own reaction if they have one, otherwise show top reaction
-  const displayReaction = currentReaction || topReaction;
+  const displayReaction = currentReaction;
 
   return (
     <article className="feed-post-card">
@@ -437,6 +418,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
                   {reactionBreakdown.length > 3 && (
                     <span className="reaction-display-more">+{reactionBreakdown.length - 3}</span>
                   )}
+                  <span className="reaction-display-total">{post.like_count}</span>
                 </div>
               ) : (
                 <ThumbsUp size={16} />
@@ -520,6 +502,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
                   {reactionBreakdown.length > 3 && (
                     <span className="reaction-display-more">+{reactionBreakdown.length - 3}</span>
                   )}
+                  <span className="reaction-display-total">{post.like_count}</span>
                 </div>
               ) : (
                 <ThumbsUp size={18} />

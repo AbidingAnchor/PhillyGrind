@@ -6451,6 +6451,13 @@ body {
   font-weight: 500;
 }
 
+.reaction-display-total {
+  margin-left: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
 /* Toast Notification */
 .toast-notification {
   position: fixed;
