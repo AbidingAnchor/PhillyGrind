@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, ShieldOff, ShieldBan, ShieldCheck, Users, BadgeCheck } from 'lucide-react';
 import { adminVerifyLandlord, getAdminUsers, liftSuspension, suspendUser } from '../../lib/adminApi.js';
+import KebabMenu from '../../components/KebabMenu.jsx';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -128,49 +129,37 @@ export default function AdminUsers() {
                       )}
                     </td>
                     <td className="admin-table-actions">
-                      {!user.landlord_verified && (
-                        <button
-                          type="button"
-                          className="admin-table-btn"
-                          disabled={busy}
-                          onClick={() => handleVerifyLandlord(user.id)}
-                        >
-                          {busy ? <Loader2 size={14} className="spin" /> : <BadgeCheck size={14} />}
-                          Verify Landlord
-                        </button>
-                      )}
-                      {suspension ? (
-                        <button
-                          type="button"
-                          className="admin-table-btn"
-                          disabled={busy}
-                          onClick={() => handleLift(user.id)}
-                        >
-                          {busy ? <Loader2 size={14} className="spin" /> : <ShieldCheck size={14} />}
-                          Lift
-                        </button>
-                      ) : (
-                        <>
-                          <button
-                            type="button"
-                            className="admin-table-btn warn"
-                            disabled={busy}
-                            onClick={() => handleSuspend(user.id, 'suspended')}
-                          >
-                            {busy ? <Loader2 size={14} className="spin" /> : <ShieldOff size={14} />}
-                            Suspend
-                          </button>
-                          <button
-                            type="button"
-                            className="admin-table-btn danger"
-                            disabled={busy}
-                            onClick={() => handleSuspend(user.id, 'banned')}
-                          >
-                            {busy ? <Loader2 size={14} className="spin" /> : <ShieldBan size={14} />}
-                            Ban
-                          </button>
-                        </>
-                      )}
+                      <KebabMenu
+                        items={[
+                          !user.landlord_verified && {
+                            label: 'Verify Landlord',
+                            icon: <BadgeCheck size={14} />,
+                            onClick: () => handleVerifyLandlord(user.id),
+                            disabled: busy,
+                          },
+                          suspension
+                            ? {
+                                label: 'Lift Suspension',
+                                icon: <ShieldCheck size={14} />,
+                                onClick: () => handleLift(user.id),
+                                disabled: busy,
+                              }
+                            : {
+                                label: 'Suspend',
+                                icon: <ShieldOff size={14} />,
+                                onClick: () => handleSuspend(user.id, 'suspended'),
+                                disabled: busy,
+                                warn: true,
+                              },
+                          !suspension && {
+                            label: 'Ban',
+                            icon: <ShieldBan size={14} />,
+                            onClick: () => handleSuspend(user.id, 'banned'),
+                            disabled: busy,
+                            danger: true,
+                          },
+                        ].filter(Boolean)}
+                      />
                     </td>
                   </tr>
                 );
