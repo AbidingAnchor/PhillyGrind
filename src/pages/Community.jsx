@@ -318,7 +318,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
 
       {reactionsLoaded && reactionTotal > 0 && (
         <div className="feed-post-reaction-summary">
-          <ReactionBreakdown breakdown={reactionBreakdown} />
+          <ReactionBreakdown breakdown={reactionBreakdown} userReaction={userReaction} />
         </div>
       )}
       
