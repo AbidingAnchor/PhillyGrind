@@ -71,9 +71,18 @@ export const REACTIONS = [
 ];
 
 export function normalizeReactionType(type) {
-  if (typeof type !== 'string') return null;
+  console.log('[normalizeReactionType] Input:', type, 'Type:', typeof type);
+  if (typeof type !== 'string') {
+    console.log('[normalizeReactionType] Invalid type, returning null');
+    return null;
+  }
   const normalized = type.trim().toLowerCase();
-  return REACTIONS.some((reaction) => reaction.type === normalized) ? normalized : null;
+  console.log('[normalizeReactionType] Normalized:', normalized);
+  const isValid = REACTIONS.some((reaction) => reaction.type === normalized);
+  console.log('[normalizeReactionType] Is valid:', isValid);
+  const result = isValid ? normalized : null;
+  console.log('[normalizeReactionType] Returning:', result);
+  return result;
 }
 
 export function getReactionByType(type) {

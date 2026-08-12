@@ -24,6 +24,7 @@ export default function ReactionPicker({ onSelect, className = '' }) {
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
+            console.log('[ReactionPicker] Button clicked for reaction:', reaction.type, 'from button:', reaction.label);
             onSelect(reaction.type);
           }}
           title={reaction.label}

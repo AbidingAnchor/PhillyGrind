@@ -413,6 +413,8 @@ export async function createCommunityComment(postId, content) {
 }
 
 export async function toggleCommunityPostReaction(postId, reactionType = 'like') {
+  console.log('[toggleCommunityPostReaction] START - postId:', postId, 'reactionType:', reactionType, 'type:', typeof reactionType);
+  
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
   }
@@ -423,12 +425,15 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
   }
 
   // Check if already reacted
+  console.log('[toggleCommunityPostReaction] Checking for existing reaction...');
   const { data: existingLike } = await supabase
     .from('community_post_likes')
     .select('id, reaction_type')
     .eq('post_id', postId)
     .eq('user_id', userData.user.id)
     .maybeSingle();
+  
+  console.log('[toggleCommunityPostReaction] Existing reaction:', existingLike);
 
   if (existingLike) {
     // If same reaction, remove it (toggle off)
@@ -459,10 +464,12 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
       existingLikeId: existingLike.id,
     });
 
+    console.log('[toggleCommunityPostReaction] About to UPDATE with reaction_type:', reactionType);
     const { error: updateError } = await supabase
       .from('community_post_likes')
       .update({ reaction_type: reactionType })
       .eq('id', existingLike.id);
+    console.log('[toggleCommunityPostReaction] UPDATE completed, error:', updateError);
 
     if (updateError) throw updateError;
 
@@ -475,6 +482,7 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
     reactionType,
   });
 
+  console.log('[toggleCommunityPostReaction] About to INSERT with reaction_type:', reactionType);
   const { error: insertError } = await supabase
       .from('community_post_likes')
       .insert({
@@ -482,6 +490,7 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
         user_id: userData.user.id,
         reaction_type: reactionType,
       });
+  console.log('[toggleCommunityPostReaction] INSERT completed, error:', insertError);
 
     if (insertError) {
       // Handle unique constraint violation (race condition or duplicate)
