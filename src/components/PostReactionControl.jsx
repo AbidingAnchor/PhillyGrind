@@ -25,6 +25,11 @@ export default function PostReactionControl({
   const activeReactionType = activeReaction?.type ?? null;
   const hasReaction = !!userReaction;
 
+  // Log when reaction state changes to debug re-rendering
+  useEffect(() => {
+    console.log('[PostReactionControl] userReaction changed:', userReaction, 'activeReactionType:', activeReactionType);
+  }, [userReaction, activeReactionType]);
+
   const clearLongPressTimer = () => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
@@ -147,13 +152,13 @@ export default function PostReactionControl({
       >
         {activeReactionType ? (
           <ReactionIcon
-            key={activeReactionType}
+            key={`reaction-${activeReactionType}`}
             type={activeReactionType}
             size={iconSize}
             className="reaction-icon-active"
           />
         ) : (
-          <ThumbsUp size={iconSize} />
+          <ThumbsUp key="thumbs-up-none" size={iconSize} />
         )}
         {showLabel && <span>{activeReaction?.label ?? 'Like'}</span>}
         {!showLabel && totalReactions > 0 && <span>{totalReactions}</span>}
