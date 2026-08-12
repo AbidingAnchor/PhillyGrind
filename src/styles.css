@@ -6076,6 +6076,94 @@ body {
   transition: all 0.3s ease;
 }
 
+.feed-composer-input {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--background);
+  color: var(--ink);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feed-composer-input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(17, 184, 121, 0.1);
+}
+
+.feed-composer-input::placeholder {
+  color: var(--muted);
+}
+
+.feed-composer-actions-compact {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.feed-composer-photo-btn-compact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.feed-composer-photo-btn-compact:hover {
+  background: var(--background);
+  color: var(--ink);
+  border-color: var(--muted);
+}
+
+.feed-composer-photo-btn-compact input {
+  display: none;
+}
+
+.feed-composer-post-btn-compact {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 20px;
+  background: var(--green);
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.feed-composer-post-btn-compact:hover {
+  background: #00a87a;
+  transform: translateY(-1px);
+}
+
+.feed-composer-post-btn-compact:active {
+  transform: translateY(0);
+}
+
+.feed-composer-photo-preview-compact {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 8px;
+  max-width: 200px;
+}
+
+.feed-composer-photo-preview-compact img {
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
 .feed-composer-compact:hover {
   box-shadow: 0 4px 16px rgba(6, 21, 36, 0.1);
 }

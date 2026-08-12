@@ -539,9 +539,9 @@ function Community() {
   }
 
   async function handleSubmitPost(e) {
-    e.preventDefault();
-    if (!composerContent.trim()) {
-      alert('Please write something to post.');
+    e?.preventDefault();
+    if (!composerContent.trim() && !composerPhoto) {
+      alert('Please write something or add a photo to post.');
       return;
     }
 
@@ -631,21 +631,56 @@ function Community() {
 
             {/* Facebook-style Composer */}
             <div className="feed-composer-wrapper">
+              {/* Compact Inline Composer */}
               <div className="feed-composer-compact">
-                {user?.avatarUrl ? (
+                {user?.avatar_url ? (
                   <img src={user.avatar_url} alt="Your avatar" className="feed-composer-avatar" />
                 ) : (
                   <div className="feed-composer-avatar-placeholder">{user?.name?.charAt(0) || 'Y'}</div>
                 )}
                 
-                <button 
-                  type="button" 
-                  className="feed-composer-trigger"
-                  onClick={handleComposerClick}
-                >
-                  Share something with your neighbors...
-                </button>
+                <input
+                  type="text"
+                  className="feed-composer-input"
+                  placeholder="What's happening, neighbor?"
+                  value={composerContent}
+                  onChange={(e) => setComposerContent(e.target.value)}
+                  onFocus={() => setShowComposer(true)}
+                />
+                
+                <div className="feed-composer-actions-compact">
+                  <label className="feed-composer-photo-btn-compact" title="Add photo">
+                    <Upload size={20} />
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handlePhotoChange}
+                    />
+                  </label>
+                  {composerContent.trim() && (
+                    <button
+                      type="button"
+                      className="feed-composer-post-btn-compact"
+                      onClick={handleSubmitPost}
+                    >
+                      Post
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {composerPhotoPreview && (
+                <div className="feed-composer-photo-preview-compact">
+                  <img src={composerPhotoPreview} alt="Preview" />
+                  <button
+                    type="button"
+                    className="feed-composer-photo-remove"
+                    onClick={handleRemovePhoto}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
 
               {showComposer && (
                 <div className="feed-composer-expanded-wrapper">
