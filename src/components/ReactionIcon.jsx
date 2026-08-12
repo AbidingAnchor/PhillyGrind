@@ -18,10 +18,12 @@ export default function ReactionIcon({
       ? reaction.badgeScale ?? 0.82
       : variant === 'leading'
         ? reaction.leadingScale ?? 0.9
-        : 1
+        : variant === 'picker'
+          ? reaction.pickerScale ?? 0.88
+          : 1
   );
 
-  const isContained = variant === 'badge' || variant === 'leading';
+  const isContained = variant === 'badge' || variant === 'leading' || variant === 'picker';
 
   return (
     <img

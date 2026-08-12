@@ -25,7 +25,7 @@ export default function ReactionPicker({ onSelect, className = '' }) {
           title={reaction.label}
           aria-label={reaction.label}
         >
-          <ReactionIcon type={reaction.type} size={36} className="reaction-icon-picker" />
+          <ReactionIcon type={reaction.type} variant="picker" className="reaction-icon-picker" />
         </button>
       ))}
     </div>

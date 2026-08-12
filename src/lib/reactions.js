@@ -11,6 +11,7 @@ export const REACTIONS = [
     color: '#1877f2',
     badgeScale: 0.68,
     leadingScale: 0.82,
+    pickerScale: 0.7,
   },
   {
     type: 'love',
@@ -21,6 +22,7 @@ export const REACTIONS = [
     color: '#e0245e',
     badgeScale: 0.8,
     leadingScale: 0.88,
+    pickerScale: 0.88,
   },
   {
     type: 'haha',
@@ -31,6 +33,7 @@ export const REACTIONS = [
     color: '#f7b928',
     badgeScale: 0.82,
     leadingScale: 0.9,
+    pickerScale: 0.9,
   },
   {
     type: 'wow',
@@ -41,6 +44,7 @@ export const REACTIONS = [
     color: '#f7b928',
     badgeScale: 0.82,
     leadingScale: 0.9,
+    pickerScale: 0.9,
   },
   {
     type: 'sad',
@@ -51,6 +55,7 @@ export const REACTIONS = [
     color: '#f7b928',
     badgeScale: 0.82,
     leadingScale: 0.9,
+    pickerScale: 0.9,
   },
   {
     type: 'angry',
@@ -61,6 +66,7 @@ export const REACTIONS = [
     color: '#e9710f',
     badgeScale: 0.82,
     leadingScale: 0.9,
+    pickerScale: 0.9,
   },
 ];
 
