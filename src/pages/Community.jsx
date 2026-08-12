@@ -481,7 +481,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
 
 function Community() {
   const navigate = useNavigate();
-  const { isLoggedIn, user } = useAuth();
+  const { isLoggedIn, user, profile } = useAuth();
   const [posts, setPosts] = useState([]);
   const [neighborhood, setNeighborhood] = useState('Any');
   const [filterTab, setFilterTab] = useState('all'); // all, recent, nearby, popular
@@ -643,14 +643,14 @@ function Community() {
             <div className="feed-composer-wrapper">
               {/* Compact Inline Composer */}
               <div className="feed-composer-compact">
-                {user?.avatar_url ? (
-                  <img src={user.avatar_url} alt="Your avatar" className="feed-composer-avatar" />
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Your avatar" className="feed-composer-avatar" />
                 ) : (
                   <div 
                     className="feed-composer-avatar-placeholder"
-                    style={{ backgroundColor: getUserAvatarColor(user?.id, user?.name) }}
+                    style={{ backgroundColor: getUserAvatarColor(user?.id, profile?.name || user?.name) }}
                   >
-                    {user?.name?.charAt(0) || 'Y'}
+                    {(profile?.name || user?.name)?.charAt(0) || 'Y'}
                   </div>
                 )}
                 
@@ -701,17 +701,17 @@ function Community() {
                 <div className="feed-composer-expanded-wrapper">
                   <form onSubmit={handleSubmitPost} className="feed-composer-expanded">
                     <div className="feed-composer-header">
-                      {user?.avatar_url ? (
-                        <img src={user.avatar_url} alt="Your avatar" className="feed-composer-avatar-small" />
+                      {profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="Your avatar" className="feed-composer-avatar-small" />
                       ) : (
                         <div 
                           className="feed-composer-avatar-placeholder-small"
-                          style={{ backgroundColor: getUserAvatarColor(user?.id, user?.name) }}
+                          style={{ backgroundColor: getUserAvatarColor(user?.id, profile?.name || user?.name) }}
                         >
-                          {user?.name?.charAt(0) || 'Y'}
+                          {(profile?.name || user?.name)?.charAt(0) || 'Y'}
                         </div>
                       )}
-                      <span className="feed-composer-user-name">{user?.name || 'You'}</span>
+                      <span className="feed-composer-user-name">{profile?.name || user?.name || 'You'}</span>
                     </div>
                     
                     <textarea
