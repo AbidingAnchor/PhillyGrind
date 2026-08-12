@@ -4593,20 +4593,56 @@ body {
   margin-top: 0;
   padding: 0;
   -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.admin-table-wrap::-webkit-scrollbar {
+  height: 8px;
+}
+
+.admin-table-wrap::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.admin-table-wrap::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.admin-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+[data-theme="dark"] .admin-table-wrap::-webkit-scrollbar-track {
+  background: #2a2a2a;
+}
+
+[data-theme="dark"] .admin-table-wrap::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+[data-theme="dark"] .admin-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: #777;
 }
 
 .admin-table {
   width: 100%;
-  min-width: 800px;
+  min-width: 1000px;
   border-collapse: collapse;
   font-size: 14px;
 }
 
 .admin-table th,
 .admin-table td {
-  padding: 14px 16px;
+  padding: 10px 12px;
   text-align: left;
   border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-table td.admin-table-actions {
+  padding: 8px 10px;
+  vertical-align: top;
 }
 
 .admin-table th {
@@ -4629,23 +4665,25 @@ body {
 
 .admin-table-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-width: 200px;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
 }
 
 .admin-table-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 4px;
+  padding: 4px 8px;
   border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border-radius: 6px;
   background: white;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  width: 100%;
+  justify-content: center;
 }
 
 [data-theme="dark"] .admin-table-btn {
