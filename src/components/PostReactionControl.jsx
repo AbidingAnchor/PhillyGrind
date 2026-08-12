@@ -41,7 +41,6 @@ export default function PostReactionControl({
 
     const handlePointerDownOutside = (event) => {
       if (event.target.closest('.feed-post-reaction-wrapper')) return;
-      console.log('[PostReactionControl] Click outside detected, closing picker');
       setShowReactionPicker(false);
       longPressTriggeredRef.current = false;
     };
@@ -51,12 +50,6 @@ export default function PostReactionControl({
   }, [showReactionPicker]);
 
   const handlePointerDown = (event) => {
-    console.log('[PostReactionControl] handlePointerDown fired', { 
-      pointerType: event.pointerType, 
-      button: event.button,
-      currentReaction: userReaction 
-    });
-    
     if (event.pointerType === 'mouse' && event.button !== 0) return;
 
     longPressTriggeredRef.current = false;
@@ -64,7 +57,6 @@ export default function PostReactionControl({
 
     clearLongPressTimer();
     longPressTimerRef.current = setTimeout(() => {
-      console.log('[PostReactionControl] Long press triggered, opening picker');
       longPressTriggeredRef.current = true;
       setShowReactionPicker(true);
     }, LONG_PRESS_MS);
@@ -76,37 +68,23 @@ export default function PostReactionControl({
     const dx = event.clientX - pointerStartRef.current.x;
     const dy = event.clientY - pointerStartRef.current.y;
     if (Math.hypot(dx, dy) > MOVE_CANCEL_PX) {
-      console.log('[PostReactionControl] Movement exceeded threshold, canceling long press');
       clearLongPressTimer();
     }
   };
 
   const handlePointerUp = (event) => {
-    console.log('[PostReactionControl] handlePointerUp fired', { 
-      longPressTriggered: longPressTriggeredRef.current,
-      currentReaction: userReaction 
-    });
-    
     clearLongPressTimer();
     pointerStartRef.current = null;
   };
 
   const handlePointerCancel = () => {
-    console.log('[PostReactionControl] handlePointerCancel fired');
     clearLongPressTimer();
     pointerStartRef.current = null;
     longPressTriggeredRef.current = false;
   };
 
   const handleClick = (event) => {
-    console.log('[PostReactionControl] handleClick fired', { 
-      longPressTriggered: longPressTriggeredRef.current,
-      currentReaction: userReaction,
-      hasReaction 
-    });
-    
     if (longPressTriggeredRef.current) {
-      console.log('[PostReactionControl] Click suppressed due to long press');
       event.preventDefault();
       event.stopPropagation();
       longPressTriggeredRef.current = false;
@@ -114,39 +92,45 @@ export default function PostReactionControl({
     }
 
     if (showReactionPicker) {
-      console.log('[PostReactionControl] Click suppressed, picker is open');
       return;
     }
 
     // Regular click behavior
     if (hasReaction) {
-      console.log('[PostReactionControl] Regular click: User has reaction, removing it');
       onLike(); // This will toggle off the current reaction
     } else {
-      console.log('[PostReactionControl] Regular click: User has no reaction, setting to like');
       onReactionSelect('like');
     }
   };
 
   const handleReactionSelect = async (reactionType) => {
-    console.log('[PostReactionControl] handleReactionSelect called with:', reactionType, 'current reaction:', userReaction);
+    console.log('[PostReactionControl] Selected:', reactionType);
     setShowReactionPicker(false);
     longPressTriggeredRef.current = false;
 
     try {
-      console.log('[PostReactionControl] Calling onReactionSelect with:', reactionType);
       await onReactionSelect(reactionType);
-      console.log('[PostReactionControl] onReactionSelect completed successfully');
     } catch (error) {
-      console.error('[PostReactionControl] onReactionSelect failed:', error);
+      console.error('[PostReactionControl] Error:', error);
     }
   };
+
+  // Force picker to completely remount each time it opens
+  const [pickerKey, setPickerKey] = useState('closed');
+  
+  useEffect(() => {
+    if (showReactionPicker) {
+      setPickerKey(`open-${Date.now()}`);
+    } else {
+      setPickerKey('closed');
+    }
+  }, [showReactionPicker]);
 
   return (
     <div className="feed-post-reaction-wrapper">
       <button
         type="button"
-        className={buttonClassName}
+        className={`${buttonClassName} ${hasReaction ? 'liked' : ''}`.trim()}
         data-reaction={activeReactionType || undefined}
         style={activeReaction ? { color: activeReaction.color } : undefined}
         onClick={handleClick}
@@ -174,7 +158,7 @@ export default function PostReactionControl({
         {showLabel && <span>{activeReaction?.label ?? 'Like'}</span>}
         {!showLabel && totalReactions > 0 && <span>{totalReactions}</span>}
       </button>
-      {showReactionPicker && <ReactionPicker onSelect={handleReactionSelect} />}
+      {showReactionPicker && <ReactionPicker key={pickerKey} onSelect={handleReactionSelect} />}
     </div>
   );
 }

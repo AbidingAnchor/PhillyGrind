@@ -2,6 +2,11 @@ import { REACTIONS } from '../lib/reactions.js';
 import ReactionIcon from './ReactionIcon.jsx';
 
 export default function ReactionPicker({ onSelect, className = '' }) {
+  const handleReactionClick = (reactionType) => {
+    console.log('[ReactionPicker] Direct click handler - reaction:', reactionType);
+    onSelect(reactionType);
+  };
+
   return (
     <div
       className={`feed-post-reaction-picker ${className}`.trim()}
@@ -18,16 +23,10 @@ export default function ReactionPicker({ onSelect, className = '' }) {
           className="reaction-option"
           style={{ '--reaction-delay': `${index * 35}ms` }}
           onPointerDown={(e) => {
-            console.log('[ReactionPicker] onPointerDown for reaction:', reaction.type);
             e.preventDefault();
             e.stopPropagation();
           }}
-          onClick={(e) => {
-            console.log('[ReactionPicker] onClick for reaction:', reaction.type, 'label:', reaction.label);
-            e.stopPropagation();
-            e.preventDefault();
-            onSelect(reaction.type);
-          }}
+          onClick={() => handleReactionClick(reaction.type)}
           title={reaction.label}
           aria-label={reaction.label}
         >

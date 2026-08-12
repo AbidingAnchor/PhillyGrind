@@ -204,8 +204,6 @@ export async function getUserReaction(postId) {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) return null;
 
-  console.log('[getUserReaction] Fetching reaction for postId:', postId, 'userId:', userData.user.id);
-
   const { data, error } = await supabase
     .from('community_post_likes')
     .select('reaction_type')
@@ -213,21 +211,9 @@ export async function getUserReaction(postId) {
     .eq('user_id', userData.user.id)
     .maybeSingle();
 
-  if (error) {
-    console.error('[getUserReaction] Error:', error);
-    throw error;
-  }
-  
-  console.log('[getUserReaction] Raw data from DB:', data);
-  
-  if (!data?.reaction_type) {
-    console.log('[getUserReaction] No reaction found, returning null');
-    return null;
-  }
-  
-  const normalized = normalizeReactionType(data.reaction_type);
-  console.log('[getUserReaction] Returning normalized reaction:', normalized);
-  return normalized;
+  if (error) throw error;
+  if (!data?.reaction_type) return null;
+  return normalizeReactionType(data.reaction_type);
 }
 
 export async function getUserLikeStatus(postId) {
@@ -413,8 +399,6 @@ export async function createCommunityComment(postId, content) {
 }
 
 export async function toggleCommunityPostReaction(postId, reactionType = 'like') {
-  console.log('[toggleCommunityPostReaction] START - postId:', postId, 'reactionType:', reactionType, 'type:', typeof reactionType);
-  
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
   }
@@ -425,15 +409,12 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
   }
 
   // Check if already reacted
-  console.log('[toggleCommunityPostReaction] Checking for existing reaction...');
   const { data: existingLike } = await supabase
     .from('community_post_likes')
     .select('id, reaction_type')
     .eq('post_id', postId)
     .eq('user_id', userData.user.id)
     .maybeSingle();
-  
-  console.log('[toggleCommunityPostReaction] Existing reaction:', existingLike);
 
   if (existingLike) {
     // If same reaction, remove it (toggle off)
@@ -456,33 +437,16 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
       return null;
     }
 
-    console.log('[toggleCommunityPostReaction] write path: UPDATE (switch reaction)', {
-      postId,
-      userId: userData.user.id,
-      from: existingLike.reaction_type,
-      to: reactionType,
-      existingLikeId: existingLike.id,
-    });
-
-    console.log('[toggleCommunityPostReaction] About to UPDATE with reaction_type:', reactionType);
     const { error: updateError } = await supabase
       .from('community_post_likes')
       .update({ reaction_type: reactionType })
       .eq('id', existingLike.id);
-    console.log('[toggleCommunityPostReaction] UPDATE completed, error:', updateError);
 
     if (updateError) throw updateError;
 
     return reactionType;
   }
 
-  console.log('[toggleCommunityPostReaction] write path: INSERT (new reaction)', {
-    postId,
-    userId: userData.user.id,
-    reactionType,
-  });
-
-  console.log('[toggleCommunityPostReaction] About to INSERT with reaction_type:', reactionType);
   const { error: insertError } = await supabase
       .from('community_post_likes')
       .insert({
@@ -490,7 +454,6 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
         user_id: userData.user.id,
         reaction_type: reactionType,
       });
-  console.log('[toggleCommunityPostReaction] INSERT completed, error:', insertError);
 
     if (insertError) {
       // Handle unique constraint violation (race condition or duplicate)

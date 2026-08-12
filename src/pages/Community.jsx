@@ -125,9 +125,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
 
     async function loadReactionStatus() {
       try {
-        console.log('[Community PostCard] Loading reaction status for post:', post.id);
         const reaction = await getUserReaction(post.id);
-        console.log('[Community PostCard] Loaded reaction:', reaction);
         setUserReaction(reaction);
         setLiked(!!reaction);
         await refreshReactionState();
@@ -142,37 +140,21 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   }, [post.id]);
 
   async function handleLike() {
-    console.log('[Community PostCard] handleLike called - toggle current reaction');
-    console.log('[Community PostCard] Current userReaction:', userReaction);
     try {
       const hadReaction = !!userReaction;
-      console.log('[Community PostCard] Had reaction before:', hadReaction);
       
       if (hadReaction) {
-        // User has a reaction, remove it entirely
-        console.log('[Community PostCard] Removing existing reaction');
-        const toggleResult = await toggleCommunityPostReaction(post.id, userReaction);
-        console.log('[Community PostCard] toggleCommunityPostReaction result:', toggleResult);
+        await toggleCommunityPostReaction(post.id, userReaction);
       } else {
-        // User has no reaction, set to 'like'
-        console.log('[Community PostCard] Setting reaction to like');
-        const toggleResult = await toggleCommunityPostReaction(post.id, 'like');
-        console.log('[Community PostCard] toggleCommunityPostReaction result:', toggleResult);
+        await toggleCommunityPostReaction(post.id, 'like');
       }
       
-      console.log('[Community PostCard] Calling getUserReaction');
       const newReaction = await getUserReaction(post.id);
-      console.log('[Community PostCard] getUserReaction result:', newReaction);
-      
       setUserReaction(newReaction);
       setLiked(!!newReaction);
-      console.log('[Community PostCard] State updated - userReaction:', newReaction, 'liked:', !!newReaction);
-
       await refreshReactionState();
-      console.log('[Community PostCard] Reaction state refreshed');
 
       const countDelta = hadReaction && !newReaction ? -1 : !hadReaction && newReaction ? 1 : 0;
-      console.log('[Community PostCard] Count delta:', countDelta);
       onLike(post.id, countDelta);
     } catch (error) {
       console.error('[handleLike] Error:', error);
@@ -181,29 +163,16 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   }
 
   async function handleReactionSelect(reactionType) {
-    console.log('[Community PostCard] handleReactionSelect called with:', reactionType);
-    console.log('[Community PostCard] Current userReaction:', userReaction);
+    console.log('[Community PostCard] Selected:', reactionType, 'replacing:', userReaction);
     try {
       const hadReaction = !!userReaction;
-      console.log('[Community PostCard] Had reaction before:', hadReaction);
-      
-      console.log('[Community PostCard] Calling toggleCommunityPostReaction with:', reactionType);
-      const toggleResult = await toggleCommunityPostReaction(post.id, reactionType);
-      console.log('[Community PostCard] toggleCommunityPostReaction result:', toggleResult);
-      
-      console.log('[Community PostCard] Calling getUserReaction');
+      await toggleCommunityPostReaction(post.id, reactionType);
       const newReaction = await getUserReaction(post.id);
-      console.log('[Community PostCard] getUserReaction result:', newReaction);
-      
       setUserReaction(newReaction);
       setLiked(!!newReaction);
-      console.log('[Community PostCard] State updated - userReaction:', newReaction, 'liked:', !!newReaction);
-      
       await refreshReactionState();
-      console.log('[Community PostCard] Reaction state refreshed');
 
       const countDelta = hadReaction && !newReaction ? -1 : !hadReaction && newReaction ? 1 : 0;
-      console.log('[Community PostCard] Count delta:', countDelta);
       onLike(post.id, countDelta);
     } catch (error) {
       console.error('[handleReactionSelect] Error:', error);
