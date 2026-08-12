@@ -172,7 +172,7 @@ export async function getCommunityLikeCount(postId) {
 }
 
 export async function getReactionBreakdown(postId) {
-  if (!hasSupabaseConfig) return {};
+  if (!hasSupabaseConfig) return [];
 
   const { data, error } = await supabase
     .from('community_post_likes')
@@ -187,10 +187,13 @@ export async function getReactionBreakdown(postId) {
     breakdown[type] = (breakdown[type] || 0) + 1;
   });
 
-  // Sort by count (descending) and return as array of objects
-  return Object.entries(breakdown)
+  const result = Object.entries(breakdown)
     .map(([type, count]) => ({ type, count }))
     .sort((a, b) => b.count - a.count);
+
+  console.log('[getReactionBreakdown] postId:', postId, 'raw rows:', data, 'breakdown:', result);
+
+  return result;
 }
 
 export async function getUserReaction(postId) {

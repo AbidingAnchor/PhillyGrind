@@ -1,8 +1,10 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, MoreHorizontal, Upload, X, Flag, ThumbsUp, Share2 } from 'lucide-react';
+import { MessageCircle, MoreHorizontal, Upload, X, Flag, Share2 } from 'lucide-react';
 import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl, getReactionBreakdown } from '../lib/communityApi.js';
 import { useAuth } from '../lib/auth.jsx';
+import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
+import PostReactionControl from '../components/PostReactionControl.jsx';
 
 function withTimeout(promise, milliseconds, message) {
   let timeoutId;
@@ -103,34 +105,15 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   const [showReportModal, setShowReportModal] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
-  const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
-  const [hasMoved, setHasMoved] = useState(false);
-  const [reactionBreakdown, setReactionBreakdown] = useState({});
-  const [isMobile, setIsMobile] = useState(false);
-  
-  // Use refs for timers to avoid dependency issues
-  const longPressTimerRef = useRef(null);
-  const hoverLeaveTimerRef = useRef(null);
+  const [reactionBreakdown, setReactionBreakdown] = useState([]);
 
-  const REACTIONS = [
-    { emoji: '👍', type: 'like', label: 'Like' },
-    { emoji: '❤️', type: 'love', label: 'Love' },
-    { emoji: '😂', type: 'haha', label: 'Haha' },
-    { emoji: '😮', type: 'wow', label: 'Wow' },
-    { emoji: '😢', type: 'sad', label: 'Sad' },
-    { emoji: '😡', type: 'angry', label: 'Angry' },
-  ];
-
-  useEffect(() => {
-    // Detect mobile device
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768 || 'ontouchstart' in window);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  async function refreshReactionState() {
+    const breakdown = await getReactionBreakdown(post.id);
+    console.log('[PostCard] reaction breakdown for post', post.id, breakdown);
+    setReactionBreakdown(breakdown);
+    return breakdown;
+  }
 
   useEffect(() => {
     async function loadReactionStatus() {
@@ -138,9 +121,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         const reaction = await getUserReaction(post.id);
         setUserReaction(reaction);
         setLiked(!!reaction);
-        
-        const breakdown = await getReactionBreakdown(post.id);
-        setReactionBreakdown(breakdown);
+        await refreshReactionState();
       } catch (error) {
         console.error('Failed to load reaction status:', error);
       }
@@ -148,81 +129,13 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
     loadReactionStatus();
   }, [post.id]);
 
-  // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      if (longPressTimerRef.current) {
-        clearTimeout(longPressTimerRef.current);
-      }
-      if (hoverLeaveTimerRef.current) {
-        clearTimeout(hoverLeaveTimerRef.current);
-      }
-    };
-  }, []);
-
-  const handleReactionGroupEnter = () => {
-    if (hoverLeaveTimerRef.current) {
-      clearTimeout(hoverLeaveTimerRef.current);
-      hoverLeaveTimerRef.current = null;
-    }
-    if (!isMobile) {
-      setShowReactionPicker(true);
-    }
-  };
-
-  const handleReactionGroupLeave = () => {
-    if (!isMobile) {
-      hoverLeaveTimerRef.current = setTimeout(() => {
-        setShowReactionPicker(false);
-      }, 200);
-    }
-  };
-
-  const handleLikeMouseDown = (e) => {
-    if (isMobile) {
-      setHasMoved(false);
-      longPressTimerRef.current = setTimeout(() => {
-        setShowReactionPicker(true);
-      }, 400);
-    }
-  };
-
-  const handleLikeMouseUp = (e) => {
-    if (isMobile) {
-      if (longPressTimerRef.current) {
-        clearTimeout(longPressTimerRef.current);
-        longPressTimerRef.current = null;
-      }
-      
-      if (!showReactionPicker && !hasMoved) {
-        handleLike();
-      }
-      setShowReactionPicker(false);
-    }
-  };
-
-  const handleLikeMouseMove = () => {
-    if (isMobile) {
-      setHasMoved(true);
-    }
-  };
-
-  const handleLikeClick = (e) => {
-    if (!isMobile && !showReactionPicker) {
-      handleLike();
-    }
-  };
-
   async function handleLike() {
     try {
       const newReaction = await toggleCommunityPostReaction(post.id, 'like');
       setUserReaction(newReaction);
       setLiked(!!newReaction);
       
-      // Refresh reaction breakdown
-      const breakdown = await getReactionBreakdown(post.id);
-      setReactionBreakdown(breakdown);
-      
+      await refreshReactionState();
       onLike(post.id, !!newReaction);
     } catch (error) {
       console.error('[handleLike] Error:', error);
@@ -231,18 +144,11 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   }
 
   async function handleReactionSelect(reactionType) {
-    console.log('[handleReactionSelect] Reaction type:', reactionType);
     try {
       const newReaction = await toggleCommunityPostReaction(post.id, reactionType);
-      console.log('[handleReactionSelect] API response:', newReaction);
       setUserReaction(newReaction);
       setLiked(!!newReaction);
-      setShowReactionPicker(false);
-      
-      // Refresh reaction breakdown
-      const breakdown = await getReactionBreakdown(post.id);
-      setReactionBreakdown(breakdown);
-      
+      await refreshReactionState();
       onLike(post.id, !!newReaction);
     } catch (error) {
       console.error('[handleReactionSelect] Error:', error);
@@ -314,10 +220,6 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   }
 
   const isOwnPost = currentUser?.id === post.authorId;
-  const currentReaction = REACTIONS.find(r => r.type === userReaction);
-  
-  // Show user's own reaction if they have one, otherwise show top reaction
-  const displayReaction = currentReaction;
 
   return (
     <article className="feed-post-card">
@@ -379,72 +281,23 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       {post.photo_url && (
         <img src={getCommunityPhotoPublicUrl(post.photo_url)} alt="Post photo" className="feed-post-photo" />
       )}
+
+      {post.like_count > 0 && (
+        <div className="feed-post-reaction-summary">
+          <ReactionBreakdown breakdown={reactionBreakdown} totalCount={post.like_count} />
+        </div>
+      )}
       
       {post.photo_url ? (
         <div className="feed-post-photo-actions">
-          <div 
-            className="feed-post-reaction-wrapper"
-            onMouseEnter={handleReactionGroupEnter}
-            onMouseLeave={handleReactionGroupLeave}
-          >
-            <button
-              type="button"
-              className={`feed-post-photo-action-btn ${liked ? 'liked' : ''}`}
-              onClick={(e) => {
-                // Don't trigger like if picker is visible
-                if (!showReactionPicker) {
-                  handleLikeClick(e);
-                }
-              }}
-              onMouseDown={handleLikeMouseDown}
-              onMouseUp={handleLikeMouseUp}
-              onMouseMove={handleLikeMouseMove}
-              onTouchStart={handleLikeMouseDown}
-              onTouchEnd={handleLikeMouseUp}
-              onTouchMove={handleLikeMouseMove}
-            >
-              {post.like_count > 0 ? (
-                <div className="reaction-display">
-                  {reactionBreakdown.slice(0, 3).map(({ type, count }) => {
-                    const reaction = REACTIONS.find(r => r.type === type);
-                    if (!reaction) return null;
-                    return (
-                      <span key={type} className="reaction-display-item">
-                        <span className="reaction-display-emoji">{reaction.emoji}</span>
-                        <span className="reaction-display-count">{count}</span>
-                      </span>
-                    );
-                  })}
-                  {reactionBreakdown.length > 3 && (
-                    <span className="reaction-display-more">+{reactionBreakdown.length - 3}</span>
-                  )}
-                  <span className="reaction-display-total">{post.like_count}</span>
-                </div>
-              ) : (
-                <ThumbsUp size={16} />
-              )}
-            </button>
-            {showReactionPicker && (
-              <div className="feed-post-reaction-picker">
-                {REACTIONS.map((reaction) => (
-                  <button
-                    key={reaction.type}
-                    type="button"
-                    className="reaction-option"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      console.log('[Reaction button clicked] Type:', reaction.type, 'Emoji:', reaction.emoji);
-                      handleReactionSelect(reaction.type);
-                    }}
-                    title={reaction.label}
-                  >
-                    <span className="reaction-emoji-lg">{reaction.emoji}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <PostReactionControl
+            liked={liked}
+            userReaction={userReaction}
+            onLike={handleLike}
+            onReactionSelect={handleReactionSelect}
+            buttonClassName="feed-post-photo-action-btn"
+            iconSize={20}
+          />
           <button
             type="button"
             className="feed-post-photo-action-btn"
@@ -466,75 +319,15 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         <>
           <div className="feed-post-divider" />
           <div className="feed-post-actions">
-            <div 
-              className="feed-post-reaction-wrapper"
-              onMouseEnter={handleReactionGroupEnter}
-              onMouseLeave={handleReactionGroupLeave}
-            >
-              <button
-                type="button"
-                className={`feed-post-action-btn ${liked ? 'liked' : ''}`}
-                onClick={(e) => {
-                  // Don't trigger like if picker is visible
-                  if (!showReactionPicker) {
-                    handleLikeClick(e);
-                  }
-                }}
-                onMouseDown={handleLikeMouseDown}
-                onMouseUp={handleLikeMouseUp}
-                onMouseMove={handleLikeMouseMove}
-                onTouchStart={handleLikeMouseDown}
-                onTouchEnd={handleLikeMouseUp}
-                onTouchMove={handleLikeMouseMove}
-              >
-              {post.like_count > 0 ? (
-                <div className="reaction-display">
-                  {reactionBreakdown.slice(0, 3).map(({ type, count }) => {
-                    const reaction = REACTIONS.find(r => r.type === type);
-                    if (!reaction) return null;
-                    return (
-                      <span key={type} className="reaction-display-item">
-                        <span className="reaction-display-emoji">{reaction.emoji}</span>
-                        <span className="reaction-display-count">{count}</span>
-                      </span>
-                    );
-                  })}
-                  {reactionBreakdown.length > 3 && (
-                    <span className="reaction-display-more">+{reactionBreakdown.length - 3}</span>
-                  )}
-                  <span className="reaction-display-total">{post.like_count}</span>
-                </div>
-              ) : (
-                <ThumbsUp size={18} />
-              )}
-              <span>{post.like_count || 0}</span>
-              </button>
-              {showReactionPicker && (
-                <div 
-                  className="feed-post-reaction-picker"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onMouseUp={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {REACTIONS.map((reaction) => (
-                    <button
-                      key={reaction.type}
-                      type="button"
-                      className="reaction-option"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        console.log('[Reaction button clicked] Type:', reaction.type, 'Emoji:', reaction.emoji);
-                        handleReactionSelect(reaction.type);
-                      }}
-                      title={reaction.label}
-                    >
-                      <span className="reaction-emoji-lg">{reaction.emoji}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <PostReactionControl
+              liked={liked}
+              userReaction={userReaction}
+              onLike={handleLike}
+              onReactionSelect={handleReactionSelect}
+              buttonClassName="feed-post-action-btn"
+              iconSize={18}
+              showLabel
+            />
             <button
               type="button"
               className="feed-post-action-btn"
