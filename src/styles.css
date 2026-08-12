@@ -5490,7 +5490,7 @@ body {
   background: var(--card);
   border-radius: 16px;
   box-shadow: 0 4px 24px rgba(6, 21, 36, 0.06);
-  overflow: hidden;
+  overflow: visible;
   transition: box-shadow 0.3s ease;
 }
 
@@ -6272,6 +6272,9 @@ body {
   gap: 0;
   border-top: 1px solid var(--line);
   opacity: 0.8;
+  overflow: visible;
+  position: relative;
+  z-index: 1;
 }
 
 .feed-post-action-btn {
@@ -6406,16 +6409,18 @@ body {
   position: relative;
   display: inline-flex;
   width: fit-content;
+  overflow: visible;
+  z-index: 2;
 }
 
 .feed-post-reaction-picker {
   position: absolute;
   bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  transform: none;
   display: flex;
   gap: 4px;
-  padding: 10px 16px 10px 20px;
+  padding: 10px 16px;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -6433,11 +6438,11 @@ body {
 @keyframes reactionPickerIn {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(10px) scale(0.92);
+    transform: translateY(10px) scale(0.92);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -6479,6 +6484,7 @@ body {
 .reaction-icon,
 .reaction-icon-picker,
 .reaction-icon-active,
+.reaction-icon-emoji,
 .reaction-display-icon,
 .reaction-summary-leading-icon {
   display: block;
@@ -6487,11 +6493,23 @@ body {
   pointer-events: none;
 }
 
+.reaction-icon-emoji {
+  line-height: 1;
+  text-align: center;
+}
+
 .reaction-icon-picker {
   width: 40px;
   height: 40px;
   transform: scale(var(--reaction-icon-scale, 0.88));
   transform-origin: center center;
+}
+
+.reaction-icon-emoji.reaction-icon-picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
 }
 
 .reaction-icon-active {

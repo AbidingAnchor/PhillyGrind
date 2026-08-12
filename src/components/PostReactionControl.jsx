@@ -19,9 +19,11 @@ export default function PostReactionControl({
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const longPressTimerRef = useRef(null);
   const longPressTriggeredRef = useRef(false);
+  const suppressNextClickRef = useRef(false);
   const pointerStartRef = useRef(null);
 
   const activeReaction = getReactionByType(userReaction);
+  const activeReactionType = activeReaction?.type ?? null;
 
   const clearLongPressTimer = () => {
     if (longPressTimerRef.current) {
@@ -82,8 +84,9 @@ export default function PostReactionControl({
   };
 
   const handleClick = (event) => {
-    if (longPressTriggeredRef.current) {
+    if (longPressTriggeredRef.current || suppressNextClickRef.current) {
       event.preventDefault();
+      event.stopPropagation();
       longPressTriggeredRef.current = false;
       return;
     }
@@ -94,9 +97,17 @@ export default function PostReactionControl({
   };
 
   const handleReactionSelect = async (reactionType) => {
+    suppressNextClickRef.current = true;
     setShowReactionPicker(false);
     longPressTriggeredRef.current = false;
-    await onReactionSelect(reactionType);
+
+    try {
+      await onReactionSelect(reactionType);
+    } finally {
+      window.setTimeout(() => {
+        suppressNextClickRef.current = false;
+      }, 300);
+    }
   };
 
   return (
@@ -104,7 +115,7 @@ export default function PostReactionControl({
       <button
         type="button"
         className={`${buttonClassName} ${liked ? 'liked' : ''}`.trim()}
-        data-reaction={userReaction || undefined}
+        data-reaction={activeReactionType || undefined}
         style={activeReaction ? { color: activeReaction.color } : undefined}
         onClick={handleClick}
         onPointerDown={handlePointerDown}
@@ -118,8 +129,13 @@ export default function PostReactionControl({
         aria-haspopup="true"
         aria-expanded={showReactionPicker}
       >
-        {activeReaction ? (
-          <ReactionIcon type={activeReaction.type} size={iconSize} className="reaction-icon-active" />
+        {activeReactionType ? (
+          <ReactionIcon
+            key={activeReactionType}
+            type={activeReactionType}
+            size={iconSize}
+            className="reaction-icon-active"
+          />
         ) : (
           <ThumbsUp size={iconSize} />
         )}

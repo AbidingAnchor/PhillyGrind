@@ -1,5 +1,6 @@
 import { hasSupabaseConfig, supabase } from './supabase.js';
 import { createListingWithModeration } from './adminApi.js';
+import { normalizeReactionType } from './reactions.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -183,7 +184,7 @@ export async function getReactionBreakdown(postId) {
 
   const breakdown = {};
   (data || []).forEach((like) => {
-    const type = like.reaction_type || 'like';
+    const type = normalizeReactionType(like.reaction_type) || 'like';
     breakdown[type] = (breakdown[type] || 0) + 1;
   });
 
@@ -210,7 +211,8 @@ export async function getUserReaction(postId) {
     .maybeSingle();
 
   if (error) throw error;
-  return data?.reaction_type || null;
+  if (!data?.reaction_type) return null;
+  return normalizeReactionType(data.reaction_type);
 }
 
 export async function getUserLikeStatus(postId) {

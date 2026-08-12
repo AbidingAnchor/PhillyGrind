@@ -142,7 +142,8 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   async function handleLike() {
     try {
       const hadReaction = !!userReaction;
-      const newReaction = await toggleCommunityPostReaction(post.id, 'like');
+      await toggleCommunityPostReaction(post.id, 'like');
+      const newReaction = await getUserReaction(post.id);
       setUserReaction(newReaction);
       setLiked(!!newReaction);
 
@@ -159,7 +160,8 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   async function handleReactionSelect(reactionType) {
     try {
       const hadReaction = !!userReaction;
-      const newReaction = await toggleCommunityPostReaction(post.id, reactionType);
+      await toggleCommunityPostReaction(post.id, reactionType);
+      const newReaction = await getUserReaction(post.id);
       setUserReaction(newReaction);
       setLiked(!!newReaction);
       await refreshReactionState();

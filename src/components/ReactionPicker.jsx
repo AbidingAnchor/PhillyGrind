@@ -17,6 +17,10 @@ export default function ReactionPicker({ onSelect, className = '' }) {
           type="button"
           className="reaction-option"
           style={{ '--reaction-delay': `${index * 35}ms` }}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();

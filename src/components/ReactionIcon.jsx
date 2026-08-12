@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { getReactionAssetUrlByType, getReactionByType } from '../lib/reactions.js';
 
 export default function ReactionIcon({
@@ -8,10 +9,11 @@ export default function ReactionIcon({
   variant = 'inline',
   scale,
 }) {
+  const [useEmojiFallback, setUseEmojiFallback] = useState(false);
   const reaction = getReactionByType(type);
   const src = getReactionAssetUrlByType(type);
 
-  if (!reaction || !src) return null;
+  if (!reaction) return null;
 
   const resolvedScale = scale ?? (
     variant === 'badge'
@@ -25,6 +27,20 @@ export default function ReactionIcon({
 
   const isContained = variant === 'badge' || variant === 'leading' || variant === 'picker';
 
+  if (!src || useEmojiFallback) {
+    return (
+      <span
+        className={`reaction-icon reaction-icon--${variant} reaction-icon-emoji ${className}`.trim()}
+        data-reaction={type}
+        title={title ?? reaction.label}
+        aria-label={reaction.label}
+        style={isContained ? { '--reaction-icon-scale': resolvedScale } : undefined}
+      >
+        {reaction.emoji}
+      </span>
+    );
+  }
+
   return (
     <img
       src={src}
@@ -37,6 +53,7 @@ export default function ReactionIcon({
       style={isContained ? { '--reaction-icon-scale': resolvedScale } : undefined}
       loading="lazy"
       draggable={false}
+      onError={() => setUseEmojiFallback(true)}
     />
   );
 }

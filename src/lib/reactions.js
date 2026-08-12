@@ -70,8 +70,16 @@ export const REACTIONS = [
   },
 ];
 
+export function normalizeReactionType(type) {
+  if (typeof type !== 'string') return null;
+  const normalized = type.trim().toLowerCase();
+  return REACTIONS.some((reaction) => reaction.type === normalized) ? normalized : null;
+}
+
 export function getReactionByType(type) {
-  return REACTIONS.find((reaction) => reaction.type === type) ?? null;
+  const normalized = normalizeReactionType(type);
+  if (!normalized) return null;
+  return REACTIONS.find((reaction) => reaction.type === normalized) ?? null;
 }
 
 export function getReactionAssetUrl(reaction) {
