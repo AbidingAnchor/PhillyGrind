@@ -152,7 +152,7 @@ export async function getConversations(userId) {
         .select('id,user_id,title,company,contact,category,neighborhood,pay,description,created_at')
         .in('id', listingIds),
       supabase
-        .from('marketplace_items')
+        .from('marketplace_listings')
         .select('id,user_id,title,category,neighborhood,price,description,photo_urls,created_at')
         .in('id', listingIds),
     ]);

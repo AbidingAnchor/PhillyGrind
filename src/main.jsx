@@ -35,51 +35,54 @@ import HousingDetail from './pages/HousingDetail.jsx';
 import Community from './pages/Community.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AuthProvider } from './lib/auth.jsx';
+import { ThemeProvider } from './lib/theme.jsx';
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<App />}>
-            <Route path="/" element={<Community />} />
-            <Route path="/community" element={<Navigate to="/" replace />} />
-            <Route path="/jobs" element={<BrowseJobs />} />
-            <Route path="/gigs" element={<BrowseGigs />} />
-            <Route path="/marketplace" element={<BrowseMarketplace />} />
-            <Route path="/marketplace/:id" element={<MarketplaceDetail />} />
-            <Route path="/hiring-events" element={<BrowseHiringEvents />} />
-            <Route path="/housing" element={<Housing />} />
-            <Route path="/housing/post" element={<ProtectedRoute><PostHousing /></ProtectedRoute>} />
-            <Route path="/housing/:id" element={<HousingDetail />} />
-            <Route path="/post-hiring-event" element={<PostHiringEvent />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/profile/:userId" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
-            <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-            <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
-            <Route path="/post-gig" element={<ProtectedRoute><PostGig /></ProtectedRoute>} />
-            <Route path="/marketplace/post" element={<ProtectedRoute><PostMarketplaceListing /></ProtectedRoute>} />
-            <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-              <Route index element={<AdminOverview />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="listings" element={<AdminListings />} />
-              <Route path="disputes" element={<AdminDisputes />} />
-              <Route path="reports" element={<AdminReports />} />
-              <Route path="verifications" element={<AdminVerifications />} />
-              <Route path="housing" element={<AdminHousing />} />
-              <Route path="community" element={<AdminCommunity />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<App />}>
+              <Route path="/" element={<Community />} />
+              <Route path="/community" element={<Navigate to="/" replace />} />
+              <Route path="/jobs" element={<BrowseJobs />} />
+              <Route path="/gigs" element={<BrowseGigs />} />
+              <Route path="/marketplace" element={<BrowseMarketplace />} />
+              <Route path="/marketplace/:id" element={<MarketplaceDetail />} />
+              <Route path="/hiring-events" element={<BrowseHiringEvents />} />
+              <Route path="/housing" element={<Housing />} />
+              <Route path="/housing/post" element={<ProtectedRoute><PostHousing /></ProtectedRoute>} />
+              <Route path="/housing/:id" element={<HousingDetail />} />
+              <Route path="/post-hiring-event" element={<PostHiringEvent />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/profile/:userId" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
+              <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+              <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
+              <Route path="/post-gig" element={<ProtectedRoute><PostGig /></ProtectedRoute>} />
+              <Route path="/marketplace/post" element={<ProtectedRoute><PostMarketplaceListing /></ProtectedRoute>} />
+              <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+                <Route index element={<AdminOverview />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="listings" element={<AdminListings />} />
+                <Route path="disputes" element={<AdminDisputes />} />
+                <Route path="reports" element={<AdminReports />} />
+                <Route path="verifications" element={<AdminVerifications />} />
+                <Route path="housing" element={<AdminHousing />} />
+                <Route path="community" element={<AdminCommunity />} />
+              </Route>
+              <Route path="/jobs/:id" element={<ListingDetail type="job" />} />
+              <Route path="/gigs/:id" element={<ListingDetail type="gig" />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
-            <Route path="/jobs/:id" element={<ListingDetail type="job" />} />
-            <Route path="/gigs/:id" element={<ListingDetail type="gig" />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   </React.StrictMode>,
 );

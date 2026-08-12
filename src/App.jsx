@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from './lib/auth.jsx';
 import { isAdminUser } from './lib/adminApi.js';
 import NotificationBell from './components/NotificationBell.jsx';
+import ThemeToggle from './components/ThemeToggle.jsx';
 import OnboardingModal from './components/OnboardingModal.jsx';
 import GrindBot from './components/GrindBot.jsx';
 
@@ -49,15 +50,9 @@ function App() {
     <div className="app-shell">
       <header className={scrolled ? 'site-header scrolled' : 'site-header'}>
         <Link to="/" className="brand" onClick={() => setOpen(false)}>
-          <span style={{
-            fontSize: '22px',
-            fontWeight: '800',
-            letterSpacing: '-0.5px',
-            fontFamily: 'Inter, sans-serif',
-          }}
-          >
-            <span style={{ color: '#ffffff' }}>Philly</span>
-            <span style={{ color: '#00c896' }}>Grind</span>
+          <span className="brand-text">
+            <span className="brand-philly">Philly</span>
+            <span className="brand-grind">Grind</span>
           </span>
         </Link>
 
@@ -88,6 +83,7 @@ function App() {
           </Link>
           {isLoggedIn && (
             <div className="nav-user">
+              <ThemeToggle />
               <NotificationBell />
               {showAdminLink && (
                 <NavLink to="/admin" id="nav-admin" onClick={() => setOpen(false)}>
