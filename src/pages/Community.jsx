@@ -576,10 +576,11 @@ function Community() {
 
   return (
     <>
-      <section className="browse-hero community-hero">
-        <span className="eyebrow">Community</span>
-        <h1>Connect with your neighborhood</h1>
-        <p>Share local updates, ask questions, and build community with neighbors across Philadelphia.</p>
+      <section className="feed-welcome-banner">
+        <div className="feed-welcome-content">
+          <span className="feed-welcome-eyebrow">PhillyGrind Community</span>
+          <h1 className="feed-welcome-title">Connect with your neighborhood</h1>
+        </div>
       </section>
 
       <section className="page-section browse-content community-content">

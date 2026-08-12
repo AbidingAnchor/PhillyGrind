@@ -2,7 +2,6 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import App from './App.jsx';
-import Home from './pages/Home.jsx';
 import BrowseJobs from './pages/BrowseJobs.jsx';
 import BrowseGigs from './pages/BrowseGigs.jsx';
 import BrowseMarketplace from './pages/BrowseMarketplace.jsx';
@@ -44,7 +43,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         <Routes>
           <Route element={<App />}>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Community />} />
+            <Route path="/community" element={<Navigate to="/" replace />} />
             <Route path="/jobs" element={<BrowseJobs />} />
             <Route path="/gigs" element={<BrowseGigs />} />
             <Route path="/marketplace" element={<BrowseMarketplace />} />
@@ -53,7 +53,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="/housing" element={<Housing />} />
             <Route path="/housing/post" element={<ProtectedRoute><PostHousing /></ProtectedRoute>} />
             <Route path="/housing/:id" element={<HousingDetail />} />
-            <Route path="/community" element={<Community />} />
             <Route path="/post-hiring-event" element={<PostHiringEvent />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />

@@ -3,8 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import CategoryFilters from '../components/CategoryFilters.jsx';
 import ListingCard from '../components/ListingCard.jsx';
 import QuickApplyModal from '../components/QuickApplyModal.jsx';
+import StarRating from '../components/StarRating.jsx';
 import { jobCategories } from '../data/listings.js';
-import { getListings } from '../lib/listingsApi.js';
+import { getListings, getFeaturedWorkers } from '../lib/listingsApi.js';
 import { attachPosterRatings } from '../lib/reviewsApi.js';
 import { useAuth } from '../lib/auth.jsx';
 
@@ -121,6 +122,7 @@ function BrowseJobs() {
   const navigate = useNavigate();
   const { isLoggedIn, user } = useAuth();
   const [fetchedJobs, setFetchedJobs] = useState([]);
+  const [featuredWorkers, setFeaturedWorkers] = useState([]);
   const [category, setCategory] = useState('All');
   const [keyword, setKeyword] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
@@ -128,9 +130,23 @@ function BrowseJobs() {
   const [salaryMin, setSalaryMin] = useState('');
   const [hideNoSalary, setHideNoSalary] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingWorkers, setLoadingWorkers] = useState(true);
   const [error, setError] = useState('');
   const [usingFallback, setUsingFallback] = useState(false);
   const [quickApplyJob, setQuickApplyJob] = useState(null);
+
+  useEffect(() => {
+    // Load featured workers (from Home.jsx)
+    getFeaturedWorkers(4)
+      .then((workers) => {
+        setFeaturedWorkers(workers);
+        setLoadingWorkers(false);
+      })
+      .catch((error) => {
+        console.error('Failed to load featured workers:', error);
+        setLoadingWorkers(false);
+      });
+  }, []);
 
   useEffect(() => {
     const timeoutId = setTimeout(async () => {
@@ -340,6 +356,44 @@ function BrowseJobs() {
         </>
       )}
     </section>
+
+    {/* Featured Workers Section (from Home.jsx) */}
+    {!loadingWorkers && Boolean(featuredWorkers.length) && (
+      <section className="split-section featured-workers-section">
+        <div className="section-heading">
+          <span className="icon-chip">⭐</span>
+          <h2>Featured Workers</h2>
+          <p>Pro boosted Philly workers ready to get hired.</p>
+        </div>
+        <div className="featured-workers-grid">
+          {featuredWorkers.map((worker) => {
+            const initials = worker.posterName
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((word) => word[0])
+              .join('')
+              .toUpperCase();
+
+            return (
+              <Link className="featured-worker-card" key={worker.id} to={`/gigs/${worker.id}`}>
+                <span className="featured-worker-avatar">
+                  {worker.posterAvatarUrl ? <img src={worker.posterAvatarUrl} alt={`${worker.posterName} profile`} /> : initials}
+                </span>
+                <div>
+                  <span className="boost-badge pro">⭐ Pro</span>
+                  <h3>{worker.posterName}</h3>
+                  <StarRating rating={worker.posterRating?.average} count={worker.posterRating?.count} compact />
+                  <p>{worker.title}</p>
+                  <strong>{worker.pay} · {worker.neighborhood}</strong>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+    )}
+
     {quickApplyJob && (
       <QuickApplyModal
         listing={quickApplyJob}
