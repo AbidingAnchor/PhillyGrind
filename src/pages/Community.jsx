@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, MoreHorizontal, Upload, X, Flag, Share2 } from 'lucide-react';
+import { MessageCircle, MoreHorizontal, Upload, X, Flag, SquareArrowOutUpRight } from 'lucide-react';
 import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl, getReactionBreakdown } from '../lib/communityApi.js';
 import { useAuth } from '../lib/auth.jsx';
 import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
@@ -131,12 +131,15 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
 
   async function handleLike() {
     try {
+      const hadReaction = !!userReaction;
       const newReaction = await toggleCommunityPostReaction(post.id, 'like');
       setUserReaction(newReaction);
       setLiked(!!newReaction);
-      
+
       await refreshReactionState();
-      onLike(post.id, !!newReaction);
+
+      const countDelta = hadReaction && !newReaction ? -1 : !hadReaction && newReaction ? 1 : 0;
+      onLike(post.id, countDelta);
     } catch (error) {
       console.error('[handleLike] Error:', error);
       alert(error.message);
@@ -145,11 +148,14 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
 
   async function handleReactionSelect(reactionType) {
     try {
+      const hadReaction = !!userReaction;
       const newReaction = await toggleCommunityPostReaction(post.id, reactionType);
       setUserReaction(newReaction);
       setLiked(!!newReaction);
       await refreshReactionState();
-      onLike(post.id, !!newReaction);
+
+      const countDelta = hadReaction && !newReaction ? -1 : !hadReaction && newReaction ? 1 : 0;
+      onLike(post.id, countDelta);
     } catch (error) {
       console.error('[handleReactionSelect] Error:', error);
       alert(error.message);
@@ -312,7 +318,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
             onClick={handleShare}
             title="Share post"
           >
-            <Share2 size={16} />
+            <SquareArrowOutUpRight size={16} />
           </button>
         </div>
       ) : (
@@ -342,7 +348,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
               onClick={handleShare}
               title="Share post"
             >
-              <Share2 size={18} />
+              <SquareArrowOutUpRight size={18} />
             </button>
           </div>
         </>
@@ -516,10 +522,12 @@ function Community() {
     }
   }
 
-  async function handleLike(postId, liked) {
-    setPosts(posts.map((post) => 
-      post.id === postId 
-        ? { ...post, like_count: (post.like_count || 0) + (liked ? 1 : -1) }
+  function handleLike(postId, countDelta) {
+    if (!countDelta) return;
+
+    setPosts(posts.map((post) =>
+      post.id === postId
+        ? { ...post, like_count: Math.max(0, (post.like_count || 0) + countDelta) }
         : post
     ));
   }

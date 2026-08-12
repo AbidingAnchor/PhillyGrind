@@ -77,3 +77,14 @@ export function getReactionTotalCount(breakdown, fallbackTotal = 0) {
   if (items.length === 0) return fallbackTotal;
   return items.reduce((sum, { count }) => sum + count, 0);
 }
+
+export function formatReactionCount(count) {
+  const value = Number(count) || 0;
+  if (value < 1000) return String(value);
+  if (value < 1_000_000) {
+    const formatted = (value / 1000).toFixed(1).replace(/\.0$/, '');
+    return `${formatted}K`;
+  }
+  const formatted = (value / 1_000_000).toFixed(1).replace(/\.0$/, '');
+  return `${formatted}M`;
+}
