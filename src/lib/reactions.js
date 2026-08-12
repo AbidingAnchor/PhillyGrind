@@ -9,6 +9,8 @@ export const REACTIONS = [
     folder: 'Hand gestures',
     file: 'Thumbs Up.png',
     color: '#1877f2',
+    badgeScale: 0.68,
+    leadingScale: 0.82,
   },
   {
     type: 'love',
@@ -17,6 +19,8 @@ export const REACTIONS = [
     folder: 'Smilies',
     file: 'Red Heart.png',
     color: '#e0245e',
+    badgeScale: 0.8,
+    leadingScale: 0.88,
   },
   {
     type: 'haha',
@@ -25,6 +29,8 @@ export const REACTIONS = [
     folder: 'Smilies',
     file: 'Face with Tears of Joy.png',
     color: '#f7b928',
+    badgeScale: 0.82,
+    leadingScale: 0.9,
   },
   {
     type: 'wow',
@@ -33,6 +39,8 @@ export const REACTIONS = [
     folder: 'Smilies',
     file: 'Face with Open Mouth.png',
     color: '#f7b928',
+    badgeScale: 0.82,
+    leadingScale: 0.9,
   },
   {
     type: 'sad',
@@ -41,6 +49,8 @@ export const REACTIONS = [
     folder: 'Smilies',
     file: 'Crying Face.png',
     color: '#f7b928',
+    badgeScale: 0.82,
+    leadingScale: 0.9,
   },
   {
     type: 'angry',
@@ -49,6 +59,8 @@ export const REACTIONS = [
     folder: 'Smilies',
     file: 'Enraged Face.png',
     color: '#e9710f',
+    badgeScale: 0.82,
+    leadingScale: 0.9,
   },
 ];
 

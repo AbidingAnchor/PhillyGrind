@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, MoreHorizontal, Upload, X, Flag, SquareArrowOutUpRight } from 'lucide-react';
+import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward } from 'lucide-react';
 import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl, getReactionBreakdown } from '../lib/communityApi.js';
 import { useAuth } from '../lib/auth.jsx';
+import { getReactionTotalCount } from '../lib/reactions.js';
 import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
 import PostReactionControl from '../components/PostReactionControl.jsx';
 
@@ -107,6 +108,9 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   const [loadingComments, setLoadingComments] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const [reactionBreakdown, setReactionBreakdown] = useState([]);
+  const [reactionsLoaded, setReactionsLoaded] = useState(false);
+
+  const reactionTotal = getReactionTotalCount(reactionBreakdown);
 
   async function refreshReactionState() {
     const breakdown = await getReactionBreakdown(post.id);
@@ -116,6 +120,9 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   }
 
   useEffect(() => {
+    setReactionsLoaded(false);
+    setReactionBreakdown([]);
+
     async function loadReactionStatus() {
       try {
         const reaction = await getUserReaction(post.id);
@@ -124,6 +131,9 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         await refreshReactionState();
       } catch (error) {
         console.error('Failed to load reaction status:', error);
+        setReactionBreakdown([]);
+      } finally {
+        setReactionsLoaded(true);
       }
     }
     loadReactionStatus();
@@ -288,9 +298,9 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         <img src={getCommunityPhotoPublicUrl(post.photo_url)} alt="Post photo" className="feed-post-photo" />
       )}
 
-      {post.like_count > 0 && (
+      {reactionsLoaded && reactionTotal > 0 && (
         <div className="feed-post-reaction-summary">
-          <ReactionBreakdown breakdown={reactionBreakdown} totalCount={post.like_count} />
+          <ReactionBreakdown breakdown={reactionBreakdown} />
         </div>
       )}
       
@@ -318,7 +328,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
             onClick={handleShare}
             title="Share post"
           >
-            <SquareArrowOutUpRight size={16} />
+            <Forward size={16} />
           </button>
         </div>
       ) : (
@@ -348,7 +358,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
               onClick={handleShare}
               title="Share post"
             >
-              <SquareArrowOutUpRight size={18} />
+              <Forward size={18} />
             </button>
           </div>
         </>
