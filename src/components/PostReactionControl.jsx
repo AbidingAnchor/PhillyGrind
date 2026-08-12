@@ -15,6 +15,7 @@ export default function PostReactionControl({
   buttonClassName = 'feed-post-action-btn',
   iconSize = 18,
   showLabel = false,
+  totalReactions = 0,
 }) {
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const longPressTimerRef = useRef(null);
@@ -97,15 +98,19 @@ export default function PostReactionControl({
   };
 
   const handleReactionSelect = async (reactionType) => {
+    console.log('[PostReactionControl] handleReactionSelect called with:', reactionType);
     suppressNextClickRef.current = true;
     setShowReactionPicker(false);
     longPressTriggeredRef.current = false;
 
     try {
+      console.log('[PostReactionControl] Calling onReactionSelect with:', reactionType);
       await onReactionSelect(reactionType);
+      console.log('[PostReactionControl] onReactionSelect completed');
     } finally {
       window.setTimeout(() => {
         suppressNextClickRef.current = false;
+        console.log('[PostReactionControl] suppressNextClickRef reset');
       }, 300);
     }
   };
@@ -140,6 +145,7 @@ export default function PostReactionControl({
           <ThumbsUp size={iconSize} />
         )}
         {showLabel && <span>{activeReaction?.label ?? 'Like'}</span>}
+        {!showLabel && totalReactions > 0 && <span>{totalReactions}</span>}
       </button>
       {showReactionPicker && <ReactionPicker onSelect={handleReactionSelect} />}
     </div>

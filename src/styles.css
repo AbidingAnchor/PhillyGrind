@@ -6355,10 +6355,10 @@ body {
 }
 
 .reaction-summary-leading-icon {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
-  transform: scale(var(--reaction-icon-scale, 0.9));
+  transform: scale(var(--reaction-icon-scale, 1));
   transform-origin: center center;
 }
 
@@ -6397,10 +6397,10 @@ body {
 }
 
 .reaction-display-icon {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
-  transform: scale(var(--reaction-icon-scale, 0.82));
+  transform: scale(var(--reaction-icon-scale, 1));
   transform-origin: center center;
   flex-shrink: 0;
 }

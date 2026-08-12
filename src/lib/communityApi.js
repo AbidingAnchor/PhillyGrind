@@ -51,6 +51,7 @@ function normalizePost(post) {
     authorAvatarUrl: profile.avatar_url || '',
     authorId: post.user_id,
     relativeTime: formatRelativeTime(post.created_at),
+    like_count: post.like_count || 0, // Ensure like_count is never undefined
   };
 }
 
@@ -203,6 +204,8 @@ export async function getUserReaction(postId) {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) return null;
 
+  console.log('[getUserReaction] Fetching reaction for postId:', postId, 'userId:', userData.user.id);
+
   const { data, error } = await supabase
     .from('community_post_likes')
     .select('reaction_type')
@@ -210,9 +213,21 @@ export async function getUserReaction(postId) {
     .eq('user_id', userData.user.id)
     .maybeSingle();
 
-  if (error) throw error;
-  if (!data?.reaction_type) return null;
-  return normalizeReactionType(data.reaction_type);
+  if (error) {
+    console.error('[getUserReaction] Error:', error);
+    throw error;
+  }
+  
+  console.log('[getUserReaction] Raw data from DB:', data);
+  
+  if (!data?.reaction_type) {
+    console.log('[getUserReaction] No reaction found, returning null');
+    return null;
+  }
+  
+  const normalized = normalizeReactionType(data.reaction_type);
+  console.log('[getUserReaction] Returning normalized reaction:', normalized);
+  return normalized;
 }
 
 export async function getUserLikeStatus(postId) {
