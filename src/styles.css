@@ -5557,7 +5557,7 @@ body {
 
 .feed-post-avatar-placeholder {
   background: var(--navy);
-  color: var(--green);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5754,7 +5754,7 @@ body {
 
 .feed-comment-avatar-placeholder {
   background: var(--navy);
-  color: var(--green);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6232,12 +6232,31 @@ body {
 
 .feed-composer-avatar-placeholder-small {
   background: var(--navy);
-  color: var(--green);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
   font-size: 0.9rem;
+}
+
+.feed-composer-avatar-placeholder {
+  background: var(--navy);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.feed-composer-avatar,
+.feed-composer-avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .feed-composer-user-name {
