@@ -3670,6 +3670,10 @@ body {
   font-size: clamp(1.5rem, 3vw, 2.2rem);
 }
 
+[data-theme="dark"] .profile-section-heading h2 {
+  color: var(--ink);
+}
+
 .profile-listings-grid {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
