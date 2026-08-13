@@ -55,20 +55,7 @@ function parseMultipart(req) {
   return form.parse(req);
 }
 
-export default async function handler(req, res) {
-  if (!requireMethod(req, res)) return;
-
-  if (!hasServerSupabaseConfig) {
-    sendJson(res, 500, { error: 'Server Supabase configuration is missing.' });
-    return;
-  }
-
-  const user = await getUserFromRequest(req);
-  if (!user) {
-    sendJson(res, 401, { error: 'Authentication required.' });
-    return;
-  }
-
+async function handleUploadResume(req, res, user) {
   let uploadedFile;
 
   try {
@@ -137,4 +124,84 @@ export default async function handler(req, res) {
       await fs.unlink(uploadedFile.filepath).catch(() => {});
     }
   }
+}
+
+async function handleGetResumeSignedUrl(req, res, user) {
+  const applicationId = req.query.application_id;
+  if (!applicationId) {
+    sendJson(res, 400, { error: 'application_id is required.' });
+    return;
+  }
+
+  try {
+    const { data: application, error: applicationError } = await supabaseAdmin
+      .from('applications')
+      .select('id,applicant_id,resume_url,job_id')
+      .eq('id', applicationId)
+      .maybeSingle();
+
+    if (applicationError) throw applicationError;
+    if (!application) {
+      sendJson(res, 404, { error: 'Application not found.' });
+      return;
+    }
+
+    const isApplicant = application.applicant_id === user.id;
+    let isJobPoster = false;
+
+    if (!isApplicant) {
+      const { data: job, error: jobError } = await supabaseAdmin
+        .from('jobs')
+        .select('user_id')
+        .eq('id', application.job_id)
+        .maybeSingle();
+
+      if (jobError) throw jobError;
+      isJobPoster = job?.user_id === user.id;
+    }
+
+    if (!isApplicant && !isJobPoster) {
+      sendJson(res, 403, { error: 'You do not have access to this resume.' });
+      return;
+    }
+
+    const { data: signedData, error: signedError } = await supabaseAdmin.storage
+      .from('resumes')
+      .createSignedUrl(application.resume_url, 300);
+
+    if (signedError) throw signedError;
+
+    sendJson(res, 200, { signedUrl: signedData.signedUrl });
+  } catch (error) {
+    sendJson(res, 500, { error: error.message || 'Could not load resume.' });
+  }
+}
+
+export default async function handler(req, res) {
+  if (!hasServerSupabaseConfig) {
+    sendJson(res, 500, { error: 'Server Supabase configuration is missing.' });
+    return;
+  }
+
+  const user = await getUserFromRequest(req);
+  if (!user) {
+    sendJson(res, 401, { error: 'Authentication required.' });
+    return;
+  }
+
+  const action = req.query.action;
+
+  if (action === 'upload') {
+    if (!requireMethod(req, res, 'POST')) return;
+    await handleUploadResume(req, res, user);
+    return;
+  }
+
+  if (action === 'signed-url') {
+    if (!requireMethod(req, res, 'GET')) return;
+    await handleGetResumeSignedUrl(req, res, user);
+    return;
+  }
+
+  sendJson(res, 400, { error: 'A valid action is required (upload or signed-url).' });
 }

@@ -117,7 +117,7 @@ export async function submitApplication({ jobId, resumeUrl, coverNote }) {
 
 export async function getApplicationResumeUrl(applicationId) {
   const token = await getAccessToken();
-  const response = await fetch(`/api/application-resume?application_id=${encodeURIComponent(applicationId)}`, {
+  const response = await fetch(`/api/resume?action=signed-url&application_id=${encodeURIComponent(applicationId)}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

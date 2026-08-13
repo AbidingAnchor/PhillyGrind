@@ -56,7 +56,7 @@ export async function uploadResume(file) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch('/api/upload-resume', {
+  const response = await fetch('/api/resume?action=upload', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${sessionData.session.access_token}`,
