@@ -178,6 +178,8 @@ function Profile() {
 
     async function loadHousingData() {
       try {
+        console.log('[Profile] Loading housing data for user:', viewedUserId);
+        console.log('[Profile] Current auth user:', user?.id);
         const housingData = await getHousingListings({ user_id: viewedUserId });
         console.log('[Profile] Housing data for user:', viewedUserId, housingData);
         setHousingListings(housingData);
@@ -188,7 +190,7 @@ function Profile() {
     }
 
     loadHousingData();
-  }, [viewedUserId]);
+  }, [viewedUserId, user?.id]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
