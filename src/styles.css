@@ -1091,12 +1091,18 @@ main {
   font-size: clamp(1.35rem, 3vw, 2rem);
 }
 
+[data-theme="dark"] .payout-profile-card h2 {
+  color: var(--ink);
+}
+
 .payout-profile-card p {
   max-width: 680px;
   margin: 0;
   color: #4b5563;
-  font-weight: 750;
-  line-height: 1.6;
+}
+
+[data-theme="dark"] .payout-profile-card p {
+  color: var(--muted);
 }
 
 .marketplace-payout-card {
@@ -1314,15 +1320,27 @@ a.bid-card {
   color: #111827;
 }
 
+[data-theme="dark"] .bid-card-header strong {
+  color: var(--ink);
+}
+
 .bid-card-header span {
   color: #6b7280;
   font-weight: 850;
+}
+
+[data-theme="dark"] .bid-card-header span {
+  color: var(--muted);
 }
 
 .bid-card p {
   margin: 0;
   color: #374151;
   line-height: 1.55;
+}
+
+[data-theme="dark"] .bid-card p {
+  color: var(--ink);
 }
 
 .bid-status {
@@ -3771,10 +3789,18 @@ body {
   font-family: Syne, Inter, sans-serif;
 }
 
+[data-theme="dark"] .boost-dashboard-card h3 {
+  color: var(--ink);
+}
+
 .boost-dashboard-card p {
   margin: 0;
   color: #6b7280;
   font-weight: 800;
+}
+
+[data-theme="dark"] .boost-dashboard-card p {
+  color: var(--muted);
 }
 
 .profile-edit-form {
@@ -3787,6 +3813,10 @@ body {
   gap: 8px;
   color: #111827;
   font-weight: 850;
+}
+
+[data-theme="dark"] .profile-edit-form label {
+  color: var(--ink);
 }
 
 .profile-edit-form input,
@@ -3832,6 +3862,10 @@ body {
   color: #374151;
   font-size: 1.05rem;
   line-height: 1.75;
+}
+
+[data-theme="dark"] .profile-bio {
+  color: var(--ink);
 }
 
 .profile-mini-heading {
@@ -3897,16 +3931,28 @@ body {
   color: #111827;
 }
 
+[data-theme="dark"] .review-card strong {
+  color: var(--ink);
+}
+
 .review-card p {
   margin: 0;
   color: #374151;
   line-height: 1.7;
 }
 
+[data-theme="dark"] .review-card p {
+  color: var(--ink);
+}
+
 .review-card time {
   color: #6b7280;
   font-weight: 750;
   font-size: 0.88rem;
+}
+
+[data-theme="dark"] .review-card time {
+  color: var(--muted);
 }
 
 .public-review-card {
