@@ -1273,9 +1273,9 @@ create policy "Admins can read contact submissions"
   using (
     exists (
       select 1
-      from auth.users
-      where auth.users.id = auth.uid()
-      and auth.users.email = 'drewnegron95@gmail.com'
+      from profiles
+      where profiles.id = auth.uid()
+      and profiles.email = 'drewnegron95@gmail.com'
     )
   );
 
@@ -1285,17 +1285,17 @@ create policy "Admins can update contact submissions"
   using (
     exists (
       select 1
-      from auth.users
-      where auth.users.id = auth.uid()
-      and auth.users.email = 'drewnegron95@gmail.com'
+      from profiles
+      where profiles.id = auth.uid()
+      and profiles.email = 'drewnegron95@gmail.com'
     )
   )
   with check (
     exists (
       select 1
-      from auth.users
-      where auth.users.id = auth.uid()
-      and auth.users.email = 'drewnegron95@gmail.com'
+      from profiles
+      where profiles.id = auth.uid()
+      and profiles.email = 'drewnegron95@gmail.com'
     )
   );
 
