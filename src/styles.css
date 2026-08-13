@@ -3840,6 +3840,10 @@ body {
   font-size: 1rem;
 }
 
+[data-theme="dark"] .profile-mini-heading {
+  color: var(--ink);
+}
+
 .profile-pill-row {
   display: flex;
   flex-wrap: wrap;
