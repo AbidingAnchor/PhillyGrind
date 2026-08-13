@@ -4,53 +4,96 @@ function Privacy() {
       <div className="page-heading">
         <span className="eyebrow">Privacy</span>
         <h1>Privacy Policy</h1>
-        <p>Last Updated: June 2, 2026</p>
+        <p>Last Updated: August 13, 2026</p>
       </div>
 
       <article className="legal-card">
+        <p>This Privacy Policy explains how PhillyGrind ("PhillyGrind," "we," "us," or "our") collects, uses, and protects information when you use phillygrind.work (the "Platform").</p>
+
         <h2>1. Information We Collect</h2>
-        <p>We collect account data such as your email address, display name, and account settings. We collect listing information you post, including job or gig details, category, pay, neighborhood, and descriptions.</p>
-        <p>We store chat logs and photos shared through the Platform so users can communicate and so PhillyGrind can review relevant records for disputes, fraud prevention, safety, and platform enforcement.</p>
-        <p>PhillyGrind does not store credit card numbers, bank account numbers, or sensitive financial credentials. Stripe handles all financial data and payment processing.</p>
-        <p>Location information is limited to neighborhood-level location data. PhillyGrind does not require or publicly display exact addresses.</p>
 
-        <h2>2. How We Use Your Information</h2>
-        <p>We use your information to operate the Platform, create and manage accounts, publish listings, match hirers and workers, enable messaging, support escrow payment workflows, resolve disputes, prevent fraud, enforce policies, and comply with legal obligations.</p>
+        <h3>1.1 Information You Provide</h3>
+        <ul>
+          <li><strong>Account information:</strong> name, email address, password (hashed), profile photo</li>
+          <li><strong>Listing content:</strong> job postings, gig postings, marketplace listings, housing listings, community posts, comments, and reactions</li>
+          <li><strong>Verification documents:</strong> identity or business documentation submitted for landlord or user verification badges</li>
+          <li><strong>Payment information:</strong> processed and stored by our payment processor, Stripe — PhillyGrind does not store full payment card numbers</li>
+          <li><strong>Messages:</strong> content sent through PhillyGrind's in-platform messaging and GrindBot chatbot</li>
+          <li><strong>Communications with us:</strong> support requests, dispute submissions, and evidence submitted during a dispute</li>
+        </ul>
 
-        <h2>3. Sharing and Disclosure</h2>
-        <p>PhillyGrind does not sell user data to third parties. Your display name and neighborhood may be visible to other users as part of account, listing, messaging, or review features.</p>
-        <p>Chat logs, photos, listing details, and transaction-related information may be shared with Stripe, law enforcement, courts, regulators, or other necessary parties for payment disputes, fraud investigations, safety issues, legal compliance, or valid legal mandates from Pennsylvania courts.</p>
+        <h3>1.2 Information Collected Automatically</h3>
+        <ul>
+          <li>Device and browser information</li>
+          <li>IP address</li>
+          <li>Usage data (pages viewed, features used, general activity on the Platform)</li>
+          <li>Cookies and similar technologies (see Section 6)</li>
+        </ul>
 
-        <h2>4. Data Security and Retention</h2>
-        <p>We use industry-standard security practices designed to protect user data. No system is perfectly secure, and PhillyGrind cannot guarantee absolute security.</p>
-        <p>We retain data while your account is active or as needed for listings, messages, payments, dispute resolution, fraud prevention, legal compliance, tax records, or enforcement of our Terms.</p>
+        <h2>2. How We Use Information</h2>
+        <p>We use collected information to:</p>
+        <ul>
+          <li>Operate and maintain the Platform (accounts, listings, messaging, payments)</li>
+          <li>Process Marketplace transactions and Secure Checkout escrow through Stripe</li>
+          <li>Screen content through our moderation systems (Section 3)</li>
+          <li>Verify landlord and user identity for verification badges</li>
+          <li>Investigate and resolve disputes between users</li>
+          <li>Communicate with you about your account, transactions, or support requests</li>
+          <li>Improve and maintain Platform security</li>
+          <li>Comply with legal obligations</li>
+        </ul>
 
-        <h2>5. Children's Privacy</h2>
-        <p>PhillyGrind is for users 18 and older. We do not knowingly collect data from children under 13. If we discover that a user is under 18, or that we have collected data from a child under 13, we will immediately terminate the account and delete the data where required by law.</p>
+        <h2>3. AI-Assisted Content Moderation</h2>
+        <p>PhillyGrind uses automated systems, including third-party AI providers (OpenAI and/or Groq), to screen user-submitted content — including Housing, Marketplace, Jobs, Gigs, and Community posts — for compliance with our Terms of Service, including Fair Housing law compliance, scam pattern detection, and harassment/doxxing detection.</p>
+        <ul>
+          <li>Content submitted for a listing or post is sent to our AI moderation service (which may include a third-party AI provider) for automated analysis.</li>
+          <li>If a violation is flagged, the flagged content, the specific phrases identified, and the rule violated are logged internally for administrative review.</li>
+          <li>We do not use content submitted for moderation to train third-party AI models, to the extent controllable by our provider agreements.</li>
+          <li>Moderation decisions may be reviewed and, where appropriate, appealed by contacting [support email].</li>
+        </ul>
 
-        <h2>6. Marketplace Data Collection</h2>
-        <p>When you use the PhillyGrind Marketplace, we collect listing information including item descriptions, photos, pricing, and location. For Secure Checkout transactions, payment information is processed and stored securely by Stripe. PhillyGrind does not store your full credit card details.</p>
+        <h2>4. How We Share Information</h2>
+        <p>We do not sell your personal information. We share information only as follows:</p>
+        <ul>
+          <li><strong>With other users:</strong> your display name, profile photo, and any content you choose to post are visible to other users as part of normal Platform functionality (e.g., a job listing, a marketplace listing, or a community post).</li>
+          <li><strong>With service providers:</strong> Stripe (payments), Supabase (database/hosting infrastructure), Vercel (application hosting), OpenAI and/or Groq (AI content moderation), Resend (transactional email), and other vendors who process data on our behalf under confidentiality obligations.</li>
+          <li><strong>For legal reasons:</strong> if required by law, subpoena, or legal process, or to protect the rights, property, or safety of PhillyGrind, our users, or the public.</li>
+          <li><strong>In a business transfer:</strong> if PhillyGrind is involved in a merger, acquisition, or sale of assets, user information may be transferred as part of that transaction, subject to this Policy.</li>
+        </ul>
+        <p><strong>Email addresses are never displayed publicly on the Platform.</strong></p>
 
-        <h2>7. Data Sharing Between Users</h2>
-        <p>To facilitate transactions, basic contact information may be shared between buyers and sellers through our in-app messaging system. We do not share your personal information with third parties outside of what is necessary to complete a transaction.</p>
+        <h2>5. Data Retention</h2>
+        <p>We retain account and listing information for as long as your account is active. Moderation logs (including flagged content and the outcome of the moderation check) are retained to support dispute resolution, legal compliance, and pattern detection, even after the associated listing is removed or the account is closed, for a period we determine is reasonably necessary.</p>
 
-        <h2>8. Third-Party Payment Processing</h2>
-        <p>All Secure Checkout payments are processed by Stripe. By using Secure Checkout you agree to Stripe's Privacy Policy and Terms of Service. PhillyGrind shares transaction data with Stripe solely for payment processing and fraud prevention purposes.</p>
+        <h2>6. Cookies</h2>
+        <p>We use cookies and similar technologies to keep you logged in, remember your preferences (e.g., dark mode, neighborhood filter), and understand how the Platform is used. You can control cookies through your browser settings, though disabling cookies may affect Platform functionality.</p>
 
-        <h2>9. Marketplace Photos</h2>
-        <p>Photos uploaded to the Marketplace are stored in a public Supabase Storage bucket and are viewable by anyone visiting the listing. Do not upload photos containing sensitive personal information.</p>
+        <h2>7. Your Rights and Choices</h2>
+        <p>Depending on your location, you may have the right to:</p>
+        <ul>
+          <li>Access the personal information we hold about you</li>
+          <li>Request correction of inaccurate information</li>
+          <li>Request deletion of your account and associated personal information</li>
+          <li>Object to or restrict certain processing of your information</li>
+        </ul>
+        <p>To exercise these rights, contact us at [support email]. We will respond within a reasonable time and in accordance with applicable law, including the Pennsylvania and any applicable state privacy frameworks.</p>
 
-        <h2>10. CCPA Compliance</h2>
-        <p>California residents have the right to request access to, deletion of, or opt-out of the sale of their personal data. Pennsylvania residents and other US users may also request data access or deletion by contacting us at drewnegron95@gmail.com.</p>
+        <h2>8. Children's Privacy</h2>
+        <p>PhillyGrind is not intended for use by anyone under 18. We do not knowingly collect personal information from anyone under 18. If we learn that we have done so, we will delete that information.</p>
 
-        <h2>11. DMCA Policy</h2>
-        <p>If you believe content on PhillyGrind infringes your copyright, please send a DMCA takedown notice to drewnegron95@gmail.com with a description of the copyrighted work, the URL of the infringing content, and your contact information. We will respond within 72 hours.</p>
+        <h2>9. Data Security</h2>
+        <p>We use reasonable administrative, technical, and physical safeguards to protect your information, including encrypted data storage and transmission (via Supabase and Stripe) and role-based access controls for administrative data (including moderation logs). No system is completely secure, and we cannot guarantee absolute security.</p>
 
-        <h2>12. Changes to This Policy</h2>
-        <p>We may update this Privacy Policy from time to time. When we do, we will update the Last Updated date. Continued use of PhillyGrind after changes are posted constitutes acceptance of the updated policy.</p>
+        <h2>10. Data Location</h2>
+        <p>Your information is processed and stored using infrastructure providers (Supabase, Vercel, Stripe) that may store data outside of your state or country of residence.</p>
 
-        <h2>13. Contact</h2>
-        <p>For questions about this Privacy Policy, contact us at support@phillygrind.work.</p>
+        <h2>11. Changes to This Policy</h2>
+        <p>We may update this Privacy Policy from time to time. Material changes will be reflected by updating the "Last Updated" date above, and, where appropriate, additional notice will be provided.</p>
+
+        <h2>12. Contact Us</h2>
+        <p>Questions about this Privacy Policy or your information can be sent to [support email].</p>
+
+        <p className="legal-disclaimer"><em>This document is a working draft. PhillyGrind recommends review by a licensed attorney before this document is treated as final, particularly regarding data handling obligations tied to payment processing, housing verification documents, and AI-assisted moderation.</em></p>
       </article>
     </section>
   );

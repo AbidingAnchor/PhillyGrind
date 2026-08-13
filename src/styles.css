@@ -3037,12 +3037,32 @@ body {
   padding: clamp(24px, 5vw, 44px);
 }
 
+[data-theme="dark"] .legal-card {
+  background: var(--card);
+}
+
 .legal-card h2 {
   margin: 18px 0 0;
   color: #111827;
   font-family: Syne, Inter, sans-serif;
   font-size: clamp(1.28rem, 2.2vw, 1.7rem);
   letter-spacing: -0.03em;
+}
+
+[data-theme="dark"] .legal-card h2 {
+  color: var(--ink);
+}
+
+.legal-card h3 {
+  margin: 18px 0 8px;
+  color: #111827;
+  font-family: Syne, Inter, sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+}
+
+[data-theme="dark"] .legal-card h3 {
+  color: var(--ink);
 }
 
 .legal-card h2:first-child {
@@ -3054,6 +3074,49 @@ body {
   color: #374151;
   font-size: 1.03rem;
   line-height: 1.75;
+}
+
+[data-theme="dark"] .legal-card p {
+  color: var(--muted);
+}
+
+.legal-card ul {
+  margin: 0 0 18px;
+  padding-left: 24px;
+  color: #374151;
+}
+
+[data-theme="dark"] .legal-card ul {
+  color: var(--muted);
+}
+
+.legal-card li {
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+.legal-card a {
+  color: #4f46e5;
+}
+
+[data-theme="dark"] .legal-card a {
+  color: #818cf8;
+}
+
+.legal-card a:hover {
+  text-decoration: underline;
+}
+
+.legal-disclaimer {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+[data-theme="dark"] .legal-disclaimer {
+  color: var(--muted);
 }
 
 .terms-document pre {

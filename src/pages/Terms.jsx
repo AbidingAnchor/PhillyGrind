@@ -4,62 +4,146 @@ function Terms() {
       <div className="page-heading">
         <span className="eyebrow">Legal</span>
         <h1>Terms of Service</h1>
-        <p>Last updated: June 2, 2026</p>
+        <p>Last Updated: August 13, 2026</p>
       </div>
 
       <article className="legal-card">
-        <h2>1. Acceptance of Terms</h2>
-        <p>By accessing or using PhillyGrind ("the Platform"), you agree to be bound by these Terms of Service. If you do not agree, do not use the Platform. You must be at least 18 years of age to create an account or use PhillyGrind. By registering, you confirm you are 18 or older.</p>
+        <p>Welcome to PhillyGrind ("PhillyGrind," "we," "us," or "our"), a Philadelphia-focused community platform offering job listings, gig postings, a marketplace, housing listings, and a community social feed, accessible at phillygrind.work (the "Platform" or "Service").</p>
+        <p>By creating an account or using PhillyGrind, you agree to these Terms of Service ("Terms"). If you do not agree, do not use the Platform.</p>
 
-        <h2>2. Marketplace Role & Status Waiver</h2>
-        <p>PhillyGrind operates strictly as an online marketplace platform connecting independent hirers ("Hirers") and independent workers/service providers ("Workers"). PhillyGrind is not an employer, employment agency, staffing agency, joint employer, or broker of any job, gig, or service listed on the Platform.</p>
-        <p>Workers explicitly acknowledge and agree that they are performing services as independent contractors. Workers are not entitled to, and hereby waive any claim to, workers' compensation, unemployment insurance, minimum wage protections, sick leave, or any other employee benefits from PhillyGrind under the Pennsylvania Wage Payment and Collection Law or any other applicable state or federal law. Workers assume sole responsibility for their own taxes (including self-employment taxes), licenses, permits, insurance, and equipment.</p>
+        <h2>1. Eligibility</h2>
+        <p>You must be at least 18 years old to create an account or use PhillyGrind. By using the Platform, you represent that you meet this requirement and that all information you provide is accurate and current.</p>
 
-        <h2>3. Section 230 Notice</h2>
-        <p>PhillyGrind is a platform, not a publisher. Under Section 230 of the Communications Decency Act, PhillyGrind is not liable for content posted by users. We do not verify, endorse, or guarantee any listing, user, or transaction on the Platform.</p>
+        <h2>2. Account Registration</h2>
+        <p>You are responsible for maintaining the confidentiality of your account credentials and for all activity under your account. Notify us immediately at [support email] if you suspect unauthorized use of your account.</p>
+        <p>You agree not to:</p>
+        <ul>
+          <li>Create an account using false information</li>
+          <li>Create multiple accounts to evade a suspension or ban</li>
+          <li>Impersonate another person or entity</li>
+        </ul>
 
-        <h2>4. Philadelphia Fair Criminal Record Screening (Ban-the-Box)</h2>
-        <p>PhillyGrind operates within Philadelphia, Pennsylvania. In compliance with Philadelphia's Fair Criminal Record Screening Standards Ordinance (FCRSS), effective January 6, 2026, Hirers are prohibited from inquiring about or considering a Worker's criminal history prior to making a conditional offer. Job listings may not include language such as "no felonies," "clean record required," or any other criminal history screening language. Violations of this policy may result in immediate listing removal and account suspension.</p>
+        <h2>3. Platform Role and Relationship of Parties</h2>
+        <p>PhillyGrind is a <strong>platform that connects users</strong> — it is not a party to any transaction, employment relationship, rental agreement, or sale between users. We do not:</p>
+        <ul>
+          <li>Employ any worker who posts or responds to Job or Gig listings</li>
+          <li>Act as a landlord, property manager, or party to any lease</li>
+          <li>Own, inspect, or guarantee any item sold through Marketplace</li>
+          <li>Guarantee the accuracy of any listing, profile, or user-submitted content</li>
+        </ul>
+        <p>Users are solely responsible for their own conduct, the accuracy of what they post, and their compliance with applicable law in any transaction or interaction facilitated through PhillyGrind.</p>
 
-        <h2>5. Escrow Payments & Stripe Services</h2>
-        <p>
-          Payment processing services for PhillyGrind are provided by Stripe and are subject to the{' '}
-          <a href="https://stripe.com/legal/connect-account" target="_blank" rel="noreferrer">Stripe Connected Account Agreement</a>,
-          {' '}which includes the Stripe Terms of Service (collectively, the "Stripe Services Agreement"). By agreeing to these Terms or continuing to use PhillyGrind, you agree to be bound by the Stripe Services Agreement as modified by Stripe from time to time.
-        </p>
-        <p>When escrow payments are utilized, Hirer funds will be securely held via Stripe until a job is marked complete by the Worker. Upon completion, the Hirer has seventy-two (72) hours to review and approve the work. If the Hirer fails to respond or take action within this 72-hour window, the funds will automatically release to the Worker as a "Deemed Completion," and PhillyGrind shall have no liability for such automatic release.</p>
+        <h2>4. Community Feed</h2>
+        <p>The Community feed allows users to post, comment on, and react to content related to Philadelphia neighborhoods.</p>
+        <p><strong>You agree not to post content that:</strong></p>
+        <ul>
+          <li>Is discriminatory, harassing, threatening, or promotes violence against any individual or group</li>
+          <li>Discloses another person's private information without their consent ("doxxing"), including home address, phone number, or other identifying details</li>
+          <li>Is false and materially misleading (misinformation)</li>
+          <li>Infringes on another person's intellectual property rights</li>
+          <li>Is spam, unauthorized advertising, or promotes a competing platform</li>
+          <li>Violates any applicable law</li>
+        </ul>
+        <p>We use a combination of automated moderation (including AI-based content review) and human review to enforce this section. See Section 9 (Content Moderation) below.</p>
 
-        <h2>6. Disputes & Binding Administrative Authority</h2>
-        <p>Hirers and Workers have a strict forty-eight (48) hour window following job completion to lodge a formal dispute through the Platform. PhillyGrind reserves the right, but holds no obligation, to review platform communications, photos, listing details, and transaction history to resolve disputes.</p>
-        <p>By using the escrow service, both Hirers and Workers agree that PhillyGrind holds final, binding, and unappealable administrative authority to determine the allocation of escrowed funds, including full refunds to Hirers or full disbursement to Workers. You release PhillyGrind from any and all liability arising out of escrow dispute determinations.</p>
+        <h2>5. Jobs and Gigs</h2>
+        <p>Job and Gig listings are posted by users seeking to hire or be hired. PhillyGrind does not verify the legitimacy of any employer, job, or gig listing, though we apply automated screening (Section 9) to detect common scam patterns and discriminatory hiring language.</p>
+        <p><strong>Prohibited in Job/Gig postings:</strong></p>
+        <ul>
+          <li>Discriminatory hiring criteria based on race, color, religion, sex, age, disability, national origin, sexual orientation, or gender identity, except where a bona fide occupational qualification applies and is disclosed as such</li>
+          <li>Requests for payment from a prospective worker as a condition of being hired</li>
+          <li>Multi-level marketing (MLM) or pyramid-scheme recruitment disguised as a job or gig posting</li>
+          <li>Unpaid labor misrepresented as a paid position</li>
+        </ul>
+        <p>Users engaging in Jobs/Gigs transactions are responsible for verifying the legitimacy of the other party and for complying with applicable employment and labor law.</p>
 
-        <h2>7. No Guarantees & Limitation of Liability</h2>
-        <p>PhillyGrind provides its Platform on an "as-is" and "as-available" basis. To the maximum extent permitted under Pennsylvania law, PhillyGrind disclaims all warranties, express or implied. PhillyGrind does not verify, vet, guarantee, or control the quality, safety, legality, timing, or performance of any Worker, nor the conduct, safety, environment, or payment capability of any Hirer.</p>
-        <p>In no event shall PhillyGrind be liable for any indirect, incidental, special, or consequential damages, including but not limited to bodily injury, property damage, or financial loss arising out of any interaction or gig arranged via the Platform.</p>
+        <h2>6. Marketplace</h2>
+        <p>Marketplace allows users to buy and sell goods locally, with an optional Secure Checkout feature.</p>
 
-        <h2>8. Anti-Circumvention</h2>
-        <p>Users may not use PhillyGrind to find or contact another user and then move payment or communication off-platform to avoid fees, safety rules, or dispute processes. Violations may result in immediate account suspension.</p>
+        <h3>6.1 Secure Checkout / Escrow</h3>
+        <p>When a buyer uses Secure Checkout, PhillyGrind (via our payment processor, Stripe) holds payment in escrow until:</p>
+        <ul>
+          <li>The buyer confirms receipt of the item ("I Received This Item"), or</li>
+          <li>The auto-release period elapses following the seller's confirmed handoff, or</li>
+          <li>A dispute is resolved through our dispute process (Section 6.3)</li>
+        </ul>
+        <p>An 8% platform fee applies to transactions completed through Secure Checkout, paid by the buyer.</p>
 
-        <h2>9. User Content & Prohibited Listings</h2>
-        <p>Users are solely responsible for content they post. You may not post listings that are fraudulent, illegal, discriminatory, or violate any applicable law. PhillyGrind reserves the right to remove any listing at its sole discretion without notice.</p>
+        <h3>6.2 Prohibited Items</h3>
+        <p>Users may not list or sell:</p>
+        <ul>
+          <li>Weapons, ammunition, or explosives</li>
+          <li>Illegal drugs or drug paraphernalia</li>
+          <li>Stolen, counterfeit, or recalled goods</li>
+          <li>Any item prohibited by federal, Pennsylvania, or Philadelphia law</li>
+        </ul>
+        <p>We apply automated screening to detect these patterns; violating listings are removed and may result in account suspension.</p>
 
-        <h2>10. Account Suspension & Termination</h2>
-        <p>PhillyGrind reserves the right to suspend, restrict, or permanently ban any user at any time for fraud, abuse, unsafe behavior, policy violations, payment circumvention, criminal conduct, or any activity that harms the Platform or its community. No refunds will be issued upon termination for cause.</p>
+        <h3>6.3 Disputes</h3>
+        <p>If a buyer and seller disagree about whether an item was received, matches its description, or was handled properly, either party may open a dispute. Both parties may submit evidence; PhillyGrind reviews the evidence and makes a final determination regarding release of escrowed funds. Our decision on fund release is final.</p>
 
-        <h2>11. Indemnification</h2>
-        <p>You agree to indemnify, defend, and hold harmless PhillyGrind, its owner, officers, and agents from any claims, damages, losses, liabilities, and expenses (including legal fees) arising out of your use of the Platform, your listings, your interactions with other users, or your violation of these Terms.</p>
+        <h3>6.4 Cash Transactions</h3>
+        <p>Users may also arrange cash transactions outside of Secure Checkout. PhillyGrind has no visibility into and bears no responsibility for cash transactions arranged between users.</p>
 
-        <h2>12. Children's Privacy (COPPA)</h2>
-        <p>PhillyGrind does not knowingly collect personal information from anyone under the age of 18. If you are under 18, do not use this Platform. If we become aware that a user is under 18, we will immediately terminate their account and delete their data.</p>
+        <h2>7. Housing</h2>
+        <p>The Housing section allows users to list and browse rental housing in Philadelphia.</p>
 
-        <h2>13. Governing Law and Venue</h2>
-        <p>These Terms of Service and any disputes arising out of or related to the Platform shall be governed by and construed in accordance with the laws of the Commonwealth of Pennsylvania, without regard to its conflict of law principles. Any legal action, suit, or proceeding arising under these Terms must be brought exclusively in the state or federal courts located in Philadelphia County, Pennsylvania.</p>
+        <h3>7.1 Fair Housing Compliance</h3>
+        <p>All Housing listings must comply with the federal Fair Housing Act and applicable Pennsylvania and Philadelphia fair housing law. Listings may not express a preference, limitation, or discrimination based on:</p>
+        <ul>
+          <li>Race, color, religion, sex, national origin, familial status, or disability (protected under federal law)</li>
+          <li>Sexual orientation, gender identity, or source of income, including Section 8 housing vouchers (protected under Philadelphia and/or Pennsylvania law)</li>
+        </ul>
+        <p>We apply automated AI screening to Housing listings to detect potentially discriminatory language before a listing is published. Listings flagged with high confidence are automatically rejected; listings flagged with lower confidence are published but routed to human review. <strong>This automated screening is a compliance aid, not a legal guarantee — listing owners remain fully responsible for ensuring their listings comply with Fair Housing law.</strong></p>
+
+        <h3>7.2 Landlord Verification</h3>
+        <p>Landlords may submit identifying documentation to receive a "Verified" badge. Verification indicates only that the landlord submitted the requested documentation to PhillyGrind — it is not a guarantee of the landlord's conduct, the accuracy of a listing, or the condition of a property.</p>
+
+        <h3>7.3 Reporting</h3>
+        <p>Users may report Housing listings they believe are inaccurate, fraudulent, or discriminatory. Listings that accumulate multiple reports are automatically flagged for review and may display a warning to prospective renters pending review.</p>
+
+        <h2>8. Verification Badges</h2>
+        <p>PhillyGrind may issue a blue verification badge to users or landlords who have submitted identity or business documentation and been approved. A verification badge indicates that a user completed our verification process — it does not guarantee the user's future conduct, and PhillyGrind is not liable for the actions of a verified user.</p>
+
+        <h2>9. Content Moderation</h2>
+        <p>PhillyGrind uses a combination of:</p>
+        <ul>
+          <li><strong>Third-party moderation APIs</strong> (e.g., OpenAI's Moderation API) to screen content for broadly unsafe categories (e.g., sexual content, violence, hate speech, self-harm)</li>
+          <li><strong>Custom AI-based rule checks</strong>, built and maintained by PhillyGrind, that screen content against platform-specific rules (Fair Housing compliance, marketplace scam patterns, discriminatory hiring language, harassment, and doxxing)</li>
+          <li><strong>Human admin review</strong> of flagged content</li>
+        </ul>
+        <p>Content that receives a high-confidence violation determination may be automatically rejected before it is published. Content flagged with lower confidence is logged for human review and may remain visible pending that review.</p>
+        <p><strong>Limitations:</strong> Automated moderation is a tool to reduce risk, not a guarantee that all violating content will be caught or that no compliant content will be mistakenly flagged. Users may appeal a moderation decision by contacting [support email].</p>
+
+        <h2>10. Prohibited Conduct (Platform-Wide)</h2>
+        <p>In addition to category-specific rules above, users may not:</p>
+        <ul>
+          <li>Use the Platform for any unlawful purpose</li>
+          <li>Harass, threaten, or abuse other users</li>
+          <li>Attempt to circumvent Secure Checkout to defraud another user</li>
+          <li>Scrape, reverse-engineer, or misuse the Platform's data or infrastructure</li>
+          <li>Attempt to bypass or interfere with our moderation systems</li>
+        </ul>
+
+        <h2>11. Account Suspension and Termination</h2>
+        <p>We may suspend or terminate any account that violates these Terms, at our discretion. Users may also request deletion of their own account at any time (see Privacy Policy for data deletion).</p>
+
+        <h2>12. Disclaimers</h2>
+        <p>THE PLATFORM IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND. PHILLYGRIND DOES NOT GUARANTEE THE ACCURACY, LEGALITY, OR SAFETY OF LISTINGS, USER CONTENT, OR TRANSACTIONS. YOU USE THE PLATFORM AND ENGAGE IN ANY TRANSACTION AT YOUR OWN RISK.</p>
+
+        <h2>13. Limitation of Liability</h2>
+        <p>TO THE FULLEST EXTENT PERMITTED BY LAW, PHILLYGRIND AND ITS OPERATORS ARE NOT LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES ARISING FROM YOUR USE OF THE PLATFORM, INCLUDING DAMAGES ARISING FROM TRANSACTIONS, DISPUTES, OR CONTENT MODERATION DECISIONS.</p>
 
         <h2>14. Changes to These Terms</h2>
-        <p>PhillyGrind reserves the right to modify these Terms at any time. Continued use of the Platform after changes are posted constitutes acceptance of the updated Terms.</p>
+        <p>We may update these Terms from time to time. Continued use of the Platform after changes take effect constitutes acceptance of the updated Terms.</p>
 
-        <h2>15. Contact</h2>
-        <p>For questions about these Terms, contact us at support@phillygrind.work.</p>
+        <h2>15. Governing Law</h2>
+        <p>These Terms are governed by the laws of the Commonwealth of Pennsylvania, without regard to conflict-of-law principles.</p>
+
+        <h2>16. Contact</h2>
+        <p>Questions about these Terms can be sent to [support email].</p>
+
+        <p className="legal-disclaimer"><em>This document is a working draft. PhillyGrind recommends review by a licensed attorney familiar with Pennsylvania and Philadelphia law before this document is treated as final, particularly given the Platform's handling of escrow payments, housing listings, and automated content moderation.</em></p>
       </article>
     </section>
   );
