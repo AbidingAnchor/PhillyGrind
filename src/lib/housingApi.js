@@ -73,6 +73,14 @@ async function attachLandlordInfo(listings) {
 export async function getHousingListings(filters = {}) {
   if (!hasSupabaseConfig) return [];
 
+  // DEBUG: Query all housing listings with no filters to see what exists
+  const { data: allListings, error: allError } = await supabase
+    .from('housing_listings')
+    .select('*')
+    .limit(20);
+  
+  console.log('[DEBUG] All housing listings in database:', allListings, allError);
+
   const {
     neighborhood = '',
     bedrooms = 'Any',
