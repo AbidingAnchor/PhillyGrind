@@ -198,6 +198,39 @@ async function callOpenAI(systemPrompt, userMessage, model = 'gpt-4o-mini', temp
   return data.choices[0].message.content;
 }
 
+async function callGroq(systemPrompt, userMessage, model = 'llama-3.3-70b-versatile', temperature = 0.3) {
+  const apiKey = process.env.GROQ_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY is not configured');
+  }
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+      temperature,
+      response_format: { type: 'json_object' },
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Groq API error: ${response.status} - ${error}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
 export default async function handler(req, res) {
   if (!requireMethod(req, res)) return;
 
@@ -221,12 +254,34 @@ export default async function handler(req, res) {
       return;
     }
 
-    const result = await callOpenAI(
-      rule.systemPrompt,
-      content,
-      rule.model,
-      rule.temperature
-    );
+    let result;
+    let usedProvider = 'openai';
+
+    try {
+      result = await callOpenAI(
+        rule.systemPrompt,
+        content,
+        rule.model,
+        rule.temperature
+      );
+      console.log('[moderate] used provider:', usedProvider);
+    } catch (openaiError) {
+      console.warn('[moderate] OpenAI failed, falling back to Groq:', openaiError.message);
+      
+      try {
+        result = await callGroq(
+          rule.systemPrompt,
+          content,
+          'llama-3.3-70b-versatile',
+          rule.temperature
+        );
+        usedProvider = 'groq';
+        console.log('[moderate] used provider:', usedProvider);
+      } catch (groqError) {
+        console.error('[moderate] Both OpenAI and Groq failed:', groqError.message);
+        throw new Error(`All AI providers failed. OpenAI: ${openaiError.message}, Groq: ${groqError.message}`);
+      }
+    }
 
     const parsed = JSON.parse(result);
     
