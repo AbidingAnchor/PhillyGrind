@@ -150,15 +150,8 @@ async function handleVerifyCode(req, res, user) {
     return;
   }
 
-  // Mark code as used
-  const { error: updateError } = await supabaseAdmin
-    .from('two_factor_codes')
-    .update({ used: true })
-    .eq('id', codeRecord.id);
-
-  if (updateError) {
-    console.error('[2FA] Failed to mark code as used:', updateError);
-  }
+  // Don't mark code as used here - let toggle-2fa mark it when actually enabling
+  // This allows the same code to be verified once, then used for the toggle action
 
   console.log('[2FA] Code verified successfully for user:', user.id);
   sendJson(res, 200, { success: true });
@@ -167,13 +160,17 @@ async function handleVerifyCode(req, res, user) {
 async function handleToggle2FA(req, res, user) {
   const { enabled, verifyCode } = req.body ?? {};
 
+  console.log('[2FA Toggle] Request body:', { enabled, hasVerifyCode: !!verifyCode, verifyCode });
+
   if (typeof enabled !== 'boolean') {
+    console.error('[2FA Toggle] Validation failed: enabled is not a boolean', { enabled, type: typeof enabled });
     sendJson(res, 400, { error: 'enabled (boolean) is required.' });
     return;
   }
 
   // When enabling, require verification code
   if (enabled && verifyCode) {
+    console.log('[2FA Toggle] Verifying code for enable:', { verifyCode, userId: user.id });
     const now = new Date().toISOString();
 
     const { data: codeRecord, error: codeError } = await supabaseAdmin
@@ -187,7 +184,10 @@ async function handleToggle2FA(req, res, user) {
       .limit(1)
       .maybeSingle();
 
+    console.log('[2FA Toggle] Code lookup result:', { codeRecord, codeError });
+
     if (codeError || !codeRecord) {
+      console.error('[2FA Toggle] Code verification failed:', { codeError, codeRecord });
       sendJson(res, 400, { error: 'Invalid or expired verification code.' });
       return;
     }
@@ -197,6 +197,8 @@ async function handleToggle2FA(req, res, user) {
       .from('two_factor_codes')
       .update({ used: true })
       .eq('id', codeRecord.id);
+
+    console.log('[2FA Toggle] Code marked as used:', codeRecord.id);
   }
 
   // Update profile
