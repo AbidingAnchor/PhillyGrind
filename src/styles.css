@@ -1091,18 +1091,10 @@ main {
   font-size: clamp(1.35rem, 3vw, 2rem);
 }
 
-[data-theme="dark"] .payout-profile-card h2 {
-  color: var(--ink);
-}
-
 .payout-profile-card p {
   max-width: 680px;
   margin: 0;
   color: #4b5563;
-}
-
-[data-theme="dark"] .payout-profile-card p {
-  color: var(--muted);
 }
 
 .marketplace-payout-card {
@@ -3931,28 +3923,16 @@ body {
   color: #111827;
 }
 
-[data-theme="dark"] .review-card strong {
-  color: var(--ink);
-}
-
 .review-card p {
   margin: 0;
   color: #374151;
   line-height: 1.7;
 }
 
-[data-theme="dark"] .review-card p {
-  color: var(--ink);
-}
-
 .review-card time {
   color: #6b7280;
   font-weight: 750;
   font-size: 0.88rem;
-}
-
-[data-theme="dark"] .review-card time {
-  color: var(--muted);
 }
 
 .public-review-card {
