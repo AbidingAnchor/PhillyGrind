@@ -199,6 +199,15 @@ alter table profiles
 alter table profiles
   add column if not exists two_factor_enabled boolean not null default false;
 
+alter table profiles
+  add column if not exists identity_verified boolean not null default false;
+
+alter table profiles
+  add column if not exists verification_status text check (verification_status in ('pending', 'verified', 'failed'));
+
+alter table profiles
+  add column if not exists stripe_identity_session_id text;
+
 alter table notifications
   add column if not exists listing_type text;
 

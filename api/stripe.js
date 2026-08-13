@@ -404,6 +404,87 @@ async function checkConnectStatus(req, res, user) {
   });
 }
 
+async function createVerificationCheckout(req, res, user) {
+  const origin = req.headers.origin || process.env.APP_URL || 'http://localhost:5173';
+
+  const session = await stripe.checkout.sessions.create({
+    mode: 'payment',
+    customer_email: user.email || undefined,
+    line_items: [
+      {
+        price_data: {
+          currency: 'usd',
+          unit_amount: 200, // $2.00
+          product_data: {
+            name: 'PhillyGrind Identity Verification',
+            description: 'One-time identity verification fee',
+          },
+        },
+        quantity: 1,
+      },
+    ],
+    metadata: {
+      user_id: user.id,
+      type: 'identity_verification',
+    },
+    success_url: `${origin}/profile?verification=success`,
+    cancel_url: `${origin}/profile?verification=cancelled`,
+  });
+
+  sendJson(res, 200, { url: session.url });
+}
+
+async function createIdentityVerificationSession(req, res, user) {
+  const { data: profile, error: profileError } = await supabaseAdmin
+    .from('profiles')
+    .select('id,verification_status,stripe_identity_session_id')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (profileError) throw profileError;
+  if (!profile) {
+    sendJson(res, 404, { error: 'Profile not found.' });
+    return;
+  }
+
+  if (profile.verification_status === 'verified') {
+    sendJson(res, 400, { error: 'You are already verified.' });
+    return;
+  }
+
+  if (profile.verification_status === 'pending' && profile.stripe_identity_session_id) {
+    // Return existing session if still pending
+    try {
+      const existingSession = await stripe.identity.verificationSessions.retrieve(profile.stripe_identity_session_id);
+      if (existingSession.status === 'processing' || existingSession.status === 'requires_input') {
+        sendJson(res, 200, { url: existingSession.url });
+        return;
+      }
+    } catch (error) {
+      console.warn('Failed to retrieve existing verification session:', error.message);
+    }
+  }
+
+  const verificationSession = await stripe.identity.verificationSessions.create({
+    type: 'document',
+    metadata: {
+      user_id: user.id,
+    },
+  });
+
+  const { error: updateError } = await supabaseAdmin
+    .from('profiles')
+    .update({
+      verification_status: 'pending',
+      stripe_identity_session_id: verificationSession.id,
+    })
+    .eq('id', user.id);
+
+  if (updateError) throw updateError;
+
+  sendJson(res, 200, { url: verificationSession.url });
+}
+
 export default async function handler(req, res) {
   if (!requireMethod(req, res)) return;
 
@@ -412,6 +493,8 @@ export default async function handler(req, res) {
     'create-payment-intent',
     'create-boost-checkout',
     'check-connect-status',
+    'create-verification-checkout',
+    'create-identity-verification',
   ]);
 
   try {
@@ -441,6 +524,16 @@ export default async function handler(req, res) {
 
     if (action === 'check-connect-status') {
       await checkConnectStatus(req, res, user);
+      return;
+    }
+
+    if (action === 'create-verification-checkout') {
+      await createVerificationCheckout(req, res, user);
+      return;
+    }
+
+    if (action === 'create-identity-verification') {
+      await createIdentityVerificationSession(req, res, user);
       return;
     }
 

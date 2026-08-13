@@ -9,6 +9,7 @@ import { getUserReviews } from '../lib/reviewsApi.js';
 import { getMyBids } from '../lib/bidsApi.js';
 import { createConnectAccount } from '../lib/ordersApi.js';
 import { sendTwoFactorCode, toggleTwoFactorAuth, verifyTwoFactorCode } from '../lib/twoFactorApi.js';
+import { getHousingListings } from '../lib/housingApi.js';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
 import { getUserAvatarColor } from '../lib/reactions.js';
@@ -97,6 +98,8 @@ function Profile() {
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [twoFactorSending, setTwoFactorSending] = useState(false);
   const [twoFactorError, setTwoFactorError] = useState('');
+  const [housingListings, setHousingListings] = useState([]);
+  const [isLandlord, setIsLandlord] = useState(false);
   const isOwnProfile = isLoggedIn && user?.id === viewedUserId;
   const hasStripeAccount = Boolean(isOwnProfile && authProfile?.stripe_account_id);
   const payoutsConnected = Boolean(hasStripeAccount && authProfile?.stripe_onboarding_complete);
@@ -152,25 +155,68 @@ function Profile() {
             .from('marketplace_listings')
             .select('*')
             .eq('user_id', viewedUserId)
-            .eq('status', 'active')
             .order('created_at', { ascending: false }),
           supabase
             .from('marketplace_orders')
-            .select('*, marketplace_listings(title, price, photos, location)')
+            .select('*')
             .or(`buyer_id.eq.${viewedUserId},seller_id.eq.${viewedUserId}`)
-            .in('status', ['pending', 'held', 'delivered_pending_confirmation', 'disputed'])
             .order('created_at', { ascending: false }),
         ]);
 
         setMarketplaceListings(listingsData.data || []);
         setMarketplaceOrders(ordersData.data || []);
       } catch (err) {
-        console.warn('Error loading marketplace data:', err);
+        console.warn('Failed to load marketplace data:', err);
       }
     }
 
     loadMarketplaceData();
   }, [viewedUserId]);
+
+  useEffect(() => {
+    if (!viewedUserId) return;
+
+    async function loadHousingData() {
+      try {
+        const housingData = await getHousingListings({ user_id: viewedUserId });
+        setHousingListings(housingData);
+        setIsLandlord(housingData.length > 0);
+      } catch (err) {
+        console.warn('Failed to load housing data:', err);
+      }
+    }
+
+    loadHousingData();
+  }, [viewedUserId]);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const verificationStatus = urlParams.get('verification');
+
+    if (verificationStatus === 'success' && isOwnProfile) {
+      async function startIdentityVerification() {
+        try {
+          const token = (await supabase.auth.getSession()).data.session?.access_token;
+          const response = await fetch('/api/stripe?action=create-identity-verification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          });
+          const data = await response.json();
+          if (response.ok) {
+            window.location.href = data.url;
+          } else {
+            setProfileStatus(data.error || 'Failed to start identity verification');
+          }
+        } catch (err) {
+          setProfileStatus('Failed to start identity verification');
+        }
+      }
+
+      startIdentityVerification();
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [isOwnProfile]);
 
   useEffect(() => {
     const resumeRef = getProfileResumePath(profileData?.profile);
@@ -429,7 +475,10 @@ function Profile() {
             </span>
             <div>
               <span className="eyebrow">PhillyGrind Profile</span>
-              <h1>{profileData.profileName}</h1>
+              <div className="profile-name-row">
+                <h1>{profileData.profileName}</h1>
+                {profile?.identity_verified && <span className="verified-badge-small">✓</span>}
+              </div>
               <p>
                 Member since{' '}
                 {profileData.profileCreatedAt
@@ -526,6 +575,54 @@ function Profile() {
                 </div>
               )}
               {twoFactorError && twoFactorStep === 'idle' && <p className="error-text">{twoFactorError}</p>}
+            </section>
+          )}
+
+          {isOwnProfile && (
+            <section className="profile-section-card">
+              <div className="profile-section-heading">
+                <span className="eyebrow">Identity Verification</span>
+                <h2>Verified Badge</h2>
+              </div>
+              {authProfile?.identity_verified ? (
+                <div className="verification-badge-display">
+                  <span className="verified-badge">✓ Verified</span>
+                  <p>Your identity has been verified. Your profile and listings display a verified badge to build trust with the PhillyGrind community.</p>
+                </div>
+              ) : authProfile?.verification_status === 'pending' ? (
+                <div className="verification-pending">
+                  <span className="pending-badge">Pending Verification</span>
+                  <p>Your identity verification is being processed. This typically takes a few minutes. You'll be notified once it's complete.</p>
+                </div>
+              ) : isLandlord ? (
+                <div className="verification-action">
+                  <p>Get a blue verified badge on your profile and Housing listings by verifying your identity with Stripe Identity. This builds trust with renters and shows you're a legitimate landlord.</p>
+                  <button className="primary-button" type="button" onClick={async () => {
+                    try {
+                      const token = (await supabase.auth.getSession()).data.session?.access_token;
+                      const response = await fetch('/api/stripe?action=create-verification-checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                      });
+                      const data = await response.json();
+                      if (response.ok) {
+                        window.location.href = data.url;
+                      } else {
+                        setProfileStatus(data.error || 'Failed to start verification');
+                      }
+                    } catch (err) {
+                      setProfileStatus('Failed to start verification');
+                    }
+                  }}>
+                    Get Verified ($2)
+                  </button>
+                </div>
+              ) : (
+                <div className="verification-coming-soon">
+                  <span className="coming-soon-badge">Coming Soon</span>
+                  <p>Identity verification is currently available for landlords who have posted Housing listings. Post a Housing listing to unlock verification.</p>
+                </div>
+              )}
             </section>
           )}
 

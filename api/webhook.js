@@ -101,6 +101,35 @@ export default async function handler(req, res) {
       }
     }
 
+    if (event.type === 'identity.verification_session.verified') {
+      const verificationSession = event.data.object;
+      const userId = verificationSession.metadata?.user_id;
+      if (userId) {
+        await supabaseAdmin
+          .from('profiles')
+          .update({
+            identity_verified: true,
+            verification_status: 'verified',
+          })
+          .eq('id', userId);
+        console.log('[Webhook] Identity verified for user:', userId);
+      }
+    }
+
+    if (event.type === 'identity.verification_session.requires_input') {
+      const verificationSession = event.data.object;
+      const userId = verificationSession.metadata?.user_id;
+      if (userId) {
+        await supabaseAdmin
+          .from('profiles')
+          .update({
+            verification_status: 'failed',
+          })
+          .eq('id', userId);
+        console.log('[Webhook] Identity verification requires input/failed for user:', userId);
+      }
+    }
+
     res.status(200).json({ received: true });
   } catch (error) {
     if (error instanceof Stripe.errors.StripeSignatureVerificationError) {

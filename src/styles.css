@@ -3347,7 +3347,6 @@ body {
 [data-theme="dark"] .two-factor-code-input input {
   background: var(--card);
   color: var(--ink);
-  border-color: var(--line);
 }
 
 .two-factor-code-input input:focus {
@@ -3359,6 +3358,106 @@ body {
 [data-theme="dark"] .two-factor-code-input input:focus {
   border-color: #818cf8;
   box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.1);
+}
+
+.verification-badge-display,
+.verification-pending,
+.verification-action,
+.verification-coming-soon {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+[data-theme="dark"] .verified-badge {
+  background: rgba(59, 130, 246, 0.20);
+  color: #93c5fd;
+}
+
+.pending-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #fef3c7;
+  color: #b45309;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+[data-theme="dark"] .pending-badge {
+  background: rgba(251, 191, 36, 0.20);
+  color: #fcd34d;
+}
+
+.coming-soon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #e5e7eb;
+  color: #6b7280;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+[data-theme="dark"] .coming-soon-badge {
+  background: rgba(107, 114, 128, 0.20);
+  color: #9ca3af;
+}
+
+.verification-badge-display p,
+.verification-pending p,
+.verification-action p,
+.verification-coming-soon p {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+[data-theme="dark"] .verification-badge-display p,
+[data-theme="dark"] .verification-pending p,
+[data-theme="dark"] .verification-action p,
+[data-theme="dark"] .verification-coming-soon p {
+  color: var(--muted);
+}
+
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.verified-badge-small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+[data-theme="dark"] .verified-badge-small {
+  background: rgba(59, 130, 246, 0.20);
+  color: #93c5fd;
 }
 
 .two-factor-verification {

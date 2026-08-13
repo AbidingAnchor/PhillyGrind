@@ -41,7 +41,7 @@ function normalizeListing(listing) {
     type: 'housing',
     landlordName,
     posterName: landlordName,
-    landlordVerified: Boolean(profile.landlord_verified),
+    landlordVerified: Boolean(profile.identity_verified),
     landlordWarning: Boolean(profile.landlord_warning),
     landlordAvatarUrl: profile.avatar_url || '',
     landlordMemberSince: profile.created_at || listing.created_at,
