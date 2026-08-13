@@ -1232,6 +1232,7 @@ create table if not exists moderation_logs (
   flagged_phrases text[] not null default '{}',
   explanation text,
   content_preview text,
+  reviewed boolean not null default false,
   created_at timestamptz default now()
 );
 

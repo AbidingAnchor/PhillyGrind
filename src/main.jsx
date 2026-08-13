@@ -29,6 +29,7 @@ import AdminReports from './pages/admin/AdminReports.jsx';
 import AdminVerifications from './pages/admin/AdminVerifications.jsx';
 import AdminHousing from './pages/admin/AdminHousing.jsx';
 import AdminCommunity from './pages/admin/AdminCommunity.jsx';
+import AdminModeration from './pages/admin/AdminModeration.jsx';
 import Housing from './pages/Housing.jsx';
 import PostHousing from './pages/PostHousing.jsx';
 import HousingDetail from './pages/HousingDetail.jsx';
@@ -77,6 +78,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 <Route path="verifications" element={<AdminVerifications />} />
                 <Route path="housing" element={<AdminHousing />} />
                 <Route path="community" element={<AdminCommunity />} />
+                <Route path="moderation" element={<AdminModeration />} />
               </Route>
               <Route path="/jobs/:id" element={<ListingDetail type="job" />} />
               <Route path="/gigs/:id" element={<ListingDetail type="gig" />} />

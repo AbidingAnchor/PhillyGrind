@@ -97,6 +97,60 @@ export async function adminReportAction(reportId, action, warnMessage) {
   });
 }
 
+export async function getModerationLogs({ category = 'all', status = 'all', reviewed = 'all' } = {}) {
+  const { data, error } = await supabase
+    .from('moderation_logs')
+    .select(`
+      *,
+      profiles:user_id (
+        name,
+        email
+      )
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  let filtered = data ?? [];
+
+  if (category !== 'all') {
+    filtered = filtered.filter(log => log.category === category);
+  }
+
+  if (status !== 'all') {
+    filtered = filtered.filter(log => log.status === status);
+  }
+
+  if (reviewed !== 'all') {
+    filtered = filtered.filter(log => log.reviewed === (reviewed === 'reviewed'));
+  }
+
+  return { logs: filtered };
+}
+
+export async function markModerationLogReviewed(logId) {
+  const { data, error } = await supabase
+    .from('moderation_logs')
+    .update({ reviewed: true })
+    .eq('id', logId)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function getUnreviewedModerationCount() {
+  const { count, error } = await supabase
+    .from('moderation_logs')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'flagged_for_review')
+    .eq('reviewed', false);
+
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
 export async function adminDeleteListing(listingId, listingType) {
   return listingRequest('admin-delete-listing', {
     listing_id: listingId,
