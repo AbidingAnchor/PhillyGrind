@@ -22,17 +22,23 @@ export async function sendContactSubmission({ name, email, category, message }) 
 
 async function sendContactNotification(submission) {
   try {
+    console.log('[Contact API] Sending email notification for submission:', submission.id);
     const response = await fetch('/api/send-contact-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(submission),
     });
     
+    const payload = await response.json();
+    console.log('[Contact API] Email notification response:', { status: response.status, payload });
+
     if (!response.ok) {
-      console.error('Failed to send contact email notification');
+      console.error('[Contact API] Failed to send contact email notification:', payload);
+    } else {
+      console.log('[Contact API] Email notification sent successfully');
     }
   } catch (error) {
-    console.error('Error sending contact email notification:', error);
+    console.error('[Contact API] Error sending contact email notification:', error);
   }
 }
 
