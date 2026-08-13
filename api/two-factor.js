@@ -10,13 +10,20 @@ export default async function handler(req, res) {
   if (!requireMethod(req, res, 'POST')) return;
 
   try {
+    const { action } = req.body ?? {};
+
+    // send-contact-email does not require authentication (for anonymous Contact Us form)
+    if (action === 'send-contact-email') {
+      await handleSendContactEmail(req, res);
+      return;
+    }
+
+    // All other actions require authentication
     const user = await getUserFromRequest(req);
     if (!user) {
       sendJson(res, 401, { error: 'Authentication required.' });
       return;
     }
-
-    const { action } = req.body ?? {};
 
     if (action === 'send-code') {
       await handleSendCode(req, res, user);
@@ -30,11 +37,6 @@ export default async function handler(req, res) {
 
     if (action === 'toggle-2fa') {
       await handleToggle2FA(req, res, user);
-      return;
-    }
-
-    if (action === 'send-contact-email') {
-      await handleSendContactEmail(req, res);
       return;
     }
 
