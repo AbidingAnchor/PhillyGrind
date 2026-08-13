@@ -1222,6 +1222,43 @@ create index if not exists community_reports_post_id_idx on community_reports(po
 create index if not exists community_reports_reporter_id_idx on community_reports(reporter_id);
 create index if not exists community_reports_created_at_idx on community_reports(created_at desc);
 
+-- Moderation Logs Table
+create table if not exists moderation_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  category text not null,
+  rule_name text not null,
+  status text not null check (status in ('auto_rejected', 'flagged_for_review')),
+  flagged_phrases text[] not null default '{}',
+  explanation text,
+  content_preview text,
+  created_at timestamptz default now()
+);
+
+alter table moderation_logs enable row level security;
+
+create policy "Admins can read moderation logs"
+  on moderation_logs for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from profiles
+      where profiles.id = auth.uid()
+        and profiles.email = 'drewnegron95@gmail.com'
+    )
+  );
+
+create policy "Users can insert own moderation logs"
+  on moderation_logs for insert
+  to authenticated
+  with check (auth.uid() = user_id);
+
+create index if not exists moderation_logs_user_id_idx on moderation_logs(user_id);
+create index if not exists moderation_logs_category_idx on moderation_logs(category);
+create index if not exists moderation_logs_status_idx on moderation_logs(status);
+create index if not exists moderation_logs_created_at_idx on moderation_logs(created_at desc);
+
 -- Helper functions for community post counts
 create or replace function increment_community_post_like_count(post_id uuid)
 returns void

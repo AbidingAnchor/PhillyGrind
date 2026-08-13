@@ -102,25 +102,22 @@ async function logToAdminReports({ category, ruleName, content, flagged_phrases,
     
     if (!userData?.user) return;
 
-    // Map category to reported_type that matches admin_reports expectations
-    const reportedType = category === 'community' ? 'community' : category;
-
     const { error } = await supabase
-      .from('admin_reports')
+      .from('moderation_logs')
       .insert({
         user_id: userData.user.id,
-        reported_type: reportedType,
-        subjectTitle: `${ruleName} - ${status === 'auto_rejected' ? 'Auto-Rejected' : 'Flagged for Review'}`,
-        reason: `Flagged phrases: ${flagged_phrases.join(', ')}`,
-        details: explanation,
-        description: content.substring(0, 500),
+        category,
+        rule_name: ruleName,
         status,
+        flagged_phrases,
+        explanation,
+        content_preview: content.substring(0, 500),
       });
 
     if (error) {
-      console.error('[moderation] Failed to log to admin reports:', error);
+      console.error('[moderation] Failed to log to moderation_logs:', error);
     }
   } catch (error) {
-    console.error('[moderation] Failed to log to admin reports:', error);
+    console.error('[moderation] Failed to log to moderation_logs:', error);
   }
 }
