@@ -84,12 +84,16 @@ export async function getHousingListings(filters = {}) {
   let query = supabase
     .from('housing_listings')
     .select('*')
-    .eq('status', 'active')
     .order('created_at', { ascending: false });
 
   if (user_id) {
     query = query.eq('user_id', user_id);
   }
+
+  // Temporarily comment out status filter for debugging landlord detection
+  // if (!user_id) {
+  //   query = query.eq('status', 'active');
+  // }
 
   if (neighborhood && neighborhood !== 'Any') {
     query = query.eq('neighborhood', neighborhood);
