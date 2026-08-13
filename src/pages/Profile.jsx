@@ -179,6 +179,7 @@ function Profile() {
     async function loadHousingData() {
       try {
         const housingData = await getHousingListings({ user_id: viewedUserId });
+        console.log('[Profile] Housing data for user:', viewedUserId, housingData);
         setHousingListings(housingData);
         setIsLandlord(housingData.length > 0);
       } catch (err) {
