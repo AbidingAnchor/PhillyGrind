@@ -1,4 +1,5 @@
 import { getUserFromRequest, requireMethod, sendJson, supabaseAdmin } from './_utils.js';
+import { createTwoFactorEmail, createContactEmail } from './_utils/emailTemplate.js';
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
@@ -86,6 +87,7 @@ async function handleSendCode(req, res, user) {
   }
 
   // Send email
+  const emailHtml = createTwoFactorEmail(code);
   const resendResponse = await fetch(RESEND_API_URL, {
     method: 'POST',
     headers: {
@@ -96,12 +98,7 @@ async function handleSendCode(req, res, user) {
       from: 'PhillyGrind <notifications@phillygrind.work>',
       to: email,
       subject: 'Your PhillyGrind Verification Code',
-      html: `
-        <h2>Your Verification Code</h2>
-        <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">${code}</p>
-        <p>This code will expire in 5 minutes.</p>
-        <p>If you didn't request this code, you can safely ignore this email.</p>
-      `,
+      html: emailHtml,
     }),
   });
 
@@ -234,32 +231,10 @@ async function handleSendContactEmail(req, res) {
     return;
   }
 
-  const categoryLabels = {
-    general: 'General Inquiry',
-    data_deletion: 'Data Deletion Request',
-    fair_housing_complaint: 'Fair Housing Complaint',
-    dispute_report: 'Dispute Report',
-    other: 'Other',
-  };
+  // Generate branded email
+  const emailHtml = createContactEmail({ name, email, category, message, created_at });
 
-  const emailPayload = {
-    from: 'PhillyGrind <notifications@phillygrind.work>',
-    to: 'drewnegron95@gmail.com',
-    subject: `New Contact Submission: ${categoryLabels[category] || category}`,
-    html: `
-      <h2>New Contact Submission</h2>
-      <p><strong>From:</strong> ${name} &lt;${email}&gt;</p>
-      <p><strong>Category:</strong> ${categoryLabels[category] || category}</p>
-      <p><strong>Submitted:</strong> ${new Date(created_at).toLocaleString()}</p>
-      <hr />
-      <h3>Message:</h3>
-      <p style="white-space: pre-wrap;">${message}</p>
-      <hr />
-      <p><em>You can reply directly to ${email} to respond to this submission.</em></p>
-    `,
-  };
-
-  console.log('[Contact Email] Sending to Resend:', { to: emailPayload.to, subject: emailPayload.subject });
+  console.log('[Contact Email] Sending to Resend:', { to: 'drewnegron95@gmail.com' });
 
   const resendResponse = await fetch(RESEND_API_URL, {
     method: 'POST',
@@ -267,7 +242,12 @@ async function handleSendContactEmail(req, res) {
       Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(emailPayload),
+    body: JSON.stringify({
+      from: 'PhillyGrind <notifications@phillygrind.work>',
+      to: 'drewnegron95@gmail.com',
+      subject: `New Contact Submission: ${category}`,
+      html: emailHtml,
+    }),
   });
 
   const payload = await resendResponse.json();
