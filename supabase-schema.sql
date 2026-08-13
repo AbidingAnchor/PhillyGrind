@@ -1111,9 +1111,13 @@ create table if not exists community_post_likes (
   id uuid primary key default gen_random_uuid(),
   post_id uuid references community_posts(id) on delete cascade not null,
   user_id uuid references auth.users(id) on delete cascade not null,
+  reaction_type text not null default 'like',
   created_at timestamptz default now(),
   unique(post_id, user_id)
 );
+
+-- Add reaction_type column if it doesn't exist (for existing tables)
+alter table community_post_likes add column if not exists reaction_type text not null default 'like';
 
 create table if not exists community_reports (
   id uuid primary key default gen_random_uuid(),
@@ -1188,6 +1192,12 @@ create policy "Users can delete own community post likes"
   on community_post_likes for delete
   to authenticated
   using (auth.uid() = user_id);
+
+create policy "Users can update own community post likes"
+  on community_post_likes for update
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 -- RLS Policies for community_reports
 alter table community_reports enable row level security;

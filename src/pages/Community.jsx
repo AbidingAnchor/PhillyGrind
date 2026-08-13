@@ -185,13 +185,12 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
     console.log('[Community PostCard] Selected:', reactionType, 'replacing:', userReaction);
     try {
       const hadReaction = !!userReaction;
-      const toggleResult = await toggleCommunityPostReaction(post.id, reactionType);
-      console.log('[Community PostCard] toggleCommunityPostReaction returned:', toggleResult, 'requested:', reactionType);
+      await toggleCommunityPostReaction(post.id, reactionType);
+      console.log('[Community PostCard] toggleCommunityPostReaction completed for:', reactionType);
       
-      // Use the return value from toggleCommunityPostReaction instead of re-fetching
-      // to avoid read-after-write lag issues
-      const newReaction = toggleResult;
-      console.log('[Community PostCard] Using toggle result as newReaction:', newReaction);
+      // Re-fetch the current reaction from the database to ensure we have the persisted value
+      const newReaction = await getUserReaction(post.id);
+      console.log('[Community PostCard] Re-fetched user reaction from DB:', newReaction);
       
       setUserReaction(newReaction);
       setLiked(!!newReaction);
