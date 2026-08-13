@@ -11,8 +11,10 @@ import {
   BadgeCheck,
   Home,
   MessageSquare,
+  Mail,
 } from 'lucide-react';
 import { getUnreviewedModerationCount } from '../lib/adminApi.js';
+import { getNewContactCount } from '../lib/contactApi.js';
 
 const navItems = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -23,23 +25,35 @@ const navItems = [
   { to: '/admin/disputes', label: 'Disputes', icon: AlertTriangle },
   { to: '/admin/reports', label: 'Reports', icon: ClipboardList },
   { to: '/admin/verifications', label: 'Verifications', icon: BadgeCheck },
-  { to: '/admin/moderation', label: 'Moderation', icon: ShieldAlert, showBadge: true },
+  { to: '/admin/moderation', label: 'Moderation', icon: ShieldAlert, showBadge: 'moderation' },
+  { to: '/admin/contact', label: 'Contact', icon: Mail, showBadge: 'contact' },
 ];
 
 export default function AdminLayout() {
   const [unreviewedCount, setUnreviewedCount] = useState(0);
+  const [newContactCount, setNewContactCount] = useState(0);
 
   useEffect(() => {
-    async function loadCount() {
+    async function loadCounts() {
       try {
-        const count = await getUnreviewedModerationCount();
-        setUnreviewedCount(count);
+        const [modCount, contactCount] = await Promise.all([
+          getUnreviewedModerationCount(),
+          getNewContactCount(),
+        ]);
+        setUnreviewedCount(modCount);
+        setNewContactCount(contactCount);
       } catch (error) {
-        console.error('Failed to load moderation count:', error);
+        console.error('Failed to load admin counts:', error);
       }
     }
-    loadCount();
+    loadCounts();
   }, []);
+
+  const getBadgeCount = (badgeType) => {
+    if (badgeType === 'moderation') return unreviewedCount;
+    if (badgeType === 'contact') return newContactCount;
+    return 0;
+  };
 
   return (
     <section className="page-section admin-dashboard">
@@ -62,8 +76,8 @@ export default function AdminLayout() {
               >
                 <Icon size={18} />
                 {label}
-                {showBadge && unreviewedCount > 0 && (
-                  <span className="admin-nav-badge">{unreviewedCount}</span>
+                {showBadge && getBadgeCount(showBadge) > 0 && (
+                  <span className="admin-nav-badge">{getBadgeCount(showBadge)}</span>
                 )}
               </NavLink>
             ))}

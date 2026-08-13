@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 function Privacy() {
   return (
     <section className="legal-page">
@@ -49,7 +51,7 @@ function Privacy() {
           <li>Content submitted for a listing or post is sent to our AI moderation service (which may include a third-party AI provider) for automated analysis.</li>
           <li>If a violation is flagged, the flagged content, the specific phrases identified, and the rule violated are logged internally for administrative review.</li>
           <li>We do not use content submitted for moderation to train third-party AI models, to the extent controllable by our provider agreements.</li>
-          <li>Moderation decisions may be reviewed and, where appropriate, appealed by contacting [support email].</li>
+          <li>Moderation decisions may be reviewed and, where appropriate, appealed by contacting us through our <Link to="/contact">Contact page</Link>.</li>
         </ul>
 
         <h2>4. How We Share Information</h2>
@@ -76,7 +78,7 @@ function Privacy() {
           <li>Request deletion of your account and associated personal information</li>
           <li>Object to or restrict certain processing of your information</li>
         </ul>
-        <p>To exercise these rights, contact us at [support email]. We will respond within a reasonable time and in accordance with applicable law, including the Pennsylvania and any applicable state privacy frameworks.</p>
+        <p>To exercise these rights, contact us through our <Link to="/contact">Contact page</Link>. We will respond within a reasonable time and in accordance with applicable law, including the Pennsylvania and any applicable state privacy frameworks.</p>
 
         <h2>8. Children's Privacy</h2>
         <p>PhillyGrind is not intended for use by anyone under 18. We do not knowingly collect personal information from anyone under 18. If we learn that we have done so, we will delete that information.</p>
@@ -91,7 +93,7 @@ function Privacy() {
         <p>We may update this Privacy Policy from time to time. Material changes will be reflected by updating the "Last Updated" date above, and, where appropriate, additional notice will be provided.</p>
 
         <h2>12. Contact Us</h2>
-        <p>Questions about this Privacy Policy or your information can be sent to [support email].</p>
+        <p>Questions about this Privacy Policy or your information can be sent through our <Link to="/contact">Contact page</Link>.</p>
 
         <p className="legal-disclaimer"><em>This document is a working draft. PhillyGrind recommends review by a licensed attorney before this document is treated as final, particularly regarding data handling obligations tied to payment processing, housing verification documents, and AI-assisted moderation.</em></p>
       </article>

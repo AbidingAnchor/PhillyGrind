@@ -1248,6 +1248,62 @@ create table if not exists moderation_logs (
 
 alter table moderation_logs enable row level security;
 
+-- Contact Submissions Table
+create table if not exists contact_submissions (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  email text not null,
+  category text not null check (category in ('general', 'data_deletion', 'fair_housing_complaint', 'dispute_report', 'other')),
+  message text not null,
+  status text not null default 'new' check (status in ('new', 'in_progress', 'resolved')),
+  created_at timestamptz default now()
+);
+
+alter table contact_submissions enable row level security;
+
+-- RLS Policies for contact_submissions
+create policy "Anyone can insert contact submissions"
+  on contact_submissions for insert
+  to anon
+  with check (true);
+
+create policy "Admins can read contact submissions"
+  on contact_submissions for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from auth.users
+      where auth.users.id = auth.uid()
+      and auth.users.email = 'drewnegron95@gmail.com'
+    )
+  );
+
+create policy "Admins can update contact submissions"
+  on contact_submissions for update
+  to authenticated
+  using (
+    exists (
+      select 1
+      from auth.users
+      where auth.users.id = auth.uid()
+      and auth.users.email = 'drewnegron95@gmail.com'
+    )
+  )
+  with check (
+    exists (
+      select 1
+      from auth.users
+      where auth.users.id = auth.uid()
+      and auth.users.email = 'drewnegron95@gmail.com'
+    )
+  );
+
+-- Indexes for contact_submissions
+create index if not exists contact_submissions_status_idx on contact_submissions(status);
+create index if not exists contact_submissions_category_idx on contact_submissions(category);
+create index if not exists contact_submissions_created_at_idx on contact_submissions(created_at desc);
+
 create policy "Admins can read moderation logs"
   on moderation_logs for select
   to authenticated

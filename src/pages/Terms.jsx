@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 function Terms() {
   return (
     <section className="legal-page">
@@ -15,7 +17,7 @@ function Terms() {
         <p>You must be at least 18 years old to create an account or use PhillyGrind. By using the Platform, you represent that you meet this requirement and that all information you provide is accurate and current.</p>
 
         <h2>2. Account Registration</h2>
-        <p>You are responsible for maintaining the confidentiality of your account credentials and for all activity under your account. Notify us immediately at [support email] if you suspect unauthorized use of your account.</p>
+        <p>You are responsible for maintaining the confidentiality of your account credentials and for all activity under your account. Notify us immediately through our <Link to="/contact">Contact page</Link> if you suspect unauthorized use of your account.</p>
         <p>You agree not to:</p>
         <ul>
           <li>Create an account using false information</li>
@@ -113,7 +115,7 @@ function Terms() {
           <li><strong>Human admin review</strong> of flagged content</li>
         </ul>
         <p>Content that receives a high-confidence violation determination may be automatically rejected before it is published. Content flagged with lower confidence is logged for human review and may remain visible pending that review.</p>
-        <p><strong>Limitations:</strong> Automated moderation is a tool to reduce risk, not a guarantee that all violating content will be caught or that no compliant content will be mistakenly flagged. Users may appeal a moderation decision by contacting [support email].</p>
+        <p><strong>Limitations:</strong> Automated moderation is a tool to reduce risk, not a guarantee that all violating content will be caught or that no compliant content will be mistakenly flagged. Users may appeal a moderation decision by contacting us through our <Link to="/contact">Contact page</Link>.</p>
 
         <h2>10. Prohibited Conduct (Platform-Wide)</h2>
         <p>In addition to category-specific rules above, users may not:</p>
@@ -141,7 +143,7 @@ function Terms() {
         <p>These Terms are governed by the laws of the Commonwealth of Pennsylvania, without regard to conflict-of-law principles.</p>
 
         <h2>16. Contact</h2>
-        <p>Questions about these Terms can be sent to [support email].</p>
+        <p>Questions about these Terms can be sent through our <Link to="/contact">Contact page</Link>.</p>
 
         <p className="legal-disclaimer"><em>This document is a working draft. PhillyGrind recommends review by a licensed attorney familiar with Pennsylvania and Philadelphia law before this document is treated as final, particularly given the Platform's handling of escrow payments, housing listings, and automated content moderation.</em></p>
       </article>

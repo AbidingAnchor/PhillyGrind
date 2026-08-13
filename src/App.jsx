@@ -122,6 +122,7 @@ function App() {
           <Link to="/gigs">Gigs</Link>
           <Link to="/marketplace">Marketplace</Link>
           <Link to="/housing">Housing</Link>
+          <Link to="/contact">Contact</Link>
           <Link to="/terms">Terms</Link>
           <Link to="/privacy">Privacy</Link>
         </nav>

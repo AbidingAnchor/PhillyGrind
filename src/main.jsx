@@ -15,6 +15,7 @@ import ListingDetail from './pages/ListingDetail.jsx';
 import Login from './pages/Login.jsx';
 import SignUp from './pages/SignUp.jsx';
 import Messages from './pages/Messages.jsx';
+import Contact from './pages/Contact.jsx';
 import Terms from './pages/Terms.jsx';
 import Privacy from './pages/Privacy.jsx';
 import Profile from './pages/Profile.jsx';
@@ -30,6 +31,7 @@ import AdminVerifications from './pages/admin/AdminVerifications.jsx';
 import AdminHousing from './pages/admin/AdminHousing.jsx';
 import AdminCommunity from './pages/admin/AdminCommunity.jsx';
 import AdminModeration from './pages/admin/AdminModeration.jsx';
+import AdminContact from './pages/admin/AdminContact.jsx';
 import Housing from './pages/Housing.jsx';
 import PostHousing from './pages/PostHousing.jsx';
 import HousingDetail from './pages/HousingDetail.jsx';
@@ -59,6 +61,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/post-hiring-event" element={<PostHiringEvent />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<SignUp />} />
+              <Route path="/contact" element={<Contact />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -79,6 +82,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 <Route path="housing" element={<AdminHousing />} />
                 <Route path="community" element={<AdminCommunity />} />
                 <Route path="moderation" element={<AdminModeration />} />
+                <Route path="contact" element={<AdminContact />} />
               </Route>
               <Route path="/jobs/:id" element={<ListingDetail type="job" />} />
               <Route path="/gigs/:id" element={<ListingDetail type="gig" />} />
