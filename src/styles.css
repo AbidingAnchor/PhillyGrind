@@ -3248,6 +3248,118 @@ body {
   color: var(--muted);
 }
 
+.two-factor-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.two-factor-toggle p {
+  margin: 0;
+  color: var(--muted);
+}
+
+[data-theme="dark"] .two-factor-toggle p {
+  color: var(--muted);
+}
+
+.two-factor-verify,
+.two-factor-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.two-factor-verify p,
+.two-factor-confirm p {
+  margin: 0;
+  color: var(--muted);
+}
+
+[data-theme="dark"] .two-factor-verify p,
+[data-theme="dark"] .two-factor-confirm p {
+  color: var(--muted);
+}
+
+.two-factor-code-input {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.two-factor-code-input input {
+  width: 150px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-align: center;
+  font-family: monospace;
+  background: #fff;
+  color: #111827;
+}
+
+[data-theme="dark"] .two-factor-code-input input {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.two-factor-code-input input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+[data-theme="dark"] .two-factor-code-input input:focus {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.1);
+}
+
+.two-factor-verification {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 40px 0;
+  text-align: center;
+}
+
+.two-factor-verification h2 {
+  margin: 0 0 16px;
+  color: #111827;
+}
+
+[data-theme="dark"] .two-factor-verification h2 {
+  color: var(--ink);
+}
+
+.two-factor-verification p {
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+
+[data-theme="dark"] .two-factor-verification p {
+  color: var(--muted);
+}
+
+.two-factor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.two-factor-resend {
+  margin-top: 8px;
+}
+
+.two-factor-resend button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .terms-document pre {
   margin: 0;
   white-space: pre-wrap;

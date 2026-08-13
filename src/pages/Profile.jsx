@@ -8,6 +8,7 @@ import { checkConnectStatus, getResumeUrl, updateProfile, uploadAvatar, uploadRe
 import { getUserReviews } from '../lib/reviewsApi.js';
 import { getMyBids } from '../lib/bidsApi.js';
 import { createConnectAccount } from '../lib/ordersApi.js';
+import { sendTwoFactorCode, toggleTwoFactorAuth, verifyTwoFactorCode } from '../lib/twoFactorApi.js';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
 import { getUserAvatarColor } from '../lib/reactions.js';
@@ -91,6 +92,11 @@ function Profile() {
   const [connectingPayouts, setConnectingPayouts] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [twoFactorStep, setTwoFactorStep] = useState('idle'); // idle, verify, confirm
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [twoFactorSending, setTwoFactorSending] = useState(false);
+  const [twoFactorError, setTwoFactorError] = useState('');
   const isOwnProfile = isLoggedIn && user?.id === viewedUserId;
   const hasStripeAccount = Boolean(isOwnProfile && authProfile?.stripe_account_id);
   const payoutsConnected = Boolean(hasStripeAccount && authProfile?.stripe_onboarding_complete);
@@ -200,6 +206,12 @@ function Profile() {
     };
   }, [authProfile?.stripe_account_id, authProfile?.stripe_onboarding_complete, isOwnProfile, refreshProfile]);
 
+  useEffect(() => {
+    if (isOwnProfile && authProfile) {
+      setTwoFactorEnabled(authProfile.two_factor_enabled || false);
+    }
+  }, [isOwnProfile, authProfile]);
+
   function updateField(event) {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
@@ -300,6 +312,58 @@ function Profile() {
       setProfileStatus(err.message || 'Could not start boost checkout.');
       setRenewingBoostId('');
     }
+  }
+
+  async function handleSendTwoFactorCode() {
+    setTwoFactorSending(true);
+    setTwoFactorError('');
+
+    try {
+      await sendTwoFactorCode(authProfile.email);
+      setTwoFactorStep('verify');
+    } catch (err) {
+      setTwoFactorError(err.message || 'Failed to send verification code.');
+    } finally {
+      setTwoFactorSending(false);
+    }
+  }
+
+  async function handleVerifyTwoFactorCode() {
+    setTwoFactorSending(true);
+    setTwoFactorError('');
+
+    try {
+      await verifyTwoFactorCode(twoFactorCode);
+      setTwoFactorStep('confirm');
+    } catch (err) {
+      setTwoFactorError(err.message || 'Invalid or expired code.');
+    } finally {
+      setTwoFactorSending(false);
+    }
+  }
+
+  async function handleToggleTwoFactor() {
+    setTwoFactorSending(true);
+    setTwoFactorError('');
+
+    try {
+      await toggleTwoFactorAuth(!twoFactorEnabled, twoFactorCode);
+      setTwoFactorEnabled(!twoFactorEnabled);
+      setTwoFactorStep('idle');
+      setTwoFactorCode('');
+      setProfileStatus(`Two-factor authentication ${!twoFactorEnabled ? 'enabled' : 'disabled'}.`);
+      await refreshProfile();
+    } catch (err) {
+      setTwoFactorError(err.message || 'Failed to update 2FA settings.');
+    } finally {
+      setTwoFactorSending(false);
+    }
+  }
+
+  function resetTwoFactorFlow() {
+    setTwoFactorStep('idle');
+    setTwoFactorCode('');
+    setTwoFactorError('');
   }
 
   const profile = profileData?.profile;
@@ -405,6 +469,63 @@ function Profile() {
                   {connectingPayouts ? 'Connecting...' : hasStripeAccount ? 'Finish Stripe' : 'Connect Stripe'}
                 </button>
               )}
+            </section>
+          )}
+
+          {isOwnProfile && (
+            <section className="profile-section-card">
+              <div className="profile-section-heading">
+                <span className="eyebrow">Security</span>
+                <h2>Two-Factor Authentication</h2>
+              </div>
+              {twoFactorStep === 'idle' && (
+                <div className="two-factor-toggle">
+                  <div>
+                    <p>
+                      {twoFactorEnabled
+                        ? 'Two-factor authentication is enabled. You will need to enter a verification code sent to your email when logging in.'
+                        : 'Add an extra layer of security to your account by requiring a verification code when logging in.'}
+                    </p>
+                  </div>
+                  <button
+                    className={twoFactorEnabled ? 'secondary-button' : 'primary-button'}
+                    type="button"
+                    onClick={() => twoFactorEnabled ? handleToggleTwoFactor() : handleSendTwoFactorCode()}
+                    disabled={twoFactorSending}
+                  >
+                    {twoFactorSending ? 'Processing...' : twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
+                  </button>
+                </div>
+              )}
+              {twoFactorStep === 'verify' && (
+                <div className="two-factor-verify">
+                  <p>We sent a 6-digit code to <strong>{authProfile.email}</strong>. Enter it below to confirm you want to enable 2FA.</p>
+                  <div className="two-factor-code-input">
+                    <input
+                      type="text"
+                      value={twoFactorCode}
+                      onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="000000"
+                      maxLength={6}
+                    />
+                    <button className="primary-button" type="button" onClick={handleVerifyTwoFactorCode} disabled={twoFactorSending || twoFactorCode.length !== 6}>
+                      {twoFactorSending ? 'Verifying...' : 'Verify'}
+                    </button>
+                  </div>
+                  <button className="text-link" type="button" onClick={resetTwoFactorFlow}>Cancel</button>
+                  {twoFactorError && <p className="error-text">{twoFactorError}</p>}
+                </div>
+              )}
+              {twoFactorStep === 'confirm' && (
+                <div className="two-factor-confirm">
+                  <p>Verification successful! Click below to complete enabling two-factor authentication.</p>
+                  <button className="primary-button" type="button" onClick={handleToggleTwoFactor} disabled={twoFactorSending}>
+                    {twoFactorSending ? 'Enabling...' : 'Confirm Enable 2FA'}
+                  </button>
+                  <button className="text-link" type="button" onClick={resetTwoFactorFlow}>Cancel</button>
+                </div>
+              )}
+              {twoFactorError && twoFactorStep === 'idle' && <p className="error-text">{twoFactorError}</p>}
             </section>
           )}
 

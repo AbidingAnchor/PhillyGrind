@@ -23,10 +23,10 @@ export async function sendContactSubmission({ name, email, category, message }) 
 async function sendContactNotification(submission) {
   try {
     console.log('[Contact API] Sending email notification for submission:', submission.id);
-    const response = await fetch('/api/send-contact-email', {
+    const response = await fetch('/api/two-factor', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(submission),
+      body: JSON.stringify({ action: 'send-contact-email', ...submission }),
     });
     
     const payload = await response.json();

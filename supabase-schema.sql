@@ -196,6 +196,9 @@ alter table profiles
 alter table profiles
   add column if not exists onboarding_complete boolean not null default false;
 
+alter table profiles
+  add column if not exists two_factor_enabled boolean not null default false;
+
 alter table notifications
   add column if not exists listing_type text;
 
@@ -1303,6 +1306,39 @@ create policy "Admins can update contact submissions"
 create index if not exists contact_submissions_status_idx on contact_submissions(status);
 create index if not exists contact_submissions_category_idx on contact_submissions(category);
 create index if not exists contact_submissions_created_at_idx on contact_submissions(created_at desc);
+
+-- Two-Factor Authentication Codes Table
+create table if not exists two_factor_codes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  code text not null check (length(code) = 6),
+  expires_at timestamptz not null,
+  used boolean not null default false,
+  created_at timestamptz default now()
+);
+
+alter table two_factor_codes enable row level security;
+
+-- RLS Policies for two_factor_codes
+create policy "Users can insert own 2FA codes"
+  on two_factor_codes for insert
+  to authenticated
+  with check (auth.uid() = user_id);
+
+create policy "Users can read own 2FA codes"
+  on two_factor_codes for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+create policy "Users can update own 2FA codes"
+  on two_factor_codes for update
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- Indexes for two_factor_codes
+create index if not exists two_factor_codes_user_id_idx on two_factor_codes(user_id);
+create index if not exists two_factor_codes_expires_at_idx on two_factor_codes(expires_at);
 
 create policy "Admins can read moderation logs"
   on moderation_logs for select

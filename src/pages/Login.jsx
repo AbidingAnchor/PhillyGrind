@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
+import TwoFactorVerification from '../components/TwoFactorVerification.jsx';
+import { sendTwoFactorCode } from '../lib/twoFactorApi.js';
 
 function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [status, setStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { signIn } = useAuth();
+  const [pendingUser, setPendingUser] = useState(null);
+  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+  const { signIn, refreshProfile } = useAuth();
   const navigate = useNavigate();
 
   function updateField(event) {
@@ -20,13 +24,47 @@ function Login() {
     setStatus('');
 
     try {
-      await signIn(form);
-      navigate('/', { replace: true });
+      const result = await signIn(form);
+      
+      // Check if user has 2FA enabled
+      const profile = await refreshProfile();
+      
+      if (profile?.two_factor_enabled) {
+        setPendingUser(result.user);
+        setRequiresTwoFactor(true);
+        // Send 2FA code
+        await sendTwoFactorCode(profile.email);
+        setStatus('');
+      } else {
+        navigate('/', { replace: true });
+      }
     } catch (error) {
       setStatus(error.message || 'Could not log in.');
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleTwoFactorVerified() {
+    navigate('/', { replace: true });
+  }
+
+  function handleTwoFactorCancel() {
+    setRequiresTwoFactor(false);
+    setPendingUser(null);
+    setStatus('Login cancelled.');
+  }
+
+  if (requiresTwoFactor && pendingUser) {
+    return (
+      <section className="auth-page">
+        <TwoFactorVerification
+          email={pendingUser.email}
+          onVerified={handleTwoFactorVerified}
+          onCancel={handleTwoFactorCancel}
+        />
+      </section>
+    );
   }
 
   return (
