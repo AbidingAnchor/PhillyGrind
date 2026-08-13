@@ -2,6 +2,7 @@ import { fallbackGigs, fallbackJobs } from '../data/listings.js';
 import { hasSupabaseConfig, supabase } from './supabase.js';
 import { attachPosterRatings, getProfileRating, getProfileRatings } from './reviewsApi.js';
 import { createListingWithModeration } from './adminApi.js';
+import { checkJobSafety, checkGigSafety } from './moderationService.js';
 
 const tableFor = (type) => (type === 'gig' ? 'gigs' : 'jobs');
 const fallbackFor = (type) => (type === 'gig' ? fallbackGigs : fallbackJobs);
@@ -415,6 +416,19 @@ export async function createListing(type, listing, options = {}) {
 
   if (userError || !userData.user) {
     throw new Error('You must be logged in to post a listing.');
+  }
+
+  // Run custom safety check based on listing type
+  if (type === 'job') {
+    const moderationResult = await checkJobSafety(payload);
+    if (moderationResult.autoRejected) {
+      throw new Error(moderationResult.error);
+    }
+  } else if (type === 'gig') {
+    const moderationResult = await checkGigSafety(payload);
+    if (moderationResult.autoRejected) {
+      throw new Error(moderationResult.error);
+    }
   }
 
   const { listing: data } = await createListingWithModeration(type, payload, { boostTier });

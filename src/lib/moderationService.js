@@ -1,8 +1,8 @@
-import { MODERATION_RULES } from './moderationRules.js';
+import { moderationRules } from './moderationRules.js';
 
 // Check for available AI providers in environment
 const AVAILABLE_PROVIDERS = {
-  openai: import.meta.env.VITE_OPENAI_API_KEY,
+  openai: import.meta.env.OPENAI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY,
   groq: import.meta.env.VITE_GROQ_API_KEY,
 };
 
@@ -16,7 +16,7 @@ function getAvailableProvider() {
   return null;
 }
 
-async function callAI(provider, systemPrompt, userMessage, model = 'gpt-4o-mini') {
+async function callAI(provider, systemPrompt, userMessage, model = 'gpt-4o-mini', temperature = 0.3) {
   const { apiKey, endpoint } = provider;
 
   const response = await fetch(endpoint, {
@@ -31,7 +31,7 @@ async function callAI(provider, systemPrompt, userMessage, model = 'gpt-4o-mini'
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage },
       ],
-      temperature: 0.3,
+      temperature,
       response_format: { type: 'json_object' },
     }),
   });
@@ -45,45 +45,99 @@ async function callAI(provider, systemPrompt, userMessage, model = 'gpt-4o-mini'
   return data.choices[0].message.content;
 }
 
-export async function checkFairHousingCompliance(description) {
+export async function checkModeration(category, content) {
   const provider = getAvailableProvider();
   
   if (!provider) {
-    console.warn('[moderation] No AI provider configured for Fair Housing check');
+    console.warn(`[moderation] No AI provider configured for ${category} check`);
     return { violation: false, skipped: true, reason: 'No AI provider configured' };
   }
 
-  const rule = MODERATION_RULES.fairHousing;
+  const rule = moderationRules[category];
+  
+  if (!rule) {
+    console.warn(`[moderation] No moderation rule found for category: ${category}`);
+    return { violation: false, skipped: true, reason: `No rule for category: ${category}` };
+  }
   
   try {
     const result = await callAI(
       provider,
       rule.systemPrompt,
-      description,
-      rule.model
+      content,
+      rule.model,
+      rule.temperature
     );
 
     const parsed = JSON.parse(result);
     
-    // Log to admin reports if violation found
+    // Decision logic
     if (parsed.violation) {
-      await logToAdminReports({
-        type: 'fair_housing',
-        description,
-        flagged_phrases: parsed.flagged_phrases,
-        explanation: parsed.explanation,
-      });
+      if (parsed.confidence === 'high') {
+        // Auto-reject with immediate feedback
+        const flaggedPhrases = parsed.flagged_phrases?.join(', ') || 'certain phrases';
+        const error = `Your post contains language that may violate ${rule.name}. Flagged: ${flaggedPhrases}. Please revise and resubmit.`;
+        
+        // Log to admin reports with auto_rejected status
+        await logToAdminReports({
+          category,
+          ruleName: rule.name,
+          content,
+          flagged_phrases: parsed.flagged_phrases,
+          explanation: parsed.explanation,
+          status: 'auto_rejected',
+        });
+        
+        return { violation: true, error, autoRejected: true };
+      } else if (parsed.confidence === 'low') {
+        // Allow through but flag for review
+        await logToAdminReports({
+          category,
+          ruleName: rule.name,
+          content,
+          flagged_phrases: parsed.flagged_phrases,
+          explanation: parsed.explanation,
+          status: 'flagged_for_review',
+        });
+        
+        return { violation: true, flaggedForReview: true };
+      }
     }
-
-    return parsed;
+    
+    // No violation - allow through
+    return { violation: false };
   } catch (error) {
-    console.error('[moderation] Fair Housing check failed:', error);
+    console.error(`[moderation] ${category} check failed:`, error);
     // On failure, allow the post but log the error
     return { violation: false, error: error.message, skipped: false };
   }
 }
 
-async function logToAdminReports({ type, description, flagged_phrases, explanation }) {
+// Convenience functions for each category
+export async function checkFairHousingCompliance(description) {
+  return checkModeration('housing', description);
+}
+
+export async function checkMarketplaceSafety(listing) {
+  const content = `${listing.title} ${listing.description} ${listing.price} ${listing.location}`;
+  return checkModeration('marketplace', content);
+}
+
+export async function checkJobSafety(job) {
+  const content = `${job.title} ${job.description} ${job.salary || ''}`;
+  return checkModeration('jobs', content);
+}
+
+export async function checkGigSafety(gig) {
+  const content = `${gig.title} ${gig.description} ${gig.pay || ''}`;
+  return checkModeration('gigs', content);
+}
+
+export async function checkCommunitySafety(post) {
+  return checkModeration('community', post.content);
+}
+
+async function logToAdminReports({ category, ruleName, content, flagged_phrases, explanation, status }) {
   try {
     // Import dynamically to avoid circular dependency
     const { supabase } = await import('./supabase.js');
@@ -91,16 +145,19 @@ async function logToAdminReports({ type, description, flagged_phrases, explanati
     
     if (!userData?.user) return;
 
+    // Map category to reported_type that matches admin_reports expectations
+    const reportedType = category === 'community' ? 'community' : category;
+
     const { error } = await supabase
       .from('admin_reports')
       .insert({
         user_id: userData.user.id,
-        reported_type: type,
-        subjectTitle: 'Fair Housing Violation Detected',
+        reported_type: reportedType,
+        subjectTitle: `${ruleName} - ${status === 'auto_rejected' ? 'Auto-Rejected' : 'Flagged for Review'}`,
         reason: `Flagged phrases: ${flagged_phrases.join(', ')}`,
         details: explanation,
-        description: description.substring(0, 500),
-        status: 'pending',
+        description: content.substring(0, 500),
+        status,
       });
 
     if (error) {

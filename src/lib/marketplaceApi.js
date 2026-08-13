@@ -1,6 +1,7 @@
 import { fallbackMarketplace } from '../data/listings.js';
 import { hasSupabaseConfig, supabase } from './supabase.js';
 import { createListingWithModeration } from './adminApi.js';
+import { checkMarketplaceSafety } from './moderationService.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -196,6 +197,13 @@ export async function createMarketplaceListing(listing, photoFiles = []) {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) {
     throw new Error('You must be logged in to post a listing.');
+  }
+
+  // Run custom marketplace safety check
+  const moderationResult = await checkMarketplaceSafety(payload);
+  
+  if (moderationResult.autoRejected) {
+    throw new Error(moderationResult.error);
   }
 
   const { listing: data } = await createListingWithModeration('marketplace', {
