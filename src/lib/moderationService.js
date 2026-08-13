@@ -1,58 +1,23 @@
 import { moderationRules } from './moderationRules.js';
 
-// Check for available AI providers in environment
-const AVAILABLE_PROVIDERS = {
-  openai: import.meta.env.OPENAI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY,
-  groq: import.meta.env.VITE_GROQ_API_KEY,
-};
-
-function getAvailableProvider() {
-  if (AVAILABLE_PROVIDERS.openai) {
-    return { provider: 'openai', apiKey: AVAILABLE_PROVIDERS.openai, endpoint: 'https://api.openai.com/v1/chat/completions' };
-  }
-  if (AVAILABLE_PROVIDERS.groq) {
-    return { provider: 'groq', apiKey: AVAILABLE_PROVIDERS.groq, endpoint: 'https://api.groq.com/openai/v1/chat/completions' };
-  }
-  return null;
-}
-
-async function callAI(provider, systemPrompt, userMessage, model = 'gpt-4o-mini', temperature = 0.3) {
-  const { apiKey, endpoint } = provider;
-
-  const response = await fetch(endpoint, {
+async function callModerationAPI(category, content) {
+  const response = await fetch('/api/moderate', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
-      temperature,
-      response_format: { type: 'json_object' },
-    }),
+    body: JSON.stringify({ category, content }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`AI moderation failed: ${response.status} - ${error}`);
+    throw new Error(`Moderation API failed: ${response.status} - ${error}`);
   }
 
-  const data = await response.json();
-  return data.choices[0].message.content;
+  return await response.json();
 }
 
 export async function checkModeration(category, content) {
-  const provider = getAvailableProvider();
-  
-  if (!provider) {
-    console.warn(`[moderation] No AI provider configured for ${category} check`);
-    return { violation: false, skipped: true, reason: 'No AI provider configured' };
-  }
-
   const rule = moderationRules[category];
   
   if (!rule) {
@@ -61,15 +26,7 @@ export async function checkModeration(category, content) {
   }
   
   try {
-    const result = await callAI(
-      provider,
-      rule.systemPrompt,
-      content,
-      rule.model,
-      rule.temperature
-    );
-
-    const parsed = JSON.parse(result);
+    const parsed = await callModerationAPI(category, content);
     
     // Decision logic
     if (parsed.violation) {
