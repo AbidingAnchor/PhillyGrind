@@ -1084,6 +1084,11 @@ main {
   background: #fff;
 }
 
+[data-theme="dark"] .payout-profile-card.connected {
+  background: var(--card);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+
 .payout-profile-card h2 {
   margin: 4px 0 8px;
   color: #111827;
@@ -1091,10 +1096,18 @@ main {
   font-size: clamp(1.35rem, 3vw, 2rem);
 }
 
+[data-theme="dark"] .payout-profile-card h2 {
+  color: var(--ink);
+}
+
 .payout-profile-card p {
   max-width: 680px;
   margin: 0;
   color: #4b5563;
+}
+
+[data-theme="dark"] .payout-profile-card p {
+  color: var(--muted);
 }
 
 .marketplace-payout-card {
@@ -1228,6 +1241,21 @@ main {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #f9fafb;
+}
+
+[data-theme="dark"] .resume-upload-card {
+  background: var(--card);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+
+.resume-upload-card strong {
+  margin: 0 0 4px;
+  color: #111827;
+  font-size: 1.05rem;
+}
+
+[data-theme="dark"] .resume-upload-card strong {
+  color: var(--ink);
 }
 
 .resume-upload-actions {
