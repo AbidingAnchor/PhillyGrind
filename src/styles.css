@@ -3309,6 +3309,10 @@ body {
   gap: 16px;
 }
 
+.two-factor-confirm .primary-button {
+  width: fit-content;
+}
+
 .two-factor-verify p,
 .two-factor-confirm p {
   margin: 0;
