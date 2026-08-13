@@ -3447,6 +3447,11 @@ body {
   box-shadow: var(--shadow-soft);
 }
 
+[data-theme="dark"] .review-card {
+  background: var(--card);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+
 .review-panel {
   display: grid;
   gap: 18px;
@@ -3917,6 +3922,11 @@ body {
   color: #15803d;
 }
 
+[data-theme="dark"] .skill-pill {
+  background: rgba(22, 163, 74, 0.20);
+  color: #86efac;
+}
+
 .neighborhood-pill {
   background: #f9fafb;
   color: #111827;
@@ -3951,16 +3961,28 @@ body {
   color: #111827;
 }
 
+[data-theme="dark"] .review-card strong {
+  color: var(--ink);
+}
+
 .review-card p {
   margin: 0;
   color: #374151;
   line-height: 1.7;
 }
 
+[data-theme="dark"] .review-card p {
+  color: var(--ink);
+}
+
 .review-card time {
   color: #6b7280;
   font-weight: 750;
   font-size: 0.88rem;
+}
+
+[data-theme="dark"] .review-card time {
+  color: var(--muted);
 }
 
 .public-review-card {
