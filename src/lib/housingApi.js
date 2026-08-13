@@ -78,6 +78,7 @@ export async function getHousingListings(filters = {}) {
     bedrooms = 'Any',
     maxRent = 'Any',
     petsAllowed = false,
+    user_id = '',
   } = filters;
 
   let query = supabase
@@ -85,6 +86,10 @@ export async function getHousingListings(filters = {}) {
     .select('*')
     .eq('status', 'active')
     .order('created_at', { ascending: false });
+
+  if (user_id) {
+    query = query.eq('user_id', user_id);
+  }
 
   if (neighborhood && neighborhood !== 'Any') {
     query = query.eq('neighborhood', neighborhood);
