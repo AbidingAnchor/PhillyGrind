@@ -1,14 +1,19 @@
 import { hasSupabaseConfig, supabase } from './supabase.js';
 
 const avatarExtensionFor = (file) => (file.type === 'image/png' ? 'png' : 'jpg');
-const profileSelect = 'id,name,bio,skills,availability,neighborhoods,resume_path,resume_url,avatar_url,created_at';
+const bannerExtensionFor = (file) => {
+  if (file.type === 'image/png') return 'png';
+  if (file.type === 'image/webp') return 'webp';
+  return 'jpg';
+};
+const profileSelect = 'id,name,bio,skills,availability,neighborhoods,resume_path,resume_url,avatar_url,banner_url,profile_tags,accent_color,created_at';
 const ALLOWED_RESUME_TYPES = [
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
 
-export async function updateProfile({ bio, skills, availability, neighborhoods }) {
+export async function updateProfile({ bio, skills, availability, neighborhoods, profile_tags, accent_color }) {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
   }
@@ -25,6 +30,8 @@ export async function updateProfile({ bio, skills, availability, neighborhoods }
       skills,
       availability,
       neighborhoods,
+      profile_tags,
+      accent_color,
     })
     .eq('id', userData.user.id)
     .select(profileSelect)
@@ -120,6 +127,51 @@ export async function uploadAvatar(file) {
   const { data, error } = await supabase
     .from('profiles')
     .update({ avatar_url: publicData.publicUrl })
+    .eq('id', userData.user.id)
+    .select(profileSelect)
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
+
+export async function uploadBanner(file) {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw new Error('Please log in before uploading a banner photo.');
+  }
+
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    throw new Error('Banner photo must be a JPG, PNG, or WebP.');
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error('Banner photo must be 5MB or smaller.');
+  }
+
+  const path = `${userData.user.id}/banner.${bannerExtensionFor(file)}`;
+  const { error: uploadError } = await supabase.storage
+    .from('profile-banners')
+    .upload(path, file, {
+      cacheControl: '3600',
+      contentType: file.type,
+      upsert: true,
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data: publicData } = supabase.storage
+    .from('profile-banners')
+    .getPublicUrl(path);
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ banner_url: publicData.publicUrl })
     .eq('id', userData.user.id)
     .select(profileSelect)
     .single();

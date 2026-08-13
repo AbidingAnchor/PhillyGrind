@@ -4,7 +4,7 @@ import ListingCard from '../components/ListingCard.jsx';
 import StarRating from '../components/StarRating.jsx';
 import { createBoostCheckout } from '../lib/boostsApi.js';
 import { getUserListings } from '../lib/listingsApi.js';
-import { checkConnectStatus, getResumeUrl, updateProfile, uploadAvatar, uploadResume } from '../lib/profileApi.js';
+import { checkConnectStatus, getResumeUrl, updateProfile, uploadAvatar, uploadResume, uploadBanner } from '../lib/profileApi.js';
 import { getUserReviews } from '../lib/reviewsApi.js';
 import { getMyBids } from '../lib/bidsApi.js';
 import { createConnectAccount } from '../lib/ordersApi.js';
@@ -15,6 +15,26 @@ import { useAuth } from '../lib/auth.jsx';
 import { getUserAvatarColor } from '../lib/reactions.js';
 
 const availabilityOptions = ['Available Now', 'Weekends Only', 'Evenings Only', 'Not Available'];
+const profileTagOptions = [
+  'Job Hunting',
+  'Selling Stuff',
+  'Hiring',
+  'Meeting Neighbors',
+  'Offering Services',
+  'Looking for Housing',
+  'Renting Out a Place',
+];
+
+const accentColorOptions = [
+  { name: 'Green', value: '#22c55e' },
+  { name: 'Blue', value: '#3b82f6' },
+  { name: 'Purple', value: '#a855f7' },
+  { name: 'Pink', value: '#ec4899' },
+  { name: 'Orange', value: '#f97316' },
+  { name: 'Teal', value: '#14b8a6' },
+  { name: 'Indigo', value: '#6366f1' },
+  { name: 'Rose', value: '#f43f5e' },
+];
 const activeGigStatuses = new Set(['in progress', 'in_progress']);
 
 function resumeFilename(path) {
@@ -85,7 +105,7 @@ function Profile() {
   const [marketplaceListings, setMarketplaceListings] = useState([]);
   const [marketplaceOrders, setMarketplaceOrders] = useState([]);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ bio: '', skills: [], availability: '', neighborhoods: [] });
+  const [form, setForm] = useState({ bio: '', skills: [], availability: '', neighborhoods: [], profile_tags: [], accent_color: '#22c55e' });
   const [resumeUrl, setResumeUrl] = useState('');
   const [profileStatus, setProfileStatus] = useState('');
   const [saving, setSaving] = useState(false);
@@ -100,6 +120,8 @@ function Profile() {
   const [twoFactorError, setTwoFactorError] = useState('');
   const [housingListings, setHousingListings] = useState([]);
   const [isLandlord, setIsLandlord] = useState(false);
+  const [bannerFile, setBannerFile] = useState(null);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const isOwnProfile = isLoggedIn && user?.id === viewedUserId;
   const hasStripeAccount = Boolean(isOwnProfile && authProfile?.stripe_account_id);
   const payoutsConnected = Boolean(hasStripeAccount && authProfile?.stripe_onboarding_complete);
@@ -128,6 +150,8 @@ function Profile() {
           skills: nextProfileData.profile?.skills || [],
           availability: nextProfileData.profile?.availability || '',
           neighborhoods: nextProfileData.profile?.neighborhoods || [],
+          profile_tags: nextProfileData.profile?.profile_tags || [],
+          accent_color: nextProfileData.profile?.accent_color || '#22c55e',
         });
       })
       .catch((err) => setError(err.message || 'Could not load this profile.'))
@@ -178,10 +202,7 @@ function Profile() {
 
     async function loadHousingData() {
       try {
-        console.log('[Profile] Loading housing data for user:', viewedUserId);
-        console.log('[Profile] Current auth user:', user?.id);
         const housingData = await getHousingListings({ user_id: viewedUserId });
-        console.log('[Profile] Housing data for user:', viewedUserId, housingData);
         setHousingListings(housingData);
         setIsLandlord(housingData.length > 0);
       } catch (err) {
@@ -190,7 +211,7 @@ function Profile() {
     }
 
     loadHousingData();
-  }, [viewedUserId, user?.id]);
+  }, [viewedUserId]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -272,13 +293,21 @@ function Profile() {
     setProfileStatus('');
 
     try {
-      const nextProfile = await updateProfile(form);
+      const nextProfile = await updateProfile({
+        bio: form.bio,
+        skills: form.skills,
+        availability: form.availability,
+        neighborhoods: form.neighborhoods,
+        profile_tags: form.profile_tags,
+        accent_color: form.accent_color,
+      });
       setProfileData((current) => current ? {
         ...current,
         profile: nextProfile,
       } : current);
       setEditing(false);
       setProfileStatus('Profile updated.');
+      await refreshProfile();
     } catch (err) {
       setProfileStatus(err.message || 'Could not update profile.');
     } finally {
@@ -329,6 +358,28 @@ function Profile() {
       setProfileStatus(err.message || 'Could not upload profile photo.');
     } finally {
       setSaving(false);
+      event.target.value = '';
+    }
+  }
+
+  async function handleBannerUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingBanner(true);
+    setProfileStatus('');
+
+    try {
+      const nextProfile = await uploadBanner(file);
+      setProfileData((current) => current ? {
+        ...current,
+        profile: nextProfile,
+      } : current);
+      setProfileStatus('Banner uploaded.');
+    } catch (err) {
+      setProfileStatus(err.message || 'Could not upload banner.');
+    } finally {
+      setUploadingBanner(false);
       event.target.value = '';
     }
   }
@@ -469,7 +520,12 @@ function Profile() {
       {error && <p className="empty-state error-state">{error}</p>}
       {!loading && !error && profileData && (
         <>
-          <div className="profile-header">
+          <div className="profile-header" style={{ '--profile-accent': profile?.accent_color || '#22c55e' }}>
+            {profile?.banner_url ? (
+              <div className="profile-banner" style={{ backgroundImage: `url(${profile.banner_url})` }}></div>
+            ) : (
+              <div className="profile-banner profile-banner-default"></div>
+            )}
             <span 
               className="profile-avatar-large"
               style={!profile?.avatar_url ? { backgroundColor: getUserAvatarColor(viewedUserId, profileData.profileName) } : undefined}
@@ -482,6 +538,13 @@ function Profile() {
                 <h1>{profileData.profileName}</h1>
                 {profile?.identity_verified && <span className="verified-badge-small">✓</span>}
               </div>
+              {profile?.profile_tags && profile.profile_tags.length > 0 && (
+                <div className="profile-tags-row">
+                  {profile.profile_tags.map((tag) => (
+                    <span className="profile-tag-pill" key={tag}>{tag}</span>
+                  ))}
+                </div>
+              )}
               <p>
                 Member since{' '}
                 {profileData.profileCreatedAt
@@ -703,6 +766,11 @@ function Profile() {
               </div>
               <form className="profile-edit-form" onSubmit={handleSaveProfile}>
                 <label>
+                  Banner photo
+                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleBannerUpload} />
+                  <span className="detail-note">JPG, PNG, or WebP, 5MB max. Recommended 3:1 aspect ratio (e.g., 1200x400px).</span>
+                </label>
+                <label>
                   Profile photo
                   <input type="file" accept="image/jpeg,image/png" onChange={handleAvatarUpload} />
                   <span className="detail-note">JPG or PNG, 2MB max. Publicly visible on your profile.</span>
@@ -720,6 +788,47 @@ function Profile() {
                   </select>
                 </label>
                 <TagEditor label="Neighborhoods served" placeholder="South Philly, Fishtown..." tags={form.neighborhoods} onChange={(neighborhoods) => setForm((current) => ({ ...current, neighborhoods }))} />
+                <label>
+                  Personality tags (select up to 3)
+                  <div className="profile-tags-selector">
+                    {profileTagOptions.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        className={`profile-tag-option ${form.profile_tags.includes(tag) ? 'selected' : ''}`}
+                        onClick={() => {
+                          const currentTags = form.profile_tags;
+                          if (currentTags.includes(tag)) {
+                            setForm((current) => ({ ...current, profile_tags: currentTags.filter((t) => t !== tag) }));
+                          } else if (currentTags.length < 3) {
+                            setForm((current) => ({ ...current, profile_tags: [...currentTags, tag] }));
+                          }
+                        }}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="detail-note">Choose up to 3 tags that describe what you're here for.</span>
+                </label>
+                <label>
+                  Accent color
+                  <div className="accent-color-selector">
+                    {accentColorOptions.map((color) => (
+                      <button
+                        key={color.value}
+                        type="button"
+                        className={`accent-swatch ${form.accent_color === color.value ? 'selected' : ''}`}
+                        style={{ backgroundColor: color.value }}
+                        onClick={() => setForm((current) => ({ ...current, accent_color: color.value }))}
+                        title={color.name}
+                      >
+                        {form.accent_color === color.value && <span className="accent-check">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="detail-note">Choose an accent color for your profile badges and buttons.</span>
+                </label>
                 <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Profile'}</button>
               </form>
             </section>

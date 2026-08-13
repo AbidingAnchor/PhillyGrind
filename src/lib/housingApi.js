@@ -73,14 +73,6 @@ async function attachLandlordInfo(listings) {
 export async function getHousingListings(filters = {}) {
   if (!hasSupabaseConfig) return [];
 
-  // DEBUG: Query all housing listings with no filters to see what exists
-  const { data: allListings, error: allError } = await supabase
-    .from('housing_listings')
-    .select('*')
-    .limit(20);
-  
-  console.log('[DEBUG] All housing listings in database:', allListings, allError);
-
   const {
     neighborhood = '',
     bedrooms = 'Any',
@@ -92,16 +84,12 @@ export async function getHousingListings(filters = {}) {
   let query = supabase
     .from('housing_listings')
     .select('*')
+    .eq('status', 'active')
     .order('created_at', { ascending: false });
 
   if (user_id) {
     query = query.eq('user_id', user_id);
   }
-
-  // Temporarily comment out status filter for debugging landlord detection
-  // if (!user_id) {
-  //   query = query.eq('status', 'active');
-  // }
 
   if (neighborhood && neighborhood !== 'Any') {
     query = query.eq('neighborhood', neighborhood);

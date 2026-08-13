@@ -208,6 +208,15 @@ alter table profiles
 alter table profiles
   add column if not exists stripe_identity_session_id text;
 
+alter table profiles
+  add column if not exists banner_url text;
+
+alter table profiles
+  add column if not exists profile_tags text[] not null default '{}';
+
+alter table profiles
+  add column if not exists accent_color text not null default '#22c55e';
+
 alter table notifications
   add column if not exists listing_type text;
 
@@ -1005,8 +1014,40 @@ create policy "Users can delete their own marketplace items"
   using (auth.uid() = user_id);
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('marketplace-photos', 'marketplace-photos', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
-on conflict (id) do nothing;
+values ('profile-banners', 'profile-banners', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public = true,
+      file_size_limit = 5242880,
+      allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp'];
+
+drop policy if exists "Profile banners are publicly accessible" on storage.objects;
+create policy "Profile banners are publicly accessible"
+  on storage.objects for select
+  using (bucket_id = 'profile-banners');
+
+drop policy if exists "Users can upload own profile banners" on storage.objects;
+create policy "Users can upload own profile banners"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'profile-banners' and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+drop policy if exists "Users can update their profile banners" on storage.objects;
+create policy "Users can update their profile banners"
+  on storage.objects for update
+  using (
+    bucket_id = 'profile-banners' and auth.uid()::text = (storage.foldername(name))[1]
+  )
+  with check (
+    bucket_id = 'profile-banners' and auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+drop policy if exists "Users can delete their profile banners" on storage.objects;
+create policy "Users can delete their profile banners"
+  on storage.objects for delete
+  using (
+    bucket_id = 'profile-banners' and auth.uid()::text = (storage.foldername(name))[1]
+  );
 
 drop policy if exists "Marketplace photos are publicly accessible" on storage.objects;
 create policy "Marketplace photos are publicly accessible"
