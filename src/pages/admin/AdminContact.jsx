@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MessageSquare, Loader2, Check, AlertCircle } from 'lucide-react';
 import { getContactSubmissions, updateContactSubmissionStatus } from '../../lib/contactApi.js';
+import AdminDetailModal from '../../components/AdminDetailModal.jsx';
 
 export default function AdminContact() {
   const [submissions, setSubmissions] = useState([]);
@@ -10,6 +11,7 @@ export default function AdminContact() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actingId, setActingId] = useState('');
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
 
   async function loadSubmissions() {
     try {
@@ -145,13 +147,17 @@ export default function AdminContact() {
               {filteredSubmissions.map((submission) => {
                 const busy = actingId === submission.id;
                 return (
-                  <tr key={submission.id}>
+                  <tr 
+                    key={submission.id}
+                    onClick={() => setSelectedSubmission(submission)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <td className="admin-category-cell">
                       <span className="admin-category-badge">{categoryLabels[submission.category] || submission.category}</span>
                     </td>
                     <td>{submission.name}</td>
                     <td>
-                      <a href={`mailto:${submission.email}`} className="admin-email-link">{submission.email}</a>
+                      <a href={`mailto:${submission.email}`} className="admin-email-link" onClick={(e) => e.stopPropagation()}>{submission.email}</a>
                     </td>
                     <td className="admin-message-cell">{submission.message}</td>
                     <td>
@@ -160,7 +166,7 @@ export default function AdminContact() {
                       </span>
                     </td>
                     <td>{new Date(submission.created_at).toLocaleString()}</td>
-                    <td className="admin-table-actions">
+                    <td className="admin-table-actions" onClick={(e) => e.stopPropagation()}>
                       {submission.status === 'new' && (
                         <button
                           type="button"
@@ -194,6 +200,43 @@ export default function AdminContact() {
           </table>
         </div>
       )}
+
+      <AdminDetailModal
+        isOpen={!!selectedSubmission}
+        onClose={() => setSelectedSubmission(null)}
+        title="Contact Submission Details"
+      >
+        {selectedSubmission && (
+          <>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Category</span>
+              <span className="admin-detail-value">{categoryLabels[selectedSubmission.category] || selectedSubmission.category}</span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Name</span>
+              <span className="admin-detail-value">{selectedSubmission.name}</span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Email</span>
+              <span className="admin-detail-value">
+                <a href={`mailto:${selectedSubmission.email}`}>{selectedSubmission.email}</a>
+              </span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Status</span>
+              <span className="admin-detail-value">{statusLabels[selectedSubmission.status] || selectedSubmission.status}</span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Created</span>
+              <span className="admin-detail-value">{new Date(selectedSubmission.created_at).toLocaleString()}</span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Message</span>
+              <span className="admin-detail-value">{selectedSubmission.message}</span>
+            </div>
+          </>
+        )}
+      </AdminDetailModal>
     </div>
   );
 }

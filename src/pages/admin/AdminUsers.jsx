@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, ShieldOff, ShieldBan, ShieldCheck, Users, BadgeCheck } from 'lucide-react';
 import { adminVerifyLandlord, getAdminUsers, liftSuspension, suspendUser } from '../../lib/adminApi.js';
 import KebabMenu from '../../components/KebabMenu.jsx';
+import AdminDetailModal from '../../components/AdminDetailModal.jsx';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -10,6 +11,7 @@ export default function AdminUsers() {
   const [actionUserId, setActionUserId] = useState('');
   const [reason, setReason] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedUser, setSelectedUser] = useState(null);
 
   async function loadUsers() {
     try {
@@ -131,7 +133,11 @@ export default function AdminUsers() {
                 const busy = actionUserId === user.id;
                 const suspension = user.suspension;
                 return (
-                  <tr key={user.id}>
+                  <tr 
+                    key={user.id} 
+                    onClick={() => setSelectedUser(user)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <td>{user.name}</td>
                     <td>{user.email}</td>
                     <td>{new Date(user.created_at).toLocaleDateString()}</td>
@@ -146,7 +152,7 @@ export default function AdminUsers() {
                         <span className="admin-status-badge active">active</span>
                       )}
                     </td>
-                    <td className="admin-table-actions">
+                    <td className="admin-table-actions" onClick={(e) => e.stopPropagation()}>
                       <KebabMenu
                         items={[
                           !user.landlord_verified && {
@@ -186,6 +192,59 @@ export default function AdminUsers() {
           </table>
         </div>
       )}
+
+      <AdminDetailModal
+        isOpen={!!selectedUser}
+        onClose={() => setSelectedUser(null)}
+        title="User Details"
+      >
+        {selectedUser && (
+          <>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Name</span>
+              <span className="admin-detail-value">{selectedUser.name}</span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Email</span>
+              <span className="admin-detail-value">
+                <a href={`mailto:${selectedUser.email}`}>{selectedUser.email}</a>
+              </span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Joined</span>
+              <span className="admin-detail-value">{new Date(selectedUser.created_at).toLocaleString()}</span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Listings</span>
+              <span className="admin-detail-value">{selectedUser.listingCount}</span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Reports</span>
+              <span className="admin-detail-value">{selectedUser.report_count ?? 0}</span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Landlord Verified</span>
+              <span className="admin-detail-value">{selectedUser.landlord_verified ? 'Yes' : 'No'}</span>
+            </div>
+            {selectedUser.suspension && (
+              <>
+                <div className="admin-detail-row">
+                  <span className="admin-detail-label">Status</span>
+                  <span className="admin-detail-value">{selectedUser.suspension.action_type}</span>
+                </div>
+                <div className="admin-detail-row">
+                  <span className="admin-detail-label">Reason</span>
+                  <span className="admin-detail-value">{selectedUser.suspension.reason}</span>
+                </div>
+                <div className="admin-detail-row">
+                  <span className="admin-detail-label">Suspended Since</span>
+                  <span className="admin-detail-value">{new Date(selectedUser.suspension.created_at).toLocaleString()}</span>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </AdminDetailModal>
     </div>
   );
 }

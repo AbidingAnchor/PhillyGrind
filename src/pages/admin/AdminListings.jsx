@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, ShoppingBag, Trash2 } from 'lucide-react';
 import { adminDeleteListing, getAdminListings } from '../../lib/adminApi.js';
+import AdminDetailModal from '../../components/AdminDetailModal.jsx';
 
 export default function AdminListings() {
   const [listings, setListings] = useState([]);
@@ -10,6 +11,7 @@ export default function AdminListings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState('');
+  const [selectedListing, setSelectedListing] = useState(null);
 
   async function loadListings() {
     try {
@@ -116,7 +118,11 @@ export default function AdminListings() {
                 </tr>
               )}
               {filteredListings.map((listing) => (
-                <tr key={`${listing.listing_type}-${listing.id}`}>
+                <tr 
+                  key={`${listing.listing_type}-${listing.id}`}
+                  onClick={() => setSelectedListing(listing)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <td>{listing.title}</td>
                   <td>{listing.listing_type}</td>
                   <td>{listing.posterName}</td>
@@ -127,7 +133,7 @@ export default function AdminListings() {
                     </span>
                   </td>
                   <td>{listing.category}</td>
-                  <td>
+                  <td onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
                       className="admin-table-btn danger"
@@ -144,6 +150,53 @@ export default function AdminListings() {
           </table>
         </div>
       )}
+
+      <AdminDetailModal
+        isOpen={!!selectedListing}
+        onClose={() => setSelectedListing(null)}
+        title="Listing Details"
+      >
+        {selectedListing && (
+          <>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Title</span>
+              <span className="admin-detail-value">{selectedListing.title}</span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Type</span>
+              <span className="admin-detail-value">{selectedListing.listing_type}</span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Poster</span>
+              <span className="admin-detail-value">{selectedListing.posterName}</span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Category</span>
+              <span className="admin-detail-value">{selectedListing.category}</span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Status</span>
+              <span className="admin-detail-value">{selectedListing.status}</span>
+            </div>
+            <div className="admin-detail-row">
+              <span className="admin-detail-label">Created</span>
+              <span className="admin-detail-value">{new Date(selectedListing.created_at).toLocaleString()}</span>
+            </div>
+            {selectedListing.description && (
+              <div className="admin-detail-row">
+                <span className="admin-detail-label">Description</span>
+                <span className="admin-detail-value">{selectedListing.description}</span>
+              </div>
+            )}
+            {selectedListing.price && (
+              <div className="admin-detail-row">
+                <span className="admin-detail-label">Price</span>
+                <span className="admin-detail-value">{selectedListing.price}</span>
+              </div>
+            )}
+          </>
+        )}
+      </AdminDetailModal>
     </div>
   );
 }
