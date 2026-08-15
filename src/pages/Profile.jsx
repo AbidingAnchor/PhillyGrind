@@ -395,19 +395,10 @@ function Profile() {
       {!loading && !error && profileData && (
         <>
           <div className="profile-header" style={{ '--profile-accent': profileData.profile?.accent_color || '#22c55e' }}>
-            {console.log('[Profile Render] banner_url:', profileData.profile?.banner_url)}
-            {console.log('[Profile Render] banner_url type:', typeof profileData.profile?.banner_url)}
-            {console.log('[Profile Render] banner_url truthy:', !!profileData.profile?.banner_url)}
             {profileData.profile?.banner_url && profileData.profile.banner_url.trim() !== '' ? (
               <div 
                 className="profile-banner" 
-                style={{ 
-                  backgroundImage: `url(${profileData.profile.banner_url})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  backgroundRepeat: 'no-repeat'
-                }}
-                data-banner-url={profileData.profile.banner_url}
+                style={{ backgroundImage: `url(${profileData.profile.banner_url})` }}
               ></div>
             ) : (
               <div className="profile-banner profile-banner-default"></div>
