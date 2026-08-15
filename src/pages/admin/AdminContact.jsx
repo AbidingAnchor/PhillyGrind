@@ -6,6 +6,7 @@ export default function AdminContact() {
   const [submissions, setSubmissions] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actingId, setActingId] = useState('');
@@ -28,6 +29,15 @@ export default function AdminContact() {
   useEffect(() => {
     loadSubmissions();
   }, [categoryFilter, statusFilter]);
+
+  const filteredSubmissions = submissions.filter(submission => {
+    const query = searchQuery.toLowerCase();
+    return (
+      submission.name?.toLowerCase().includes(query) ||
+      submission.email?.toLowerCase().includes(query) ||
+      submission.message?.toLowerCase().includes(query)
+    );
+  });
 
   async function handleUpdateStatus(id, status) {
     setActingId(id);
@@ -84,6 +94,15 @@ export default function AdminContact() {
 
       <div className="profile-section-card admin-filters">
         <label>
+          Search submissions
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search by name, email, or message..."
+          />
+        </label>
+        <label>
           Category
           <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
             {categoryOptions.map((opt) => (
@@ -123,7 +142,7 @@ export default function AdminContact() {
               </tr>
             </thead>
             <tbody>
-              {submissions.map((submission) => {
+              {filteredSubmissions.map((submission) => {
                 const busy = actingId === submission.id;
                 return (
                   <tr key={submission.id}>

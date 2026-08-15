@@ -6,6 +6,7 @@ export default function AdminListings() {
   const [listings, setListings] = useState([]);
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState('');
@@ -25,6 +26,15 @@ export default function AdminListings() {
   useEffect(() => {
     loadListings();
   }, [typeFilter, statusFilter]);
+
+  const filteredListings = listings.filter(listing => {
+    const query = searchQuery.toLowerCase();
+    return (
+      listing.title?.toLowerCase().includes(query) ||
+      listing.posterName?.toLowerCase().includes(query) ||
+      listing.category?.toLowerCase().includes(query)
+    );
+  });
 
   async function handleDelete(listing) {
     if (!window.confirm(`Remove "${listing.title}"? This cannot be undone.`)) return;
@@ -52,6 +62,15 @@ export default function AdminListings() {
       </header>
 
       <div className="profile-section-card admin-filters">
+        <label>
+          Search listings
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search by title, poster, or category..."
+          />
+        </label>
         <label>
           Type
           <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
@@ -91,12 +110,12 @@ export default function AdminListings() {
               </tr>
             </thead>
             <tbody>
-              {listings.length === 0 && (
+              {filteredListings.length === 0 && (
                 <tr>
                   <td colSpan={7} className="empty-state">No listings match your filters.</td>
                 </tr>
               )}
-              {listings.map((listing) => (
+              {filteredListings.map((listing) => (
                 <tr key={`${listing.listing_type}-${listing.id}`}>
                   <td>{listing.title}</td>
                   <td>{listing.listing_type}</td>

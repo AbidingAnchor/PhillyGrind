@@ -9,6 +9,7 @@ export default function AdminUsers() {
   const [error, setError] = useState('');
   const [actionUserId, setActionUserId] = useState('');
   const [reason, setReason] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   async function loadUsers() {
     try {
@@ -25,6 +26,14 @@ export default function AdminUsers() {
   useEffect(() => {
     loadUsers();
   }, []);
+
+  const filteredUsers = users.filter(user => {
+    const query = searchQuery.toLowerCase();
+    return (
+      user.name?.toLowerCase().includes(query) ||
+      user.email?.toLowerCase().includes(query)
+    );
+  });
 
   async function handleSuspend(userId, actionType) {
     if (!reason.trim()) {
@@ -80,7 +89,16 @@ export default function AdminUsers() {
         </div>
       </header>
 
-      <div className="profile-section-card admin-action-bar">
+      <div className="profile-section-card admin-filters">
+        <label>
+          Search users
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search by name or email..."
+          />
+        </label>
         <label>
           Suspension / ban reason
           <input
@@ -109,7 +127,7 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => {
+              {filteredUsers.map((user) => {
                 const busy = actionUserId === user.id;
                 const suspension = user.suspension;
                 return (

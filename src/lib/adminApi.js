@@ -76,6 +76,10 @@ export async function getAdminReports(status = 'pending') {
   return adminRequest('admin-reports', { method: 'GET', query: { status } });
 }
 
+export async function getAdminDisputes() {
+  return adminRequest('admin-disputes', { method: 'GET' });
+}
+
 export async function suspendUser(userId, reason, actionType = 'suspended') {
   return adminRequest('admin-suspend-user', {
     method: 'POST',

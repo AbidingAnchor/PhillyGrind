@@ -13,7 +13,7 @@ import {
   MessageSquare,
   Mail,
 } from 'lucide-react';
-import { getUnreviewedModerationCount } from '../lib/adminApi.js';
+import { getUnreviewedModerationCount, getAdminReports, getAdminDisputes } from '../lib/adminApi.js';
 import { getNewContactCount } from '../lib/contactApi.js';
 
 const navItems = [
@@ -22,8 +22,8 @@ const navItems = [
   { to: '/admin/listings', label: 'Listings', icon: ShoppingBag },
   { to: '/admin/housing', label: 'Housing', icon: Home },
   { to: '/admin/community', label: 'Community', icon: MessageSquare },
-  { to: '/admin/disputes', label: 'Disputes', icon: AlertTriangle },
-  { to: '/admin/reports', label: 'Reports', icon: ClipboardList },
+  { to: '/admin/disputes', label: 'Disputes', icon: AlertTriangle, showBadge: 'disputes' },
+  { to: '/admin/reports', label: 'Reports', icon: ClipboardList, showBadge: 'reports' },
   { to: '/admin/verifications', label: 'Verifications', icon: BadgeCheck },
   { to: '/admin/moderation', label: 'Moderation', icon: ShieldAlert, showBadge: 'moderation' },
   { to: '/admin/contact', label: 'Contact', icon: Mail, showBadge: 'contact' },
@@ -32,6 +32,8 @@ const navItems = [
 export default function AdminLayout() {
   const [unreviewedCount, setUnreviewedCount] = useState(0);
   const [newContactCount, setNewContactCount] = useState(0);
+  const [openDisputesCount, setOpenDisputesCount] = useState(0);
+  const [pendingReportsCount, setPendingReportsCount] = useState(0);
 
   useEffect(() => {
     async function loadCounts() {
@@ -42,6 +44,18 @@ export default function AdminLayout() {
         ]);
         setUnreviewedCount(modCount);
         setNewContactCount(contactCount);
+        
+        // Load disputes and reports counts
+        try {
+          const [disputesData, reportsData] = await Promise.all([
+            getAdminDisputes(),
+            getAdminReports('pending'),
+          ]);
+          setOpenDisputesCount(disputesData.disputes?.filter(d => d.status === 'open').length || 0);
+          setPendingReportsCount(reportsData.reports?.length || 0);
+        } catch (error) {
+          console.error('Failed to load disputes/reports counts:', error);
+        }
       } catch (error) {
         console.error('Failed to load admin counts:', error);
       }
@@ -52,6 +66,8 @@ export default function AdminLayout() {
   const getBadgeCount = (badgeType) => {
     if (badgeType === 'moderation') return unreviewedCount;
     if (badgeType === 'contact') return newContactCount;
+    if (badgeType === 'disputes') return openDisputesCount;
+    if (badgeType === 'reports') return pendingReportsCount;
     return 0;
   };
 
