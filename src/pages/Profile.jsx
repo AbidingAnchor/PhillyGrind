@@ -420,14 +420,6 @@ function Profile() {
       {!loading && !error && profileData && (
         <>
           <div className="profile-header" style={{ '--profile-accent': profileData.profile?.accent_color || '#22c55e' }}>
-            {profileData.profile?.banner_url && profileData.profile.banner_url.trim() !== '' ? (
-              <div 
-                className="profile-banner" 
-                style={{ backgroundImage: `url(${profileData.profile.banner_url})` }}
-              ></div>
-            ) : (
-              <div className="profile-banner profile-banner-default"></div>
-            )}
             <span 
               className="profile-avatar-large"
               style={!profileData.profile?.avatar_url ? { backgroundColor: getUserAvatarColor(viewedUserId, profileData.profileName) } : undefined}
@@ -893,11 +885,14 @@ function Profile() {
                     <h2>Edit Profile</h2>
                   </div>
                   <form className="profile-edit-form" onSubmit={handleSaveProfile}>
-                    <label>
-                      Banner photo
-                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleBannerUpload} />
-                      <span className="detail-note">JPG, PNG, or WebP, 5MB max. Recommended 3:1 aspect ratio (e.g., 1200x400px).</span>
-                    </label>
+                    {/* Banner upload temporarily hidden - will be revisited in future profile customization session */}
+                    {false && (
+                      <label>
+                        Banner photo
+                        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleBannerUpload} />
+                        <span className="detail-note">JPG, PNG, or WebP, 5MB max. Recommended 3:1 aspect ratio (e.g., 1200x400px).</span>
+                      </label>
+                    )}
                     <label>
                       Profile photo
                       <input type="file" accept="image/jpeg,image/png" onChange={handleAvatarUpload} />
