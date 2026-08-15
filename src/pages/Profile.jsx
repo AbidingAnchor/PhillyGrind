@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Briefcase, MapPin, Calendar, Star, Heart, MessageCircle, Share2 } from 'lucide-react';
 import ListingCard from '../components/ListingCard.jsx';
 import StarRating from '../components/StarRating.jsx';
+import ChatModal from '../components/ChatModal.jsx';
 import { createBoostCheckout } from '../lib/boostsApi.js';
 import { getUserListings } from '../lib/listingsApi.js';
 import { updateProfile, uploadAvatar, uploadBanner } from '../lib/profileApi.js';
@@ -13,6 +14,7 @@ import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
 import { getUserAvatarColor } from '../lib/reactions.js';
 import { getUserCommunityPosts, canViewActivity } from '../lib/communityApi.js';
+import { getOrCreateProfileConversation, sendMessage } from '../lib/messagesApi.js';
 
 const availabilityOptions = ['Available Now', 'Weekends Only', 'Evenings Only', 'Not Available'];
 const profileTagOptions = [
@@ -110,6 +112,9 @@ function Profile() {
   const [hasMoreCommunityPosts, setHasMoreCommunityPosts] = useState(false);
   const [loadingCommunityPosts, setLoadingCommunityPosts] = useState(false);
   const [activeTab, setActiveTab] = useState('activity');
+  const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [loadingConversation, setLoadingConversation] = useState(false);
+  const [profileConversation, setProfileConversation] = useState(null);
   const isOwnProfile = isLoggedIn && user?.id === viewedUserId;
   const activeBoosts = listings.filter((listing) => (
     listing.is_boosted
@@ -344,6 +349,26 @@ function Profile() {
     }
   }
 
+  async function handleMessageClick() {
+    if (!user || isOwnProfile) return;
+
+    setLoadingConversation(true);
+    setProfileStatus('');
+
+    try {
+      const result = await getOrCreateProfileConversation(user.id, viewedUserId);
+      setProfileConversation({
+        messages: result.messages,
+        existing: result.existing,
+      });
+      setChatModalOpen(true);
+    } catch (err) {
+      setProfileStatus(err.message || 'Could not start conversation.');
+    } finally {
+      setLoadingConversation(false);
+    }
+  }
+
   function isActiveAcceptedBid(bid) {
     return Boolean(
       bid.status === 'accepted'
@@ -433,6 +458,17 @@ function Profile() {
                 <span>{profileData.rating.count} review{profileData.rating.count === 1 ? '' : 's'}</span>
               </div>
               {profileData.profile?.availability && <span className={`availability-badge ${profileData.profile.availability === 'Available Now' ? 'available' : profileData.profile.availability === 'Not Available' ? 'unavailable' : ''}`}>{profileData.profile.availability}</span>}
+              {!isOwnProfile && isLoggedIn && (
+                <button 
+                  className="profile-edit-button" 
+                  type="button" 
+                  onClick={handleMessageClick} 
+                  disabled={loadingConversation}
+                  style={{ marginTop: '12px' }}
+                >
+                  {loadingConversation ? 'Loading...' : 'Message'}
+                </button>
+              )}
               {isOwnProfile && (
                 <button className="profile-edit-button" type="button" onClick={() => setEditing((value) => !value)} style={{ marginTop: '12px' }}>
                   {editing ? 'Close Editor' : 'Edit Profile'}
@@ -928,6 +964,20 @@ function Profile() {
             </main>
           </div>
         </>
+      )}
+      {chatModalOpen && profileConversation && (
+        <ChatModal
+          listing={{
+            id: '00000000-0000-0000-0000-000000000001',
+            title: `Conversation with ${profileData.profileName}`,
+            user_id: viewedUserId,
+            posterName: profileData.profileName,
+            company: profileData.profileName,
+          }}
+          receiverId={viewedUserId}
+          receiverLabel={profileData.profileName}
+          onClose={() => setChatModalOpen(false)}
+        />
       )}
     </section>
   );

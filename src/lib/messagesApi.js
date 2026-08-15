@@ -1,6 +1,7 @@
 import { hasSupabaseConfig, supabase } from './supabase.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PROFILE_CONVERSATION_LISTING_ID = '00000000-0000-0000-0000-000000000001';
 
 function safeDisplayName(value, fallback = 'PhillyGrind user') {
   const trimmed = String(value || '').trim();
@@ -192,7 +193,76 @@ export async function getConversations(userId) {
     }
   }
 
-  return groupConversationMessages(namedMessages, userId, listingsById, profilesById);
+  // Handle profile conversations (placeholder listing_id)
+  const profileMessages = namedMessages.filter((m) => m.listing_id === PROFILE_CONVERSATION_LISTING_ID);
+  const profileConversations = new Map();
+  
+  for (const message of profileMessages) {
+    const otherUserId = message.sender_id === userId ? message.receiver_id : message.sender_id;
+    const otherUserName = profilesById.get(otherUserId) || 'PhillyGrind user';
+    const key = `${PROFILE_CONVERSATION_LISTING_ID}:${otherUserId}`;
+    
+    if (!profileConversations.has(key) || new Date(message.created_at) > new Date(profileConversations.get(key).lastMessage.created_at)) {
+      profileConversations.set(key, {
+        id: key,
+        listingId: PROFILE_CONVERSATION_LISTING_ID,
+        otherUserId,
+        otherUserName,
+        listing: {
+          id: PROFILE_CONVERSATION_LISTING_ID,
+          title: `Conversation with ${otherUserName}`,
+          user_id: otherUserId,
+          posterName: otherUserName,
+          company: otherUserName,
+          type: 'profile',
+        },
+        lastMessage: message,
+      });
+    }
+  }
+
+  const listingConversations = groupConversationMessages(
+    namedMessages.filter((m) => m.listing_id !== PROFILE_CONVERSATION_LISTING_ID),
+    userId,
+    listingsById,
+    profilesById
+  );
+
+  return [...profileConversations.values(), ...listingConversations].sort((a, b) => (
+    new Date(b.lastMessage.created_at) - new Date(a.lastMessage.created_at)
+  ));
+}
+
+export async function getProfileConversation(userId, otherUserId) {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  const { data, error } = await supabase
+    .from('messages')
+    .select('id,sender_id,receiver_id,listing_id,content,created_at')
+    .eq('listing_id', PROFILE_CONVERSATION_LISTING_ID)
+    .or(`and(sender_id.eq.${userId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${userId})`)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+
+  const profilesById = await getProfilesByIds([
+    ...(data ?? []).map((message) => message.sender_id),
+    ...(data ?? []).map((message) => message.receiver_id),
+  ]);
+
+  return addSenderNames(data ?? [], profilesById);
+}
+
+export async function getOrCreateProfileConversation(userId, otherUserId) {
+  const existingMessages = await getProfileConversation(userId, otherUserId);
+  
+  if (existingMessages.length > 0) {
+    return { existing: true, messages: existingMessages };
+  }
+
+  return { existing: false, messages: [] };
 }
 
 export function subscribeToMessages({ listingId, receiverId, userId, onMessage }) {
