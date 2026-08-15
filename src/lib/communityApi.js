@@ -123,6 +123,33 @@ export async function getCommunityPost(id) {
   return post;
 }
 
+export function canViewActivity(viewerId, profileOwnerId) {
+  // TODO: Implement friends/connections visibility logic
+  // For now, always return true (public visibility)
+  return true;
+}
+
+export async function getUserCommunityPosts(userId, page = 1, limit = 10) {
+  if (!hasSupabaseConfig || !uuidPattern.test(userId)) return { posts: [], hasMore: false };
+
+  const offset = (page - 1) * limit;
+
+  let query = supabase
+    .from('community_posts')
+    .select('*', { count: 'exact' })
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
+  if (error) throw error;
+
+  const posts = await attachAuthorInfo(data ?? []);
+  const hasMore = count !== null && offset + limit < count;
+
+  return { posts, hasMore };
+}
+
 export async function getCommunityComments(postId) {
   if (!hasSupabaseConfig || !uuidPattern.test(postId)) return [];
 

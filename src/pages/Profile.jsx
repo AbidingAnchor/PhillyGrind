@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { Briefcase, MapPin, Calendar, Star, Heart, MessageCircle, Share2 } from 'lucide-react';
 import ListingCard from '../components/ListingCard.jsx';
 import StarRating from '../components/StarRating.jsx';
 import { createBoostCheckout } from '../lib/boostsApi.js';
 import { getUserListings } from '../lib/listingsApi.js';
-import { checkConnectStatus, getResumeUrl, updateProfile, uploadAvatar, uploadResume, uploadBanner } from '../lib/profileApi.js';
+import { updateProfile, uploadAvatar, uploadBanner } from '../lib/profileApi.js';
 import { getUserReviews } from '../lib/reviewsApi.js';
 import { getMyBids } from '../lib/bidsApi.js';
-import { createConnectAccount } from '../lib/ordersApi.js';
-import { sendTwoFactorCode, toggleTwoFactorAuth, verifyTwoFactorCode } from '../lib/twoFactorApi.js';
 import { getHousingListings } from '../lib/housingApi.js';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
 import { getUserAvatarColor } from '../lib/reactions.js';
+import { getUserCommunityPosts, canViewActivity } from '../lib/communityApi.js';
 
 const availabilityOptions = ['Available Now', 'Weekends Only', 'Evenings Only', 'Not Available'];
 const profileTagOptions = [
@@ -36,16 +36,6 @@ const accentColorOptions = [
   { name: 'Rose', value: '#f43f5e' },
 ];
 const activeGigStatuses = new Set(['in progress', 'in_progress']);
-
-function resumeFilename(path) {
-  if (!path) return '';
-  const parts = path.split('/');
-  return parts[parts.length - 1] || 'resume.pdf';
-}
-
-function getProfileResumePath(profile) {
-  return profile?.resume_url || profile?.resume_path || '';
-}
 
 function getInitials(name) {
   return (name || 'PhillyGrind user')
@@ -106,25 +96,21 @@ function Profile() {
   const [marketplaceOrders, setMarketplaceOrders] = useState([]);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ bio: '', skills: [], availability: '', neighborhoods: [], profile_tags: [], accent_color: '#22c55e' });
-  const [resumeUrl, setResumeUrl] = useState('');
   const [profileStatus, setProfileStatus] = useState('');
   const [saving, setSaving] = useState(false);
   const [renewingBoostId, setRenewingBoostId] = useState('');
-  const [connectingPayouts, setConnectingPayouts] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [twoFactorStep, setTwoFactorStep] = useState('idle'); // idle, verify, confirm
-  const [twoFactorCode, setTwoFactorCode] = useState('');
-  const [twoFactorSending, setTwoFactorSending] = useState(false);
-  const [twoFactorError, setTwoFactorError] = useState('');
   const [housingListings, setHousingListings] = useState([]);
   const [isLandlord, setIsLandlord] = useState(false);
   const [bannerFile, setBannerFile] = useState(null);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [communityPosts, setCommunityPosts] = useState([]);
+  const [communityPostsPage, setCommunityPostsPage] = useState(1);
+  const [hasMoreCommunityPosts, setHasMoreCommunityPosts] = useState(false);
+  const [loadingCommunityPosts, setLoadingCommunityPosts] = useState(false);
+  const [activeTab, setActiveTab] = useState('activity');
   const isOwnProfile = isLoggedIn && user?.id === viewedUserId;
-  const hasStripeAccount = Boolean(isOwnProfile && authProfile?.stripe_account_id);
-  const payoutsConnected = Boolean(hasStripeAccount && authProfile?.stripe_onboarding_complete);
   const activeBoosts = listings.filter((listing) => (
     listing.is_boosted
     && listing.boost_tier
@@ -214,73 +200,49 @@ function Profile() {
   }, [viewedUserId]);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const verificationStatus = urlParams.get('verification');
+    if (!viewedUserId) return;
 
-    if (verificationStatus === 'success' && isOwnProfile) {
-      async function startIdentityVerification() {
-        try {
-          const token = (await supabase.auth.getSession()).data.session?.access_token;
-          const response = await fetch('/api/stripe?action=create-identity-verification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          });
-          const data = await response.json();
-          if (response.ok) {
-            window.location.href = data.url;
-          } else {
-            setProfileStatus(data.error || 'Failed to start identity verification');
-          }
-        } catch (err) {
-          setProfileStatus('Failed to start identity verification');
-        }
+    async function loadCommunityPosts() {
+      if (!canViewActivity(user?.id, viewedUserId)) {
+        setCommunityPosts([]);
+        setHasMoreCommunityPosts(false);
+        return;
       }
 
-      startIdentityVerification();
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, [isOwnProfile]);
-
-  useEffect(() => {
-    const resumeRef = getProfileResumePath(profileData?.profile);
-    if (!isOwnProfile || !resumeRef) {
-      setResumeUrl('');
-      return;
-    }
-
-    getResumeUrl(resumeRef)
-      .then(setResumeUrl)
-      .catch((err) => console.warn(err));
-  }, [isOwnProfile, profileData]);
-
-  useEffect(() => {
-    if (!isOwnProfile || !authProfile?.stripe_account_id || authProfile?.stripe_onboarding_complete) {
-      return;
+      setLoadingCommunityPosts(true);
+      try {
+        const { posts, hasMore } = await getUserCommunityPosts(viewedUserId, 1);
+        setCommunityPosts(posts);
+        setHasMoreCommunityPosts(hasMore);
+        setCommunityPostsPage(1);
+      } catch (err) {
+        console.warn('Failed to load community posts:', err);
+        setCommunityPosts([]);
+        setHasMoreCommunityPosts(false);
+      } finally {
+        setLoadingCommunityPosts(false);
+      }
     }
 
-    let active = true;
-    checkConnectStatus()
-      .then(async (status) => {
-        if (!active) return;
+    loadCommunityPosts();
+  }, [viewedUserId, user?.id]);
 
-        if (status.stripe_onboarding_complete) {
-          await refreshProfile();
-          if (active) setProfileStatus('Stripe payouts are connected.');
-        }
-      })
-      .catch((err) => console.warn(err));
+  async function loadMoreCommunityPosts() {
+    if (loadingCommunityPosts || !hasMoreCommunityPosts) return;
 
-    return () => {
-      active = false;
-    };
-  }, [authProfile?.stripe_account_id, authProfile?.stripe_onboarding_complete, isOwnProfile, refreshProfile]);
-
-  useEffect(() => {
-    if (isOwnProfile && authProfile) {
-      setTwoFactorEnabled(authProfile.two_factor_enabled || false);
+    setLoadingCommunityPosts(true);
+    try {
+      const nextPage = communityPostsPage + 1;
+      const { posts, hasMore } = await getUserCommunityPosts(viewedUserId, nextPage);
+      setCommunityPosts((current) => [...current, ...posts]);
+      setHasMoreCommunityPosts(hasMore);
+      setCommunityPostsPage(nextPage);
+    } catch (err) {
+      console.warn('Failed to load more community posts:', err);
+    } finally {
+      setLoadingCommunityPosts(false);
     }
-  }, [isOwnProfile, authProfile]);
+  }
 
   function updateField(event) {
     const { name, value } = event.target;
@@ -312,31 +274,6 @@ function Profile() {
       setProfileStatus(err.message || 'Could not update profile.');
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleResumeUpload(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setSaving(true);
-    setProfileStatus('');
-
-    try {
-      const nextProfile = await uploadResume(file);
-      setProfileData((current) => current ? {
-        ...current,
-        profile: nextProfile,
-      } : current);
-      const nextUrl = await getResumeUrl(getProfileResumePath(nextProfile));
-      setResumeUrl(nextUrl);
-      await refreshProfile();
-      setProfileStatus('Resume uploaded.');
-    } catch (err) {
-      setProfileStatus(err.message || 'Could not upload resume.');
-    } finally {
-      setSaving(false);
-      event.target.value = '';
     }
   }
 
@@ -384,19 +321,6 @@ function Profile() {
     }
   }
 
-  async function handleConnectPayouts() {
-    setConnectingPayouts(true);
-    setProfileStatus('');
-
-    try {
-      const { url } = await createConnectAccount();
-      window.location.href = url;
-    } catch (err) {
-      setProfileStatus(err.message || 'Could not start Stripe onboarding.');
-      setConnectingPayouts(false);
-    }
-  }
-
   async function handleRenewBoost(listing) {
     setRenewingBoostId(`${listing.type}-${listing.id}`);
     setProfileStatus('');
@@ -413,62 +337,6 @@ function Profile() {
       setRenewingBoostId('');
     }
   }
-
-  async function handleSendTwoFactorCode() {
-    setTwoFactorSending(true);
-    setTwoFactorError('');
-
-    try {
-      await sendTwoFactorCode(authProfile.email);
-      setTwoFactorStep('verify');
-    } catch (err) {
-      setTwoFactorError(err.message || 'Failed to send verification code.');
-    } finally {
-      setTwoFactorSending(false);
-    }
-  }
-
-  async function handleVerifyTwoFactorCode() {
-    setTwoFactorSending(true);
-    setTwoFactorError('');
-
-    try {
-      await verifyTwoFactorCode(twoFactorCode);
-      setTwoFactorStep('confirm');
-    } catch (err) {
-      setTwoFactorError(err.message || 'Invalid or expired code.');
-    } finally {
-      setTwoFactorSending(false);
-    }
-  }
-
-  async function handleToggleTwoFactor() {
-    setTwoFactorSending(true);
-    setTwoFactorError('');
-
-    try {
-      await toggleTwoFactorAuth(!twoFactorEnabled, twoFactorCode);
-      setTwoFactorEnabled(!twoFactorEnabled);
-      setTwoFactorStep('idle');
-      setTwoFactorCode('');
-      setProfileStatus(`Two-factor authentication ${!twoFactorEnabled ? 'enabled' : 'disabled'}.`);
-      await refreshProfile();
-    } catch (err) {
-      setTwoFactorError(err.message || 'Failed to update 2FA settings.');
-    } finally {
-      setTwoFactorSending(false);
-    }
-  }
-
-  function resetTwoFactorFlow() {
-    setTwoFactorStep('idle');
-    setTwoFactorCode('');
-    setTwoFactorError('');
-  }
-
-  const profile = profileData?.profile;
-  const resumeStoragePath = getProfileResumePath(profile);
-  const resumeDisplayName = resumeFilename(resumeStoragePath);
 
   function isActiveAcceptedBid(bid) {
     return Boolean(
@@ -520,27 +388,27 @@ function Profile() {
       {error && <p className="empty-state error-state">{error}</p>}
       {!loading && !error && profileData && (
         <>
-          <div className="profile-header" style={{ '--profile-accent': profile?.accent_color || '#22c55e' }}>
-            {profile?.banner_url ? (
-              <div className="profile-banner" style={{ backgroundImage: `url(${profile.banner_url})` }}></div>
+          <div className="profile-header" style={{ '--profile-accent': profileData.profile?.accent_color || '#22c55e' }}>
+            {profileData.profile?.banner_url ? (
+              <div className="profile-banner" style={{ backgroundImage: `url(${profileData.profile.banner_url})` }}></div>
             ) : (
               <div className="profile-banner profile-banner-default"></div>
             )}
             <span 
               className="profile-avatar-large"
-              style={!profile?.avatar_url ? { backgroundColor: getUserAvatarColor(viewedUserId, profileData.profileName) } : undefined}
+              style={!profileData.profile?.avatar_url ? { backgroundColor: getUserAvatarColor(viewedUserId, profileData.profileName) } : undefined}
             >
-              {profile?.avatar_url ? <img src={profile.avatar_url} alt={`${profileData.profileName} profile`} /> : getInitials(profileData.profileName)}
+              {profileData.profile?.avatar_url ? <img src={profileData.profile.avatar_url} alt={`${profileData.profileName} profile`} /> : getInitials(profileData.profileName)}
             </span>
             <div>
               <span className="eyebrow">PhillyGrind Profile</span>
               <div className="profile-name-row">
                 <h1>{profileData.profileName}</h1>
-                {profile?.identity_verified && <span className="verified-badge-small">✓</span>}
+                {profileData.profile?.identity_verified && <span className="verified-badge-small">✓</span>}
               </div>
-              {profile?.profile_tags && profile.profile_tags.length > 0 && (
+              {profileData.profile?.profile_tags && profileData.profile.profile_tags.length > 0 && (
                 <div className="profile-tags-row">
-                  {profile.profile_tags.map((tag) => (
+                  {profileData.profile.profile_tags.map((tag) => (
                     <span className="profile-tag-pill" key={tag}>{tag}</span>
                   ))}
                 </div>
@@ -555,7 +423,7 @@ function Profile() {
                 <StarRating rating={profileData.rating.average} count={profileData.rating.count} />
                 <span>{profileData.rating.count} review{profileData.rating.count === 1 ? '' : 's'}</span>
               </div>
-              {profile?.availability && <span className={`availability-badge ${profile.availability === 'Available Now' ? 'available' : profile.availability === 'Not Available' ? 'unavailable' : ''}`}>{profile.availability}</span>}
+              {profileData.profile?.availability && <span className={`availability-badge ${profileData.profile.availability === 'Available Now' ? 'available' : profileData.profile.availability === 'Not Available' ? 'unavailable' : ''}`}>{profileData.profile.availability}</span>}
             </div>
             {isOwnProfile && (
               <button className="profile-edit-button" type="button" onClick={() => setEditing((value) => !value)}>
@@ -564,135 +432,386 @@ function Profile() {
             )}
           </div>
 
-          {isOwnProfile && (
-            <section className={payoutsConnected ? 'payout-profile-card connected' : 'payout-profile-card'}>
-              <div>
-                <span className="eyebrow">Stripe Express</span>
-                <h2>{payoutsConnected ? 'Payouts connected' : hasStripeAccount ? 'Finish payout setup' : 'Set up payouts to receive payments'}</h2>
-                <p>
-                  {payoutsConnected
-                    ? 'You can receive secure escrow payouts for gigs and marketplace sales through Stripe Express.'
-                    : hasStripeAccount
-                      ? 'Finish Stripe Express onboarding so buyers and hirers can pay into escrow and PhillyGrind can release payouts to you.'
-                      : 'Connect Stripe Express to accept Secure Checkout on marketplace listings and escrow payments on gigs.'}
-                </p>
-              </div>
-              {payoutsConnected ? (
-                <span className="payout-ready-badge">Payouts connected ✓</span>
-              ) : (
-                <button className="primary-button" type="button" onClick={handleConnectPayouts} disabled={connectingPayouts}>
-                  {connectingPayouts ? 'Connecting...' : hasStripeAccount ? 'Finish Stripe' : 'Connect Stripe'}
-                </button>
-              )}
-            </section>
-          )}
-
-          {isOwnProfile && (
-            <section className="profile-section-card">
-              <div className="profile-section-heading">
-                <span className="eyebrow">Security</span>
-                <h2>Two-Factor Authentication</h2>
-              </div>
-              {twoFactorStep === 'idle' && (
-                <div className="two-factor-toggle">
-                  <div>
-                    <p>
-                      {twoFactorEnabled
-                        ? 'Two-factor authentication is enabled. You will need to enter a verification code sent to your email when logging in.'
-                        : 'Add an extra layer of security to your account by requiring a verification code when logging in.'}
-                    </p>
-                  </div>
-                  <button
-                    className={twoFactorEnabled ? 'secondary-button' : 'primary-button'}
-                    type="button"
-                    onClick={() => twoFactorEnabled ? handleToggleTwoFactor() : handleSendTwoFactorCode()}
-                    disabled={twoFactorSending}
-                  >
-                    {twoFactorSending ? 'Processing...' : twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
-                  </button>
-                </div>
-              )}
-              {twoFactorStep === 'verify' && (
-                <div className="two-factor-verify">
-                  <p>We sent a 6-digit code to <strong>{authProfile.email}</strong>. Enter it below to confirm you want to enable 2FA.</p>
-                  <div className="two-factor-code-input">
-                    <input
-                      type="text"
-                      value={twoFactorCode}
-                      onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="000000"
-                      maxLength={6}
-                    />
-                    <button className="primary-button" type="button" onClick={handleVerifyTwoFactorCode} disabled={twoFactorSending || twoFactorCode.length !== 6}>
-                      {twoFactorSending ? 'Verifying...' : 'Verify'}
-                    </button>
-                  </div>
-                  <button className="text-link" type="button" onClick={resetTwoFactorFlow}>Cancel</button>
-                  {twoFactorError && <p className="error-text">{twoFactorError}</p>}
-                </div>
-              )}
-              {twoFactorStep === 'confirm' && (
-                <div className="two-factor-confirm">
-                  <p>Verification successful! Click below to complete enabling two-factor authentication.</p>
-                  <button className="primary-button" type="button" onClick={handleToggleTwoFactor} disabled={twoFactorSending}>
-                    {twoFactorSending ? 'Enabling...' : 'Confirm Enable 2FA'}
-                  </button>
-                  <button className="text-link" type="button" onClick={resetTwoFactorFlow}>Cancel</button>
-                </div>
-              )}
-              {twoFactorError && twoFactorStep === 'idle' && <p className="error-text">{twoFactorError}</p>}
-            </section>
-          )}
-
-          {isOwnProfile && (
-            <section className="profile-section-card">
-              <div className="profile-section-heading">
-                <span className="eyebrow">Identity Verification</span>
-                <h2>Verified Badge</h2>
-              </div>
-              {authProfile?.identity_verified ? (
-                <div className="verification-badge-display">
-                  <span className="verified-badge">✓ Verified</span>
-                  <p>Your identity has been verified. Your profile and listings display a verified badge to build trust with the PhillyGrind community.</p>
-                </div>
-              ) : authProfile?.verification_status === 'pending' ? (
-                <div className="verification-pending">
-                  <span className="pending-badge">Pending Verification</span>
-                  <p>Your identity verification is being processed. This typically takes a few minutes. You'll be notified once it's complete.</p>
-                </div>
-              ) : isLandlord ? (
-                <div className="verification-action">
-                  <p>Get a blue verified badge on your profile and Housing listings by verifying your identity with Stripe Identity. This builds trust with renters and shows you're a legitimate landlord.</p>
-                  <button className="primary-button" type="button" onClick={async () => {
-                    try {
-                      const token = (await supabase.auth.getSession()).data.session?.access_token;
-                      const response = await fetch('/api/stripe?action=create-verification-checkout', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                      });
-                      const data = await response.json();
-                      if (response.ok) {
-                        window.location.href = data.url;
-                      } else {
-                        setProfileStatus(data.error || 'Failed to start verification');
-                      }
-                    } catch (err) {
-                      setProfileStatus('Failed to start verification');
-                    }
-                  }}>
-                    Get Verified ($2)
-                  </button>
-                </div>
-              ) : (
-                <div className="verification-coming-soon">
-                  <span className="coming-soon-badge">Coming Soon</span>
-                  <p>Identity verification is currently available for landlords who have posted Housing listings. Post a Housing listing to unlock verification.</p>
-                </div>
-              )}
-            </section>
-          )}
-
           {profileStatus && <p className="form-status">{profileStatus}</p>}
+
+          {/* Two-column layout */}
+          <div className="profile-content-grid">
+            {/* Left column - Intro card */}
+            <aside className="profile-sidebar">
+              <div className="profile-intro-card">
+                <div className="profile-section-heading">
+                  <span className="eyebrow">About</span>
+                  <h2>Intro</h2>
+                </div>
+                
+                {profileData.profile?.bio && (
+                  <div className="profile-intro-item">
+                    <Briefcase className="profile-intro-icon" />
+                    <div className="profile-intro-content">
+                      <div className="profile-intro-label">Bio</div>
+                      <div className="profile-intro-value">{profileData.profile.bio}</div>
+                    </div>
+                  </div>
+                )}
+
+                {profileData.profile?.skills?.length > 0 && (
+                  <div className="profile-intro-item">
+                    <Briefcase className="profile-intro-icon" />
+                    <div className="profile-intro-content">
+                      <div className="profile-intro-label">Skills</div>
+                      <div className="profile-intro-value skills-list">
+                        {profileData.profile.skills.map((skill) => (
+                          <span key={skill} className="profile-intro-skill">{skill}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {profileData.profile?.neighborhoods?.length > 0 && (
+                  <div className="profile-intro-item">
+                    <MapPin className="profile-intro-icon" />
+                    <div className="profile-intro-content">
+                      <div className="profile-intro-label">Neighborhoods</div>
+                      <div className="profile-intro-value">{profileData.profile.neighborhoods.join(', ')}</div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="profile-intro-item">
+                  <Calendar className="profile-intro-icon" />
+                  <div className="profile-intro-content">
+                    <div className="profile-intro-label">Member since</div>
+                    <div className="profile-intro-value">
+                      {profileData.profileCreatedAt
+                        ? new Date(profileData.profileCreatedAt).toLocaleDateString([], { month: 'long', year: 'numeric' })
+                        : 'Recently'}
+                    </div>
+                  </div>
+                </div>
+
+                {profileData.rating.count > 0 && (
+                  <div className="profile-intro-item">
+                    <Star className="profile-intro-icon" />
+                    <div className="profile-intro-content">
+                      <div className="profile-intro-label">Rating</div>
+                      <div className="profile-intro-value">
+                        {profileData.rating.average.toFixed(1)} · {profileData.rating.count} review{profileData.rating.count === 1 ? '' : 's'}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {profileData.profile?.availability && (
+                  <div className="profile-intro-item">
+                    <Briefcase className="profile-intro-icon" />
+                    <div className="profile-intro-content">
+                      <div className="profile-intro-label">Availability</div>
+                      <div className="profile-intro-value">{profileData.profile.availability}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {isOwnProfile && activeBoosts.length > 0 && (
+                <section className="profile-section-card" style={{ marginTop: '24px' }}>
+                  <div className="profile-section-heading">
+                    <span className="eyebrow">Boosts</span>
+                    <h2>Active Boosts</h2>
+                  </div>
+                  <div className="boost-dashboard-list">
+                    {activeBoosts.map((listing) => (
+                      <article className="boost-dashboard-card" key={`${listing.type}-${listing.id}`}>
+                        <div>
+                          <span className={`boost-badge ${listing.boost_tier}`}>{listing.boost_tier === 'pro' ? '⭐ Pro' : '⭐ Featured'}</span>
+                          <h3>{listing.title}</h3>
+                          <p>Expires {new Date(listing.boost_expires_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                        </div>
+                        <button
+                          className="secondary-detail-button"
+                          type="button"
+                          onClick={() => handleRenewBoost(listing)}
+                          disabled={renewingBoostId === `${listing.type}-${listing.id}`}
+                        >
+                          {renewingBoostId === `${listing.type}-${listing.id}` ? 'Opening...' : 'Renew Boost'}
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </aside>
+
+            {/* Right column - Tabs and content */}
+            <main className="profile-main-content">
+              {/* Tab Bar */}
+              <div className="profile-tabs">
+                <button 
+                  className={`profile-tab ${activeTab === 'activity' ? 'active' : ''}`}
+                  type="button"
+                  onClick={() => setActiveTab('activity')}
+                >
+                  Activity
+                </button>
+                <button 
+                  className={`profile-tab ${activeTab === 'about' ? 'active' : ''}`}
+                  type="button"
+                  onClick={() => setActiveTab('about')}
+                >
+                  About
+                </button>
+                <button 
+                  className={`profile-tab ${activeTab === 'reviews' ? 'active' : ''}`}
+                  type="button"
+                  onClick={() => setActiveTab('reviews')}
+                >
+                  Reviews
+                </button>
+                <button 
+                  className={`profile-tab ${activeTab === 'listings' ? 'active' : ''}`}
+                  type="button"
+                  onClick={() => setActiveTab('listings')}
+                >
+                  Listings
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              {activeTab === 'activity' && (
+                <section className="profile-section-card">
+                  <div className="profile-section-heading">
+                    <span className="eyebrow">Community</span>
+                    <h2>Recent Activity</h2>
+                  </div>
+                  {loadingCommunityPosts ? (
+                    <p className="empty-state">Loading posts...</p>
+                  ) : communityPosts.length > 0 ? (
+                    <>
+                      <div className="profile-community-posts">
+                        {communityPosts.map((post) => (
+                          <article key={post.id} className="feed-post-card profile-post-card">
+                            <div className="feed-post-header">
+                              <Link to={`/profile/${post.authorId}`} className="feed-post-author">
+                                {post.authorAvatarUrl ? (
+                                  <img src={post.authorAvatarUrl} alt={post.authorName} className="feed-post-avatar" />
+                                ) : (
+                                  <div 
+                                    className="feed-post-avatar-placeholder" 
+                                    style={{ backgroundColor: getUserAvatarColor(post.authorId, post.authorName) }}
+                                  >
+                                    {post.authorName.charAt(0)}
+                                  </div>
+                                )}
+                                <div className="feed-post-author-info">
+                                  <span className="feed-post-author-name">{post.authorName}</span>
+                                  <div className="feed-post-meta">
+                                    <span className="feed-post-neighborhood">{post.neighborhood}</span>
+                                    <span className="feed-post-time">· {post.relativeTime}</span>
+                                  </div>
+                                </div>
+                              </Link>
+                            </div>
+                            <div className="feed-post-content">
+                              <p>{post.content}</p>
+                              {post.photo_path && (
+                                <img 
+                                  src={post.photo_url} 
+                                  alt="Post photo" 
+                                  className="feed-post-photo"
+                                />
+                              )}
+                            </div>
+                            <div className="feed-post-actions">
+                              <div className="feed-post-reactions">
+                                <Heart size={16} className="feed-post-reaction-icon" />
+                                <span className="feed-post-like-count">{post.like_count || 0}</span>
+                              </div>
+                              <div className="feed-post-action-bar">
+                                <Link to={`/community/post/${post.id}`} className="feed-post-action-button">
+                                  <Heart size={18} />
+                                  <span>React</span>
+                                </Link>
+                                <div className="feed-post-action-divider"></div>
+                                <Link to={`/community/post/${post.id}`} className="feed-post-action-button">
+                                  <MessageCircle size={18} />
+                                  <span>Comment</span>
+                                </Link>
+                                <div className="feed-post-action-divider"></div>
+                                <Link to={`/community/post/${post.id}`} className="feed-post-action-button">
+                                  <Share2 size={18} />
+                                  <span>Share</span>
+                                </Link>
+                              </div>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                      {hasMoreCommunityPosts && (
+                        <button 
+                          className="secondary-button" 
+                          type="button" 
+                          onClick={loadMoreCommunityPosts}
+                          disabled={loadingCommunityPosts}
+                          style={{ marginTop: '16px' }}
+                        >
+                          {loadingCommunityPosts ? 'Loading...' : 'Load more posts'}
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <p className="empty-state">No posts yet.</p>
+                  )}
+                </section>
+              )}
+
+          {activeTab === 'about' && (
+            <section className="profile-section-card">
+              <div className="profile-section-heading">
+                <span className="eyebrow">About</span>
+                <h2>Work Profile</h2>
+              </div>
+              {profileData.profile?.bio ? (
+                <p className="profile-bio">{profileData.profile.bio}</p>
+              ) : (
+                <p className="empty-state">No bio added yet.</p>
+              )}
+              {profileData.profile?.skills?.length > 0 ? (
+                <div>
+                  <h3 className="profile-mini-heading">Skills</h3>
+                  <div className="profile-pill-row">{profileData.profile.skills.map((skill) => <span className="skill-pill" key={skill}>{skill}</span>)}</div>
+                </div>
+              ) : (
+                <div>
+                  <h3 className="profile-mini-heading">Skills</h3>
+                  <p className="empty-state">No skills listed yet.</p>
+                </div>
+              )}
+              {profileData.profile?.neighborhoods?.length > 0 ? (
+                <div>
+                  <h3 className="profile-mini-heading">Neighborhoods served</h3>
+                  <div className="profile-pill-row">{profileData.profile.neighborhoods.map((neighborhood) => <span className="neighborhood-pill" key={neighborhood}>{neighborhood}</span>)}</div>
+                </div>
+              ) : (
+                <div>
+                  <h3 className="profile-mini-heading">Neighborhoods served</h3>
+                  <p className="empty-state">No neighborhoods specified yet.</p>
+                </div>
+              )}
+            </section>
+          )}
+
+          {activeTab === 'reviews' && (
+            <section className="profile-section-card">
+              <div className="profile-section-heading">
+                <span className="eyebrow">Reputation</span>
+                <h2>Reviews</h2>
+              </div>
+              <div className="reviews-list">
+                {profileData.reviews.length > 0 ? (
+                  profileData.reviews.map((review) => (
+                    <article key={review.id} className="review-card">
+                      <div>
+                        <StarRating rating={review.rating} compact />
+                        <strong>{review.reviewerName}</strong>
+                      </div>
+                      <p>{review.comment}</p>
+                      <time>{new Date(review.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</time>
+                    </article>
+                  ))
+                ) : (
+                  <p className="empty-state">No reviews yet.</p>
+                )}
+              </div>
+            </section>
+          )}
+
+          {activeTab === 'listings' && (
+            <>
+              {isOwnProfile && myBids.length > 0 && (
+                <section className="profile-section-card">
+                  <div className="profile-section-heading">
+                    <span className="eyebrow">Gig bids</span>
+                    <h2>My Submitted Bids</h2>
+                  </div>
+                  <div className="bids-list">
+                    {myBids.map((bid) => renderBidCard(bid))}
+                  </div>
+                </section>
+              )}
+
+              {isOwnProfile && (marketplaceListings.length > 0 || marketplaceOrders.length > 0) && (
+                <section className="profile-section-card">
+                  <div className="profile-section-heading">
+                    <span className="eyebrow">Marketplace</span>
+                    <h2>My Marketplace</h2>
+                  </div>
+
+                  {marketplaceListings.length > 0 && (
+                    <>
+                      <h3 className="profile-mini-heading">Active Listings</h3>
+                      <div className="listing-grid profile-listings-grid">
+                        {marketplaceListings.map((listing) => (
+                          <Link key={listing.id} to={`/marketplace/${listing.id}`} className="listing-card marketplace-card">
+                            {listing.photos && listing.photos.length > 0 ? (
+                              <img src={listing.photos[0]} alt={listing.title} className="listing-photo" />
+                            ) : (
+                              <div className="listing-photo-placeholder">No photo</div>
+                            )}
+                            <div className="listing-content">
+                              <h3>{listing.title}</h3>
+                              <p className="listing-price">${listing.price}</p>
+                              <div className="listing-meta">
+                                <span className="condition-badge">{listing.condition}</span>
+                                <span className="location-badge">{listing.location}</span>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {marketplaceOrders.length > 0 && (
+                    <>
+                      <h3 className="profile-mini-heading">Pending Orders</h3>
+                      <div className="bids-list">
+                        {marketplaceOrders.map((order) => (
+                          <Link key={order.id} to={`/marketplace/${order.listing_id}`} className="bid-card">
+                            <div className="bid-card-header">
+                              <div>
+                                <strong>{order.marketplace_listings?.title || 'Marketplace item'}</strong>
+                                <span>{new Date(order.created_at).toLocaleDateString()}</span>
+                              </div>
+                              <span className={`bid-status ${order.status}`}>
+                                {order.status === 'held' ? 'Payment held - awaiting confirmation' : order.status}
+                              </span>
+                            </div>
+                            <p>${(order.amount / 100).toFixed(2)} · {order.marketplace_listings?.location}</p>
+                            {order.buyer_id === user?.id && order.status === 'held' && (
+                              <span className="detail-note">Confirm receipt when you receive the item</span>
+                            )}
+                          </Link>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </section>
+              )}
+
+              <section className="profile-section-card">
+                <div className="profile-section-heading">
+                  <span className="eyebrow">Posted Work</span>
+                  <h2>Job & Gig Listings</h2>
+                </div>
+                {listings.length > 0 ? (
+                  <div className="listing-grid profile-listings-grid">
+                    {listings.map((listing) => <ListingCard key={`${listing.type}-${listing.id}`} listing={listing} />)}
+                  </div>
+                ) : (
+                  <p className="empty-state">No active listings posted yet.</p>
+                )}
+              </section>
+            </>
+          )}
 
           {isOwnProfile && activeBoosts.length > 0 && (
             <section className="profile-section-card">
@@ -720,252 +839,85 @@ function Profile() {
                 ))}
               </div>
             </section>
-          )}
+              )}
 
-          {isOwnProfile && (
-            <section className="profile-section-card">
-              <div className="profile-section-heading">
-                <span className="eyebrow">Career</span>
-                <h2>Resume</h2>
-              </div>
-              {resumeStoragePath ? (
-                <div className="resume-upload-card">
-                  <div>
-                    <strong>{resumeDisplayName || 'resume.pdf'}</strong>
-                    <p className="detail-note">Private resume stored in your profile. Attached automatically when you Quick Apply.</p>
+              {editing && isOwnProfile && (
+                <section className="profile-section-card">
+                  <div className="profile-section-heading">
+                    <span className="eyebrow">Profile Editor</span>
+                    <h2>Edit Profile</h2>
                   </div>
-                  <div className="resume-upload-actions">
-                    {resumeUrl && (
-                      <a className="text-link" href={resumeUrl} target="_blank" rel="noreferrer">
-                        View resume
-                      </a>
-                    )}
-                    <label className="secondary-detail-button resume-replace-button">
-                      Replace
-                      <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleResumeUpload} hidden />
+                  <form className="profile-edit-form" onSubmit={handleSaveProfile}>
+                    <label>
+                      Banner photo
+                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleBannerUpload} />
+                      <span className="detail-note">JPG, PNG, or WebP, 5MB max. Recommended 3:1 aspect ratio (e.g., 1200x400px).</span>
                     </label>
-                  </div>
-                </div>
-              ) : (
-                <div className="resume-upload-card">
-                  <p className="detail-note">Upload a PDF or Word resume to use Quick Apply on job listings. PDF or Word document (.pdf, .doc, .docx), 5MB max.</p>
-                  <label className="primary-button resume-upload-button">
-                    Upload Resume
-                    <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleResumeUpload} hidden />
-                  </label>
-                </div>
+                    <label>
+                      Profile photo
+                      <input type="file" accept="image/jpeg,image/png" onChange={handleAvatarUpload} />
+                      <span className="detail-note">JPG or PNG, 2MB max. Publicly visible on your profile.</span>
+                    </label>
+                    <label>
+                      Bio
+                      <textarea name="bio" value={form.bio} onChange={updateField} rows="5" placeholder="Tell Philly what kind of work you do best." />
+                    </label>
+                    <TagEditor label="Skills" placeholder="Moving, cleaning, bartending..." tags={form.skills} onChange={(skills) => setForm((current) => ({ ...current, skills }))} />
+                    <label>
+                      Availability
+                      <select name="availability" value={form.availability} onChange={updateField}>
+                        <option value="">Select availability</option>
+                        {availabilityOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                      </select>
+                    </label>
+                    <TagEditor label="Neighborhoods served" placeholder="South Philly, Fishtown..." tags={form.neighborhoods} onChange={(neighborhoods) => setForm((current) => ({ ...current, neighborhoods }))} />
+                    <label>
+                      Personality tags (select up to 3)
+                      <div className="profile-tags-selector">
+                        {profileTagOptions.map((tag) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            className={`profile-tag-option ${form.profile_tags.includes(tag) ? 'selected' : ''}`}
+                            onClick={() => {
+                              const currentTags = form.profile_tags;
+                              if (currentTags.includes(tag)) {
+                                setForm((current) => ({ ...current, profile_tags: currentTags.filter((t) => t !== tag) }));
+                              } else if (currentTags.length < 3) {
+                                setForm((current) => ({ ...current, profile_tags: [...currentTags, tag] }));
+                              }
+                            }}
+                          >
+                            {tag}
+                          </button>
+                        ))}
+                      </div>
+                      <span className="detail-note">Choose up to 3 tags that describe what you're here for.</span>
+                    </label>
+                    <label>
+                      Accent color
+                      <div className="accent-color-selector">
+                        {accentColorOptions.map((color) => (
+                          <button
+                            key={color.value}
+                            type="button"
+                            className={`accent-swatch ${form.accent_color === color.value ? 'selected' : ''}`}
+                            style={{ backgroundColor: color.value }}
+                            onClick={() => setForm((current) => ({ ...current, accent_color: color.value }))}
+                            title={color.name}
+                          >
+                            {form.accent_color === color.value && <span className="accent-check">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                      <span className="detail-note">Choose an accent color for your profile badges and buttons.</span>
+                    </label>
+                    <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Profile'}</button>
+                  </form>
+                </section>
               )}
-            </section>
-          )}
-
-          {editing && isOwnProfile && (
-            <section className="profile-section-card">
-              <div className="profile-section-heading">
-                <span className="eyebrow">Profile Editor</span>
-                <h2>Edit Profile</h2>
-              </div>
-              <form className="profile-edit-form" onSubmit={handleSaveProfile}>
-                <label>
-                  Banner photo
-                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleBannerUpload} />
-                  <span className="detail-note">JPG, PNG, or WebP, 5MB max. Recommended 3:1 aspect ratio (e.g., 1200x400px).</span>
-                </label>
-                <label>
-                  Profile photo
-                  <input type="file" accept="image/jpeg,image/png" onChange={handleAvatarUpload} />
-                  <span className="detail-note">JPG or PNG, 2MB max. Publicly visible on your profile.</span>
-                </label>
-                <label>
-                  Bio
-                  <textarea name="bio" value={form.bio} onChange={updateField} rows="5" placeholder="Tell Philly what kind of work you do best." />
-                </label>
-                <TagEditor label="Skills" placeholder="Moving, cleaning, bartending..." tags={form.skills} onChange={(skills) => setForm((current) => ({ ...current, skills }))} />
-                <label>
-                  Availability
-                  <select name="availability" value={form.availability} onChange={updateField}>
-                    <option value="">Select availability</option>
-                    {availabilityOptions.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </select>
-                </label>
-                <TagEditor label="Neighborhoods served" placeholder="South Philly, Fishtown..." tags={form.neighborhoods} onChange={(neighborhoods) => setForm((current) => ({ ...current, neighborhoods }))} />
-                <label>
-                  Personality tags (select up to 3)
-                  <div className="profile-tags-selector">
-                    {profileTagOptions.map((tag) => (
-                      <button
-                        key={tag}
-                        type="button"
-                        className={`profile-tag-option ${form.profile_tags.includes(tag) ? 'selected' : ''}`}
-                        onClick={() => {
-                          const currentTags = form.profile_tags;
-                          if (currentTags.includes(tag)) {
-                            setForm((current) => ({ ...current, profile_tags: currentTags.filter((t) => t !== tag) }));
-                          } else if (currentTags.length < 3) {
-                            setForm((current) => ({ ...current, profile_tags: [...currentTags, tag] }));
-                          }
-                        }}
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
-                  <span className="detail-note">Choose up to 3 tags that describe what you're here for.</span>
-                </label>
-                <label>
-                  Accent color
-                  <div className="accent-color-selector">
-                    {accentColorOptions.map((color) => (
-                      <button
-                        key={color.value}
-                        type="button"
-                        className={`accent-swatch ${form.accent_color === color.value ? 'selected' : ''}`}
-                        style={{ backgroundColor: color.value }}
-                        onClick={() => setForm((current) => ({ ...current, accent_color: color.value }))}
-                        title={color.name}
-                      >
-                        {form.accent_color === color.value && <span className="accent-check">✓</span>}
-                      </button>
-                    ))}
-                  </div>
-                  <span className="detail-note">Choose an accent color for your profile badges and buttons.</span>
-                </label>
-                <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Profile'}</button>
-              </form>
-            </section>
-          )}
-
-          {Boolean(profile?.bio || profile?.skills?.length > 0 || profile?.neighborhoods?.length > 0) && (
-            <section className="profile-section-card">
-              <div className="profile-section-heading">
-                <span className="eyebrow">About</span>
-                <h2>Work Profile</h2>
-              </div>
-              {profile?.bio && <p className="profile-bio">{profile.bio}</p>}
-              {profile?.skills?.length > 0 && (
-                <div>
-                  <h3 className="profile-mini-heading">Skills</h3>
-                  <div className="profile-pill-row">{profile.skills.map((skill) => <span className="skill-pill" key={skill}>{skill}</span>)}</div>
-                </div>
-              )}
-              {profile?.neighborhoods?.length > 0 && (
-                <div>
-                  <h3 className="profile-mini-heading">Neighborhoods served</h3>
-                  <div className="profile-pill-row">{profile.neighborhoods.map((neighborhood) => <span className="neighborhood-pill" key={neighborhood}>{neighborhood}</span>)}</div>
-                </div>
-              )}
-            </section>
-          )}
-
-          <section className="profile-section-card">
-            <div className="profile-section-heading">
-              <span className="eyebrow">Reputation</span>
-              <h2>Reviews</h2>
-            </div>
-            <div className="reviews-list">
-              {profileData.reviews.map((review) => (
-                <article key={review.id} className="review-card">
-                  <div>
-                    <StarRating rating={review.rating} compact />
-                    <strong>{review.reviewerName}</strong>
-                  </div>
-                  <p>{review.comment}</p>
-                  <time>{new Date(review.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</time>
-                </article>
-              ))}
-              {!profileData.reviews.length && <p className="empty-state">No reviews yet.</p>}
-            </div>
-          </section>
-
-          {isOwnProfile && (
-            <section className="profile-section-card">
-              <div className="profile-section-heading">
-                <span className="eyebrow">Gig bids</span>
-                <h2>My Submitted Bids</h2>
-              </div>
-              {myBids.length > 0 ? (
-                <div className="bids-list">
-                  {myBids.map((bid) => renderBidCard(bid))}
-                </div>
-              ) : (
-                <p className="empty-state">No bids submitted yet.</p>
-              )}
-            </section>
-          )}
-
-          {isOwnProfile && (
-            <section className="profile-section-card">
-              <div className="profile-section-heading">
-                <span className="eyebrow">Marketplace</span>
-                <h2>My Marketplace</h2>
-              </div>
-
-              {marketplaceListings.length > 0 && (
-                <>
-                  <h3 className="profile-mini-heading">Active Listings</h3>
-                  <div className="listing-grid profile-listings-grid">
-                    {marketplaceListings.map((listing) => (
-                      <Link key={listing.id} to={`/marketplace/${listing.id}`} className="listing-card marketplace-card">
-                        {listing.photos && listing.photos.length > 0 ? (
-                          <img src={listing.photos[0]} alt={listing.title} className="listing-photo" />
-                        ) : (
-                          <div className="listing-photo-placeholder">No photo</div>
-                        )}
-                        <div className="listing-content">
-                          <h3>{listing.title}</h3>
-                          <p className="listing-price">${listing.price}</p>
-                          <div className="listing-meta">
-                            <span className="condition-badge">{listing.condition}</span>
-                            <span className="location-badge">{listing.location}</span>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </>
-              )}
-              {marketplaceOrders.length > 0 && (
-                <>
-                  <h3 className="profile-mini-heading">Pending Orders</h3>
-                  <div className="bids-list">
-                    {marketplaceOrders.map((order) => (
-                      <Link key={order.id} to={`/marketplace/${order.listing_id}`} className="bid-card">
-                        <div className="bid-card-header">
-                          <div>
-                            <strong>{order.marketplace_listings?.title || 'Marketplace item'}</strong>
-                            <span>{new Date(order.created_at).toLocaleDateString()}</span>
-                          </div>
-                          <span className={`bid-status ${order.status}`}>
-                            {order.status === 'held' ? 'Payment held - awaiting confirmation' : order.status}
-                          </span>
-                        </div>
-                        <p>${(order.amount / 100).toFixed(2)} · {order.marketplace_listings?.location}</p>
-                        {order.buyer_id === user?.id && order.status === 'held' && (
-                          <span className="detail-note">Confirm receipt when you receive the item</span>
-                        )}
-                      </Link>
-                    ))}
-                  </div>
-                </>
-              )}
-              {marketplaceListings.length === 0 && marketplaceOrders.length === 0 && (
-                <p className="empty-state">No marketplace activity yet. <Link to="/marketplace/post">Post a listing</Link></p>
-              )}
-            </section>
-          )}
-
-          <section className="profile-section-card">
-            <div className="profile-section-heading">
-              <span className="eyebrow">Posted Work</span>
-              <h2>Active Listings</h2>
-            </div>
-            {listings.length > 0 ? (
-              <div className="listing-grid profile-listings-grid">
-                {listings.map((listing) => <ListingCard key={`${listing.type}-${listing.id}`} listing={listing} />)}
-              </div>
-            ) : (
-              <p className="empty-state">No active listings posted yet.</p>
-            )}
-          </section>
+            </main>
+          </div>
         </>
       )}
     </section>

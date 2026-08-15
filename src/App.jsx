@@ -92,6 +92,9 @@ function App() {
               <Link className="nav-profile-link" to="/profile" id="nav-profile" data-tour="profile" onClick={() => setOpen(false)}>
                 {displayName}
               </Link>
+              <Link className="nav-profile-link" to="/settings" id="nav-settings" onClick={() => setOpen(false)}>
+                Settings
+              </Link>
               <button type="button" onClick={handleLogout}>Logout</button>
             </div>
           )}

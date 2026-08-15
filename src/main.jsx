@@ -20,6 +20,7 @@ import Terms from './pages/Terms.jsx';
 import Privacy from './pages/Privacy.jsx';
 import Profile from './pages/Profile.jsx';
 import PublicProfile from './pages/PublicProfile.jsx';
+import Settings from './pages/Settings.jsx';
 import AdminDisputes from './pages/AdminDisputes.jsx';
 import AdminRoute from './components/AdminRoute.jsx';
 import AdminLayout from './components/AdminLayout.jsx';
@@ -66,6 +67,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/profile/:userId" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
               <Route path="/post-job" element={<Navigate to="/jobs?tab=post" replace />} />
               <Route path="/post-gig" element={<Navigate to="/gigs?tab=post" replace />} />
