@@ -199,30 +199,6 @@ export async function uploadBanner(file) {
   return data;
 }
 
-export async function getPublicProfileStats(userId) {
-  if (!hasSupabaseConfig || !userId) {
-    return { completedCount: 0 };
-  }
-
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError || !sessionData.session?.access_token) {
-    throw new Error('Please log in to view this profile.');
-  }
-
-  const response = await fetch(`/api/orders?action=profile-stats&user_id=${encodeURIComponent(userId)}`, {
-    headers: {
-      Authorization: `Bearer ${sessionData.session.access_token}`,
-    },
-  });
-
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.error || 'Could not load profile stats.');
-  }
-
-  return payload;
-}
-
 export async function checkConnectStatus() {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
