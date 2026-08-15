@@ -15,6 +15,8 @@ import { getMarketplaceListing, getMarketplaceListings } from '../lib/marketplac
 
 import { useAuth } from '../lib/auth.jsx';
 
+import { HOUSING_NEIGHBORHOODS } from '../lib/housingApi.js';
+
 
 
 function withTimeout(promise, milliseconds, message) {
@@ -85,7 +87,7 @@ function BrowseMarketplace() {
 
           const nextListings = await withTimeout(
 
-            getMarketplaceListings({ keyword, category, condition, location: neighborhood }),
+            getMarketplaceListings({ keyword, category, condition, neighborhood }),
 
             5000,
 
@@ -228,13 +230,17 @@ function BrowseMarketplace() {
                 />
               </label>
               <label>
-                Location
-                <input
+                Neighborhood
+                <select
                   className="marketplace-filter-input"
                   value={neighborhood}
                   onChange={(event) => setNeighborhood(event.target.value)}
-                  placeholder="South Philly, Fishtown, Center City..."
-                />
+                >
+                  <option value="">Any neighborhood</option>
+                  {HOUSING_NEIGHBORHOODS.map((item) => (
+                    <option key={item} value={item}>{item}</option>
+                  ))}
+                </select>
               </label>
             </div>
             <button className="primary-button marketplace-post-btn" type="button" onClick={handlePostClick}>

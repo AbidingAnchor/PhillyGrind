@@ -10,6 +10,8 @@ import { hasSupabaseConfig } from '../lib/supabase.js';
 
 import { useAuth } from '../lib/auth.jsx';
 
+import { HOUSING_NEIGHBORHOODS } from '../lib/housingApi.js';
+
 
 
 const paymentMethods = [
@@ -245,9 +247,19 @@ function MarketplacePostForm({ onClose, onPosted }) {
 
       <label>
 
-        Neighborhood / location
+        Neighborhood
 
-        <input name="neighborhood" value={form.neighborhood} onChange={updateField} placeholder="South Philly, Fishtown..." required />
+        <select name="neighborhood" value={form.neighborhood} onChange={updateField} required>
+
+          <option value="">Choose a neighborhood</option>
+
+          {HOUSING_NEIGHBORHOODS.map((item) => (
+
+            <option key={item} value={item}>{item}</option>
+
+          ))}
+
+        </select>
 
       </label>
 

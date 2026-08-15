@@ -2493,6 +2493,13 @@ main {
   box-shadow: 0 4px 20px rgba(0, 200, 150, 0.15);
 }
 
+@media (max-width: 768px) {
+  .feed-welcome-banner {
+    margin: 16px auto 12px;
+    padding: 20px 24px;
+  }
+}
+
 .feed-welcome-content {
   display: flex;
   flex-direction: column;
@@ -7892,6 +7899,12 @@ body {
   scrollbar-width: none;
   -ms-overflow-style: none;
   padding-bottom: 4px;
+}
+
+@media (max-width: 768px) {
+  .feed-filter-tabs {
+    margin-top: 12px;
+  }
 }
 
 .feed-filter-tabs::-webkit-scrollbar {

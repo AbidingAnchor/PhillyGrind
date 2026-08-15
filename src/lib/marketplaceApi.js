@@ -78,7 +78,7 @@ export async function getMarketplaceListings(filters = {}) {
     return filterFallbackListings(fallbackMarketplace.map(normalizeItem), filters);
   }
 
-  const { keyword = '', category = 'All', condition = 'All', location = '' } = filters;
+  const { keyword = '', category = 'All', condition = 'All', neighborhood = '' } = filters;
   let query = supabase
     .from('marketplace_listings')
     .select('*')
@@ -94,8 +94,8 @@ export async function getMarketplaceListings(filters = {}) {
     query = query.eq('condition', condition);
   }
 
-  if (location.trim()) {
-    query = query.ilike('location', `%${location.trim()}%`);
+  if (neighborhood.trim()) {
+    query = query.eq('neighborhood', neighborhood.trim());
   }
 
   if (keyword.trim()) {
@@ -175,6 +175,7 @@ export async function createMarketplaceListing(listing, photoFiles = []) {
     price: parseFloat(listing.price) || 0,
     category: listing.category,
     condition: listing.condition,
+    neighborhood: listing.neighborhood || 'Center City',
     location: listing.location.trim(),
     payment_type: listing.payment_type || 'both',
     status: 'active',
@@ -212,6 +213,7 @@ export async function createMarketplaceListing(listing, photoFiles = []) {
     price: payload.price,
     category: payload.category,
     condition: payload.condition,
+    neighborhood: payload.neighborhood,
     location: payload.location,
     payment_type: payload.payment_type,
   });
@@ -225,8 +227,7 @@ export async function createMarketplaceListing(listing, photoFiles = []) {
       .from('marketplace_listings')
       .update({ photos: photoUrls })
       .eq('id', data.id)
-      .select()
-      .single();
+      .select();
 
     if (updateError) throw updateError;
     return normalizeItem(updated);

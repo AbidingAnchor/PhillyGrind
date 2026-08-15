@@ -976,7 +976,7 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 
 -- Marketplace
-create table if not exists marketplace_items (
+create table if not exists marketplace_listings (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade,
   title text not null,
@@ -991,26 +991,29 @@ create table if not exists marketplace_items (
   created_at timestamptz default now()
 );
 
-alter table marketplace_items enable row level security;
+-- Add neighborhood column if it doesn't exist (for existing marketplace_listings tables)
+alter table marketplace_listings add column if not exists neighborhood text not null default 'Center City';
 
-drop policy if exists "Marketplace items are viewable by everyone" on marketplace_items;
+alter table marketplace_listings enable row level security;
+
+drop policy if exists "Marketplace items are viewable by everyone" on marketplace_listings;
 create policy "Marketplace items are viewable by everyone"
-  on marketplace_items for select
+  on marketplace_listings for select
   using (true);
 
-drop policy if exists "Users can insert their own marketplace items" on marketplace_items;
+drop policy if exists "Users can insert their own marketplace items" on marketplace_listings;
 create policy "Users can insert their own marketplace items"
-  on marketplace_items for insert
+  on marketplace_listings for insert
   with check (auth.uid() = user_id);
 
-drop policy if exists "Users can update their own marketplace items" on marketplace_items;
+drop policy if exists "Users can update their own marketplace items" on marketplace_listings;
 create policy "Users can update their own marketplace items"
-  on marketplace_items for update
+  on marketplace_listings for update
   using (auth.uid() = user_id);
 
-drop policy if exists "Users can delete their own marketplace items" on marketplace_items;
+drop policy if exists "Users can delete their own marketplace items" on marketplace_listings;
 create policy "Users can delete their own marketplace items"
-  on marketplace_items for delete
+  on marketplace_listings for delete
   using (auth.uid() = user_id);
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
