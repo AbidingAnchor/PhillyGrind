@@ -3,8 +3,6 @@ import { Menu, PlusCircle, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from './lib/auth.jsx';
 import { isAdminUser } from './lib/adminApi.js';
-import NotificationBell from './components/NotificationBell.jsx';
-import ThemeToggle from './components/ThemeToggle.jsx';
 import OnboardingModal from './components/OnboardingModal.jsx';
 import GrindBot from './components/GrindBot.jsx';
 
@@ -81,8 +79,6 @@ function App() {
           </Link>
           {isLoggedIn && (
             <div className="nav-user">
-              <ThemeToggle />
-              <NotificationBell />
               {showAdminLink && (
                 <NavLink to="/admin" id="nav-admin" onClick={() => setOpen(false)}>
                   <Shield size={16} />

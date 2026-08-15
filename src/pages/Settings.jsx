@@ -4,6 +4,8 @@ import { createConnectAccount } from '../lib/ordersApi.js';
 import { checkConnectStatus, getResumeUrl, uploadResume } from '../lib/profileApi.js';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
+import NotificationBell from '../components/NotificationBell.jsx';
+import ThemeToggle from '../components/ThemeToggle.jsx';
 
 function resumeFilename(path) {
   if (!path) return '';
@@ -274,6 +276,28 @@ function Settings() {
             <p>Identity verification is currently available for landlords who have posted Housing listings. Post a Housing listing to unlock verification.</p>
           </div>
         )}
+      </section>
+
+      <section className="profile-section-card">
+        <div className="profile-section-heading">
+          <span className="eyebrow">Appearance</span>
+          <h2>Theme</h2>
+        </div>
+        <div className="theme-toggle-row">
+          <p>Switch between light and dark mode to match your preference.</p>
+          <ThemeToggle />
+        </div>
+      </section>
+
+      <section className="profile-section-card">
+        <div className="profile-section-heading">
+          <span className="eyebrow">Notifications</span>
+          <h2>Notification Bell</h2>
+        </div>
+        <div className="notification-bell-row">
+          <p>View your notifications for messages, reactions, and other activity.</p>
+          <NotificationBell />
+        </div>
       </section>
 
       <section className="profile-section-card">
