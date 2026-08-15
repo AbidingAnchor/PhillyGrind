@@ -1831,7 +1831,7 @@ a.bid-card {
 
 .message-bubble.mine {
   align-self: flex-end;
-  border-color: rgba(15, 169, 104, 0.28);
+  border-color: var(--green);
   background: var(--mint);
 }
 
@@ -1845,9 +1845,13 @@ a.bid-card {
 
 .message-bubble p {
   margin: 0;
-  color: var(--ink);
+  color: #111827;
   line-height: 1.5;
   overflow-wrap: anywhere;
+}
+
+[data-theme="dark"] .message-bubble p {
+  color: #e5e5e5;
 }
 
 .message-bubble time {

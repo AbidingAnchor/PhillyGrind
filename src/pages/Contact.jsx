@@ -127,10 +127,15 @@ function Contact() {
 
       addAssistantMessage(payload.reply);
 
-      // Check if user wants to submit a ticket
-      const lowerReply = payload.reply.toLowerCase();
+      // Check if user wants to submit a ticket (comprehensive keyword matching)
       const userMessageLower = trimmed.toLowerCase();
-      const ticketKeywords = ['ticket', 'support', 'report', 'complaint', 'human', 'help me'];
+      const ticketKeywords = [
+        'ticket', 'support', 'report', 'complaint', 'human', 'help me',
+        'scam', 'fraud', 'issue', 'problem', 'dispute', 'harassment',
+        'threatening', 'illegal', 'no-show', 'didn\'t show', 'ghosted',
+        'payment issue', 'money', 'stolen', 'cheated', 'lied',
+        'unsafe', 'dangerous', 'file a complaint'
+      ];
       const wantsTicket = ticketKeywords.some((keyword) => userMessageLower.includes(keyword));
 
       if (wantsTicket && !ticketFlow) {
