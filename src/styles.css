@@ -7864,7 +7864,14 @@ body {
   gap: 8px;
   margin-bottom: 24px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding-bottom: 4px;
+}
+
+.feed-filter-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .page-tabs {
@@ -7950,24 +7957,40 @@ body {
 .feed-composer-compact {
   background: var(--card);
   border-radius: 50px;
-  padding: 12px 20px;
+  padding: 8px 12px;
   box-shadow: 0 2px 12px rgba(6, 21, 36, 0.06);
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
   transition: all 0.3s ease;
 }
 
+@media (min-width: 768px) {
+  .feed-composer-compact {
+    padding: 12px 20px;
+    gap: 12px;
+  }
+}
+
 .feed-composer-input {
   flex: 1;
-  padding: 10px 16px;
+  min-width: 0;
+  padding: 8px 12px;
   border: 1px solid var(--line);
-  border-radius: 24px;
+  border-radius: 20px;
   background: var(--background);
   color: var(--ink);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   outline: none;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+@media (min-width: 768px) {
+  .feed-composer-input {
+    padding: 10px 16px;
+    border-radius: 24px;
+    font-size: 0.95rem;
+  }
 }
 
 .feed-composer-input:focus {
@@ -7983,20 +8006,29 @@ body {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .feed-composer-photo-btn-compact {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: 1px solid var(--line);
   border-radius: 50%;
   background: var(--card);
   color: var(--muted);
   cursor: pointer;
   transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .feed-composer-photo-btn-compact {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 .feed-composer-photo-btn-compact:hover {
@@ -8010,15 +8042,25 @@ body {
 }
 
 .feed-composer-post-btn-compact {
-  padding: 8px 20px;
+  padding: 6px 16px;
   border: none;
-  border-radius: 20px;
+  border-radius: 18px;
   background: var(--green);
   color: white;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .feed-composer-post-btn-compact {
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+  }
 }
 
 .feed-composer-post-btn-compact:hover {
@@ -8114,11 +8156,19 @@ body {
 
 .feed-composer-avatar,
 .feed-composer-avatar-placeholder {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .feed-composer-avatar,
+  .feed-composer-avatar-placeholder {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 .feed-composer-avatar-placeholder-small {
@@ -8475,6 +8525,12 @@ body {
   overflow: visible;
   white-space: nowrap;
   pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+  .feed-post-reaction-picker {
+    display: none;
+  }
 }
 
 [data-theme="dark"] .feed-post-reaction-picker {
