@@ -104,13 +104,7 @@ export async function adminReportAction(reportId, action, warnMessage) {
 export async function getModerationLogs({ category = 'all', status = 'all', reviewed = 'all' } = {}) {
   const { data, error } = await supabase
     .from('moderation_logs')
-    .select(`
-      *,
-      profiles:user_id (
-        name,
-        email
-      )
-    `)
+    .select('*')
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);

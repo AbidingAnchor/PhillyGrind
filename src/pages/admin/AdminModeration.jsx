@@ -117,7 +117,7 @@ export default function AdminModeration() {
                 <th>Category</th>
                 <th>Rule</th>
                 <th>Status</th>
-                <th>User</th>
+                <th>User ID</th>
                 <th>Flagged Phrases</th>
                 <th>Explanation</th>
                 <th>Content Preview</th>
@@ -140,11 +140,8 @@ export default function AdminModeration() {
                         {log.status === 'auto_rejected' ? 'Auto Rejected' : 'Flagged for Review'}
                       </span>
                     </td>
-                    <td>
-                      <div className="admin-user-cell">
-                        <span className="admin-user-name">{log.profiles?.name || 'Unknown'}</span>
-                        <span className="admin-user-email">{log.profiles?.email || ''}</span>
-                      </div>
+                    <td className="admin-user-cell">
+                      <span className="admin-user-email">{log.user_id?.substring(0, 8)}...</span>
                     </td>
                     <td>
                       <div className="admin-phrases-list">

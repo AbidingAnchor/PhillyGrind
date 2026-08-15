@@ -175,9 +175,6 @@ export default function AdminCommunity() {
                   <td>{report.reporterName}</td>
                   <td>
                     <span className="admin-report-reason">{report.reason}</span>
-                    {report.details && (
-                      <div className="admin-report-details">{report.details}</div>
-                    )}
                   </td>
                   <td>
                     <div className="admin-post-content">
