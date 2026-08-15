@@ -154,7 +154,7 @@ export async function getConversations(userId) {
         .in('id', listingIds),
       supabase
         .from('marketplace_listings')
-        .select('id,user_id,title,category,neighborhood,price,description,photo_urls,created_at')
+        .select('id,user_id,title,category,neighborhood,price,description,photos,created_at')
         .in('id', listingIds),
     ]);
 

@@ -326,6 +326,20 @@ async function handleAdminListings(req, res) {
   });
 }
 
+async function handleAdminDisputes(req, res) {
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
+
+  const { data: disputes, error } = await supabaseAdmin
+    .from('disputes')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  sendJson(res, 200, { disputes });
+}
+
 async function handleAdminReports(req, res) {
   const admin = await requireAdmin(req, res);
   if (!admin) return;
@@ -657,7 +671,7 @@ async function handleAdminDismissCommunityReport(req, res, admin) {
   sendJson(res, 200, { ok: true });
 }
 
-const adminGetActions = new Set(['admin-overview', 'admin-users', 'admin-listings', 'admin-reports', 'admin-housing', 'admin-community-posts']);
+const adminGetActions = new Set(['admin-overview', 'admin-users', 'admin-listings', 'admin-reports', 'admin-disputes', 'admin-housing', 'admin-community-posts']);
 const adminPostActions = new Set([
   'admin-suspend-user',
   'admin-lift-suspension',
@@ -693,6 +707,9 @@ export default async function handler(req, res) {
           break;
         case 'admin-reports':
           await handleAdminReports(req, res);
+          break;
+        case 'admin-disputes':
+          await handleAdminDisputes(req, res);
           break;
         case 'admin-housing':
           await handleAdminHousing(req, res);

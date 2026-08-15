@@ -461,22 +461,23 @@ main {
 
 .listing-card h3 {
   margin: 12px 0 6px;
-  color: var(--navy);
+  color: #111827;
   font-size: 1.35rem;
+  font-weight: 700;
 }
 
 [data-theme="dark"] .listing-card h3 {
-  color: var(--ink);
+  color: #f3f4f6;
 }
 
 .listing-card p {
   margin: 0;
-  color: var(--muted);
+  color: #374151;
   line-height: 1.55;
 }
 
 [data-theme="dark"] .listing-card p {
-  color: var(--muted);
+  color: #d1d5db;
 }
 
 .pill {
@@ -1964,13 +1965,20 @@ a.bid-card {
   align-items: center;
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
   padding: 18px;
   color: inherit;
   text-align: left;
-  box-shadow: 0 12px 32px rgba(7, 24, 39, 0.07);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .conversation-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
 }
 
 @media (max-width: 480px) {
@@ -1981,7 +1989,14 @@ a.bid-card {
 }
 
 .conversation-card:hover {
-  border-color: rgba(15, 169, 104, 0.42);
+  border-color: rgba(17, 184, 121, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(17, 184, 121, 0.15);
+}
+
+[data-theme="dark"] .conversation-card:hover {
+  border-color: rgba(17, 184, 121, 0.5);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .conversation-icon {
@@ -1989,9 +2004,10 @@ a.bid-card {
   place-items: center;
   width: 44px;
   height: 44px;
-  border-radius: 8px;
-  background: var(--mint);
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--mint) 0%, rgba(34, 197, 94, 0.2) 100%);
   color: var(--green-dark);
+  box-shadow: 0 2px 8px rgba(17, 184, 121, 0.15);
 }
 
 .conversation-content {
@@ -2001,23 +2017,37 @@ a.bid-card {
 }
 
 .conversation-content strong {
-  color: var(--navy);
+  color: #111827;
   font-size: 1.05rem;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .conversation-content strong {
+  color: #f3f4f6;
 }
 
 .conversation-content span,
 .conversation-card time {
-  color: var(--muted);
+  color: #6b7280;
   font-size: 0.84rem;
-  font-weight: 800;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .conversation-content span,
+[data-theme="dark"] .conversation-card time {
+  color: #9ca3af;
 }
 
 .conversation-content p {
   margin: 0;
   overflow: hidden;
-  color: var(--ink);
+  color: #374151;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+[data-theme="dark"] .conversation-content p {
+  color: #d1d5db;
 }
 
 .site-footer {
@@ -7128,6 +7158,15 @@ body {
 
 .housing-post-btn {
   white-space: nowrap;
+  background: linear-gradient(135deg, var(--green) 0%, #0b8f62 100%);
+  box-shadow: 0 4px 14px rgba(17, 184, 121, 0.3);
+  transition: all 0.2s ease;
+}
+
+.housing-post-btn:hover {
+  background: linear-gradient(135deg, #0b8f62 0%, #097a54 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(17, 184, 121, 0.4);
 }
 
 .housing-grid {
@@ -8755,34 +8794,37 @@ body {
 }
 
 .feed-composer-post-btn-compact {
-  padding: 6px 16px;
+  padding: 8px 18px;
   border: none;
-  border-radius: 18px;
-  background: var(--green);
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--green) 0%, #00a87a 100%);
   color: white;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   flex-shrink: 0;
   white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(17, 184, 121, 0.25);
 }
 
 @media (min-width: 768px) {
   .feed-composer-post-btn-compact {
-    padding: 8px 20px;
-    border-radius: 20px;
+    padding: 10px 22px;
+    border-radius: 22px;
     font-size: 0.9rem;
   }
 }
 
 .feed-composer-post-btn-compact:hover {
-  background: #00a87a;
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #00a87a 0%, #009670 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(17, 184, 121, 0.35);
 }
 
 .feed-composer-post-btn-compact:active {
   transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(17, 184, 121, 0.25);
 }
 
 .feed-composer-photo-preview-compact {
