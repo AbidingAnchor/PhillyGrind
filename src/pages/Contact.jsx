@@ -238,7 +238,11 @@ function Contact() {
           {sending && (
             <article className="message-bubble">
               <span>GrindBot</span>
-              <p>Working on it...</p>
+              <div className="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
             </article>
           )}
         </div>
