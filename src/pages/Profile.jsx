@@ -424,12 +424,12 @@ function Profile() {
                 <span>{profileData.rating.count} review{profileData.rating.count === 1 ? '' : 's'}</span>
               </div>
               {profileData.profile?.availability && <span className={`availability-badge ${profileData.profile.availability === 'Available Now' ? 'available' : profileData.profile.availability === 'Not Available' ? 'unavailable' : ''}`}>{profileData.profile.availability}</span>}
+              {isOwnProfile && (
+                <button className="profile-edit-button" type="button" onClick={() => setEditing((value) => !value)} style={{ marginTop: '12px' }}>
+                  {editing ? 'Close Editor' : 'Edit Profile'}
+                </button>
+              )}
             </div>
-            {isOwnProfile && (
-              <button className="profile-edit-button" type="button" onClick={() => setEditing((value) => !value)}>
-                {editing ? 'Close Editor' : 'Edit Profile'}
-              </button>
-            )}
           </div>
 
           {profileStatus && <p className="form-status">{profileStatus}</p>}

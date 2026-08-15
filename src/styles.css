@@ -3845,15 +3845,21 @@ body {
 }
 
 .profile-edit-button {
-  justify-self: end;
-  align-self: start;
   border: 1px solid var(--profile-accent, #16a34a);
   border-radius: 999px;
   background: var(--profile-accent, #16a34a);
   color: #fff;
-  padding: 11px 16px;
-  font-weight: 850;
+  padding: 11px 20px;
+  font-weight: 600;
+  font-size: 0.95rem;
   cursor: pointer;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.profile-edit-button:hover {
+  opacity: 0.9;
 }
 
 .profile-section-heading {
@@ -3905,18 +3911,6 @@ body {
   margin: 8px 0 0;
   color: rgba(255, 255, 255, 0.76);
   font-weight: 750;
-}
-
-.profile-edit-button {
-  justify-self: end;
-  align-self: start;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 999px;
-  background: #16a34a;
-  color: #fff;
-  padding: 11px 16px;
-  font-weight: 850;
-  cursor: pointer;
 }
 
 .profile-rating-row {
