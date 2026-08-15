@@ -159,7 +159,6 @@ function Housing() {
           </div>
         </div>
 
-        {loading && <p className="empty-state">Loading rentals from Supabase...</p>}
         {error && <p className="empty-state error-state">{error}</p>}
 
         {!loading && !error && (

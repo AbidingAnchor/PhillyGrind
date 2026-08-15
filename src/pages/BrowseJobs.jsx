@@ -322,7 +322,6 @@ function BrowseJobs() {
         </div>
       </div>
       <CategoryFilters categories={jobCategories} activeCategory={category} onChange={setCategory} />
-      {loading && <p className="empty-state">Loading jobs...</p>}
       {error && <p className="empty-state error-state">{error}</p>}
       {!loading && !error && (
         <>

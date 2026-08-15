@@ -281,8 +281,6 @@ function BrowseMarketplace() {
             </div>
           </div>
         </div>
-        {loading && <p className="empty-state">Loading marketplace listings...</p>}
-
         {error && <p className="empty-state error-state">{error}</p>}
 
         {!loading && !error && (

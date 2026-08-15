@@ -100,7 +100,6 @@ function BrowseGigs() {
         ))}
       </div>
       <CategoryFilters categories={gigCategories} activeCategory={category} onChange={setCategory} />
-      {loading && <p className="empty-state">Loading gigs from Supabase...</p>}
       {error && <p className="empty-state error-state">{error}</p>}
       {!loading && !error && (
         <>
