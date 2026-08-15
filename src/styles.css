@@ -7237,6 +7237,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 32px;
+  margin-bottom: 0;
 }
 
 .feed-post-card {
@@ -7970,7 +7971,7 @@ body {
 
 @media (max-width: 768px) {
   .feed-filter-tabs {
-    margin-top: 12px;
+    margin-top: 8px;
   }
 }
 
@@ -8633,7 +8634,11 @@ body {
 
 @media (max-width: 768px) {
   .feed-post-reaction-picker {
-    display: none;
+    bottom: calc(100% + 5px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 12px;
+    gap: 3px;
   }
 }
 
