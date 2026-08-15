@@ -116,6 +116,16 @@ function Profile() {
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [profileConversation, setProfileConversation] = useState(null);
   const isOwnProfile = isLoggedIn && user?.id === viewedUserId;
+
+  // Debug logging for Message button visibility
+  console.log('[Profile Debug] Message button visibility check:', {
+    isLoggedIn,
+    userId: user?.id,
+    viewedUserId,
+    isOwnProfile,
+    shouldShowMessage: !isOwnProfile && isLoggedIn
+  });
+
   const activeBoosts = listings.filter((listing) => (
     listing.is_boosted
     && listing.boost_tier
