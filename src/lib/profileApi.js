@@ -137,6 +137,8 @@ export async function uploadAvatar(file) {
 }
 
 export async function uploadBanner(file) {
+  console.log('[uploadBanner] Starting banner upload for file:', file.name, file.size, file.type);
+  
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
   }
@@ -145,6 +147,8 @@ export async function uploadBanner(file) {
   if (userError || !userData.user) {
     throw new Error('Please log in before uploading a banner photo.');
   }
+  
+  console.log('[uploadBanner] User authenticated:', userData.user.id);
 
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
     throw new Error('Banner photo must be a JPG, PNG, or WebP.');
@@ -155,6 +159,8 @@ export async function uploadBanner(file) {
   }
 
   const path = `${userData.user.id}/banner.${bannerExtensionFor(file)}`;
+  console.log('[uploadBanner] Storage path:', path);
+  
   const { error: uploadError } = await supabase.storage
     .from('profile-banners')
     .upload(path, file, {
@@ -163,11 +169,18 @@ export async function uploadBanner(file) {
       upsert: true,
     });
 
-  if (uploadError) throw uploadError;
+  if (uploadError) {
+    console.error('[uploadBanner] Storage upload error:', uploadError);
+    throw uploadError;
+  }
+  
+  console.log('[uploadBanner] Storage upload successful');
 
   const { data: publicData } = supabase.storage
     .from('profile-banners')
     .getPublicUrl(path);
+
+  console.log('[uploadBanner] Public URL generated:', publicData.publicUrl);
 
   const { data, error } = await supabase
     .from('profiles')
@@ -176,7 +189,12 @@ export async function uploadBanner(file) {
     .select(profileSelect)
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('[uploadBanner] Database update error:', error);
+    throw error;
+  }
+  
+  console.log('[uploadBanner] Database update successful, banner_url:', data.banner_url);
 
   return data;
 }

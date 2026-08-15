@@ -303,17 +303,23 @@ function Profile() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log('[Banner Upload] Starting upload for file:', file.name, file.size, file.type);
     setUploadingBanner(true);
     setProfileStatus('');
 
     try {
+      console.log('[Banner Upload] Calling uploadBanner...');
       const nextProfile = await uploadBanner(file);
+      console.log('[Banner Upload] uploadBanner returned:', nextProfile);
+      console.log('[Banner Upload] banner_url in returned profile:', nextProfile.banner_url);
       setProfileData((current) => current ? {
         ...current,
         profile: nextProfile,
       } : current);
+      console.log('[Banner Upload] Profile data updated');
       setProfileStatus('Banner uploaded.');
     } catch (err) {
+      console.error('[Banner Upload] Error:', err);
       setProfileStatus(err.message || 'Could not upload banner.');
     } finally {
       setUploadingBanner(false);
@@ -389,6 +395,7 @@ function Profile() {
       {!loading && !error && profileData && (
         <>
           <div className="profile-header" style={{ '--profile-accent': profileData.profile?.accent_color || '#22c55e' }}>
+            {console.log('[Profile Render] banner_url:', profileData.profile?.banner_url)}
             {profileData.profile?.banner_url ? (
               <div className="profile-banner" style={{ backgroundImage: `url(${profileData.profile.banner_url})` }}></div>
             ) : (

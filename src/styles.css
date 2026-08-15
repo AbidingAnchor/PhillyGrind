@@ -3490,9 +3490,9 @@ body {
 }
 
 .profile-tag-option.selected {
-  background: #22c55e;
+  background: var(--profile-accent, #22c55e);
   color: #fff;
-  border-color: #22c55e;
+  border-color: var(--profile-accent, #22c55e);
 }
 
 [data-theme="dark"] .profile-tag-option.selected {
