@@ -3812,6 +3812,7 @@ body {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  z-index: 0;
 }
 
 .profile-banner-default {
@@ -3829,7 +3830,7 @@ body {
   align-items: flex-end;
   gap: 20px;
   margin-bottom: 24px;
-  background: #111827;
+  background: transparent;
   color: #fff;
   overflow: hidden;
 }
