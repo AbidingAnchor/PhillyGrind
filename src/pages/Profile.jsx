@@ -401,7 +401,12 @@ function Profile() {
             {profileData.profile?.banner_url && profileData.profile.banner_url.trim() !== '' ? (
               <div 
                 className="profile-banner" 
-                style={{ backgroundImage: `url(${profileData.profile.banner_url})` }}
+                style={{ 
+                  backgroundImage: `url(${profileData.profile.banner_url})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat'
+                }}
                 data-banner-url={profileData.profile.banner_url}
               ></div>
             ) : (
