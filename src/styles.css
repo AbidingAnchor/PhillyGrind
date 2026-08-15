@@ -2664,7 +2664,7 @@ main {
 
 @media (max-width: 768px) {
   .feed-welcome-banner {
-    margin: 16px auto 12px;
+    margin: 16px auto 8px;
     padding: 20px 24px;
   }
 }
@@ -8618,7 +8618,7 @@ body {
 
 @media (max-width: 768px) {
   .feed-filter-tabs {
-    margin-top: 8px;
+    margin-top: 0;
   }
 }
 
