@@ -1316,8 +1316,12 @@ create table if not exists contact_submissions (
   category text not null check (category in ('general', 'data_deletion', 'fair_housing_complaint', 'dispute_report', 'other')),
   message text not null,
   status text not null default 'new' check (status in ('new', 'in_progress', 'resolved')),
+  user_id uuid references auth.users(id) on delete set null,
   created_at timestamptz default now()
 );
+
+-- Add user_id column if it doesn't exist (for existing contact_submissions tables)
+alter table contact_submissions add column if not exists user_id uuid references auth.users(id) on delete set null;
 
 alter table contact_submissions enable row level security;
 

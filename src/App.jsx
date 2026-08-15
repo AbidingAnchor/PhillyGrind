@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useAuth } from './lib/auth.jsx';
 import { isAdminUser } from './lib/adminApi.js';
 import OnboardingModal from './components/OnboardingModal.jsx';
-import GrindBot from './components/GrindBot.jsx';
 
 const navItems = [
   { to: '/', label: 'Community', tour: 'community', id: 'nav-community' },
@@ -108,7 +107,6 @@ function App() {
       </main>
 
       {shouldShowOnboarding && <OnboardingModal />}
-      {isLoggedIn && <GrindBot />}
 
       <footer className="site-footer">
         <div>
@@ -121,7 +119,7 @@ function App() {
           <Link to="/gigs">Gigs</Link>
           <Link to="/marketplace">Marketplace</Link>
           <Link to="/housing">Housing</Link>
-          <Link to="/contact">Contact</Link>
+          <Link to="/contact">Need Help? Chat with GrindBot</Link>
           <Link to="/terms">Terms</Link>
           <Link to="/privacy">Privacy</Link>
         </nav>

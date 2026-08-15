@@ -1,6 +1,6 @@
 import { supabase } from './supabase.js';
 
-export async function sendContactSubmission({ name, email, category, message }) {
+export async function sendContactSubmission({ name, email, category, message, user_id }) {
   const { data, error } = await supabase
     .from('contact_submissions')
     .insert({
@@ -8,6 +8,7 @@ export async function sendContactSubmission({ name, email, category, message }) 
       email: email.trim(),
       category,
       message: message.trim(),
+      user_id,
     })
     .select()
     .single();
