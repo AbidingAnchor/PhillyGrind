@@ -1598,6 +1598,73 @@ a.bid-card {
   gap: 12px;
 }
 
+.neighborhood-modal {
+  max-width: 500px;
+}
+
+.neighborhood-search {
+  margin: 20px 0;
+}
+
+.neighborhood-search-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 1rem;
+  background: var(--background);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.neighborhood-search-input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.neighborhood-list {
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--background);
+}
+
+.neighborhood-option {
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.neighborhood-option:hover {
+  background: var(--line);
+}
+
+.neighborhood-option.selected {
+  background: var(--green);
+  color: white;
+  font-weight: 600;
+}
+
+.no-results {
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .driver-popover.phillygrind-tour-popover {
   max-width: 380px;
   border: 1px solid rgba(34, 197, 94, 0.22);

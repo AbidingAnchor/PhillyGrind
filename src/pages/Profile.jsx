@@ -9,7 +9,7 @@ import { getUserListings } from '../lib/listingsApi.js';
 import { updateProfile, uploadAvatar, uploadBanner } from '../lib/profileApi.js';
 import { getUserReviews } from '../lib/reviewsApi.js';
 import { getMyBids } from '../lib/bidsApi.js';
-import { getHousingListings } from '../lib/housingApi.js';
+import { getHousingListings, HOUSING_NEIGHBORHOODS } from '../lib/housingApi.js';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
 import { getUserAvatarColor } from '../lib/reactions.js';
@@ -97,7 +97,7 @@ function Profile() {
   const [marketplaceListings, setMarketplaceListings] = useState([]);
   const [marketplaceOrders, setMarketplaceOrders] = useState([]);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ bio: '', skills: [], availability: '', neighborhoods: [], profile_tags: [], accent_color: '#22c55e' });
+  const [form, setForm] = useState({ bio: '', skills: [], availability: '', neighborhoods: [], profile_tags: [], accent_color: '#22c55e', neighborhood: '' });
   const [profileStatus, setProfileStatus] = useState('');
   const [saving, setSaving] = useState(false);
   const [renewingBoostId, setRenewingBoostId] = useState('');
@@ -143,6 +143,7 @@ function Profile() {
           neighborhoods: nextProfileData.profile?.neighborhoods || [],
           profile_tags: nextProfileData.profile?.profile_tags || [],
           accent_color: nextProfileData.profile?.accent_color || '#22c55e',
+          neighborhood: nextProfileData.profile?.neighborhood || '',
         });
       })
       .catch((err) => setError(err.message || 'Could not load this profile.'))
@@ -267,6 +268,7 @@ function Profile() {
         neighborhoods: form.neighborhoods,
         profile_tags: form.profile_tags,
         accent_color: form.accent_color,
+        neighborhood: form.neighborhood,
       });
       setProfileData((current) => current ? {
         ...current,
@@ -911,6 +913,16 @@ function Profile() {
                       </select>
                     </label>
                     <TagEditor label="Neighborhoods served" placeholder="South Philly, Fishtown..." tags={form.neighborhoods} onChange={(neighborhoods) => setForm((current) => ({ ...current, neighborhoods }))} />
+                    <label>
+                      Your Neighborhood
+                      <select name="neighborhood" value={form.neighborhood} onChange={updateField}>
+                        <option value="">Select your neighborhood</option>
+                        {HOUSING_NEIGHBORHOODS.map((item) => (
+                          <option key={item} value={item}>{item}</option>
+                        ))}
+                      </select>
+                      <span className="detail-note">This helps show you nearby posts in the Community feed.</span>
+                    </label>
                     <label>
                       Personality tags (select up to 3)
                       <div className="profile-tags-selector">

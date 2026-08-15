@@ -483,7 +483,7 @@ function Community() {
   const navigate = useNavigate();
   const { isLoggedIn, user, profile } = useAuth();
   const [posts, setPosts] = useState([]);
-  const [neighborhood, setNeighborhood] = useState('Any');
+  const [neighborhood, setNeighborhood] = useState(profile?.neighborhood || 'Any');
   const [filterTab, setFilterTab] = useState('all'); // all, recent, nearby, popular
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -627,7 +627,10 @@ function Community() {
               </button>
               <button
                 className={`feed-filter-tab ${filterTab === 'nearby' ? 'active' : ''}`}
-                onClick={() => setFilterTab('nearby')}
+                onClick={() => {
+                  setFilterTab('nearby');
+                  setNeighborhood(profile?.neighborhood || 'Any');
+                }}
               >
                 Nearby
               </button>

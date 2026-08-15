@@ -43,6 +43,7 @@ create table if not exists profiles (
   skills text[] not null default '{}',
   availability text,
   neighborhoods text[] not null default '{}',
+  neighborhood text,
   resume_path text,
   resume_url text,
   avatar_url text,
@@ -52,6 +53,9 @@ create table if not exists profiles (
   tos_agreed_at timestamptz,
   created_at timestamptz default now()
 );
+
+-- Add neighborhood column if it doesn't exist (for existing profiles tables)
+alter table profiles add column if not exists neighborhood text;
 
 create table if not exists messages (
   id uuid primary key default gen_random_uuid(),
