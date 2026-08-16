@@ -2164,13 +2164,18 @@ a.bid-card {
     font-size: 2.45rem;
   }
 
-  .split-section,
   .page-section,
+  .split-section,
   .form-page,
   .auth-page,
   .detail-page {
     width: min(100% - 28px, 1160px);
     padding: 40px 0;
+  }
+
+  .community-content {
+    width: 100%;
+    padding: 0 16px;
   }
 }
 
@@ -2666,6 +2671,7 @@ main {
   .feed-welcome-banner {
     margin: 16px auto 8px;
     padding: 20px 24px;
+    width: calc(100% - 32px);
   }
 }
 
@@ -6941,6 +6947,11 @@ body {
   .hiring-events-page,
   .marketplace-content {
     width: min(100% - 32px, 1160px);
+  }
+
+  .community-content {
+    width: 100%;
+    padding: 0 16px;
   }
 
   .listing-grid,
