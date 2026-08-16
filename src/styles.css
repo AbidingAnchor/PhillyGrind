@@ -4224,7 +4224,24 @@ body {
 
 @media (max-width: 768px) {
   .profile-page {
-    padding: 70px 0;
+    padding: 70px 16px;
+    width: 100%;
+  }
+
+  .profile-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .profile-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .profile-section-card {
+    max-width: 100%;
+    overflow: hidden;
   }
 }
 
