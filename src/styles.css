@@ -2175,7 +2175,7 @@ a.bid-card {
 
   .community-content {
     width: 100%;
-    padding: 0 16px;
+    padding: 0 16px 32px;
   }
 }
 
@@ -6951,7 +6951,7 @@ body {
 
   .community-content {
     width: 100%;
-    padding: 0 16px;
+    padding: 0 16px 32px;
   }
 
   .listing-grid,
