@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward } from 'lucide-react';
 import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, removeCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, getUserCommentReaction, toggleCommentReaction, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl, getReactionBreakdown, getCommentReactionBreakdown } from '../lib/communityApi.js';
+import { muteUser, blockUser } from '../lib/moderationApi.js';
 import { useAuth } from '../lib/auth.jsx';
 import { getReactionTotalCount, getUserAvatarColor } from '../lib/reactions.js';
 import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
@@ -104,6 +105,8 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
   const [userReaction, setUserReaction] = useState(null);
   const [reactionBreakdown, setReactionBreakdown] = useState([]);
   const [reactionsLoaded, setReactionsLoaded] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const reactionTotal = getReactionTotalCount(reactionBreakdown);
 
@@ -151,7 +154,54 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
     }
   }
 
+  async function handleMuteUser() {
+    if (!window.confirm(`Mute ${comment.authorName}? You won't see their posts or comments anymore.`)) return;
+    
+    try {
+      await muteUser(comment.user_id);
+      alert(`${comment.authorName} has been muted.`);
+      setShowMenu(false);
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+
+  async function handleBlockUser() {
+    if (!window.confirm(`Block ${comment.authorName}? They won't be able to message you and you won't see their posts or comments.`)) return;
+    
+    try {
+      await blockUser(comment.user_id);
+      alert(`${comment.authorName} has been blocked.`);
+      setShowMenu(false);
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+
+  async function handleReport() {
+    setShowReportModal(true);
+    setShowMenu(false);
+  }
+
+  async function handleShare() {
+    const commentUrl = `${window.location.origin}/community/post/${comment.post_id}#comment-${comment.id}`;
+    try {
+      await navigator.clipboard.writeText(commentUrl);
+      alert('Comment link copied to clipboard!');
+      setShowMenu(false);
+    } catch (error) {
+      alert('Failed to copy link');
+    }
+  }
+
+  async function handleReportSubmit({ reason, details }) {
+    await submitCommunityReport({ commentId: comment.id, reason, details });
+    alert('Comment reported successfully. Thank you for helping keep our community safe.');
+    setShowReportModal(false);
+  }
+
   const isReply = depth > 0;
+  const isOwnComment = currentUser?.id === comment.user_id;
 
   return (
     <div className={isReply ? 'feed-comment-reply' : 'feed-comment'}>
@@ -177,15 +227,44 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
           <span className={isReply ? 'feed-comment-reply-time' : 'feed-comment-time'}>
             {comment.relativeTime}
           </span>
-          {currentUser?.id === comment.user_id && (
+          <div className="feed-comment-actions">
             <button
               type="button"
-              className="feed-comment-delete"
-              onClick={() => onDelete(comment.id)}
+              className="feed-comment-menu-button"
+              onClick={() => setShowMenu(!showMenu)}
             >
-              <X size={12} />
+              <MoreHorizontal size={16} />
             </button>
-          )}
+            {showMenu && (
+              <div className="feed-comment-menu-dropdown">
+                {!isOwnComment && (
+                  <>
+                    <button type="button" onClick={handleMuteUser}>
+                      Mute {comment.authorName}
+                    </button>
+                    <button type="button" onClick={handleBlockUser}>
+                      Block {comment.authorName}
+                    </button>
+                  </>
+                )}
+                <button type="button" onClick={handleReport}>
+                  Report
+                </button>
+                <button type="button" onClick={handleShare}>
+                  Share
+                </button>
+              </div>
+            )}
+            {isOwnComment && (
+              <button
+                type="button"
+                className="feed-comment-delete"
+                onClick={() => onDelete(comment.id)}
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
         </div>
         <p>{comment.content}</p>
         
@@ -246,6 +325,13 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
           </div>
         )}
       </div>
+
+      {showReportModal && (
+        <ReportModal
+          onClose={() => setShowReportModal(false)}
+          onSubmit={handleReportSubmit}
+        />
+      )}
     </div>
   );
 }

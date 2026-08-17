@@ -2,6 +2,7 @@ import { hasSupabaseConfig, supabase } from './supabase.js';
 import { createListingWithModeration } from './adminApi.js';
 import { normalizeReactionType } from './reactions.js';
 import { checkCommunitySafety } from './moderationService.js';
+import { getFilteredUsers } from './moderationApi.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -104,7 +105,13 @@ export async function getCommunityPosts(filters = {}) {
   const { data, error } = await query;
   if (error) throw error;
 
-  return attachAuthorInfo(data ?? []);
+  const posts = data ?? [];
+  
+  // Filter out posts from blocked/muted users
+  const filteredUserIds = await getFilteredUsers();
+  const filteredPosts = posts.filter((post) => !filteredUserIds.includes(post.user_id));
+
+  return attachAuthorInfo(filteredPosts);
 }
 
 export async function getCommunityPost(id) {
@@ -162,12 +169,17 @@ export async function getCommunityComments(postId) {
   if (error) throw error;
 
   const comments = data ?? [];
-  const userIds = [...new Set(comments.map((comment) => comment.user_id).filter(Boolean))];
   
-  console.log('[getCommunityComments] postId:', postId, 'comments:', comments.length, 'userIds:', userIds);
+  // Filter out comments from blocked/muted users
+  const filteredUserIds = await getFilteredUsers();
+  const filteredComments = comments.filter((comment) => !filteredUserIds.includes(comment.user_id));
+  
+  const userIds = [...new Set(filteredComments.map((comment) => comment.user_id).filter(Boolean))];
+  
+  console.log('[getCommunityComments] postId:', postId, 'comments:', filteredComments.length, 'userIds:', userIds);
   
   if (!userIds.length) {
-    return comments.map((comment) => ({
+    return filteredComments.map((comment) => ({
       ...comment,
       authorName: 'PhillyGrind user',
       authorAvatarUrl: '',
@@ -186,7 +198,7 @@ export async function getCommunityComments(postId) {
   
   const profilesById = Object.fromEntries((profiles ?? []).map((profile) => [profile.id, profile]));
   
-  const commentsWithAuthor = comments.map((comment) => {
+  const commentsWithAuthor = filteredComments.map((comment) => {
     const profile = profilesById[comment.user_id];
     const authorName = safeDisplayName(profile?.name);
     console.log('[getCommunityComments] comment:', comment.id, 'user_id:', comment.user_id, 'profile found:', !!profile, 'profile.name:', profile?.name, 'authorName:', authorName);
@@ -595,24 +607,33 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
     return reactionType;
   }
 
-export async function submitCommunityReport({ postId, reason, details }) {
+export async function submitCommunityReport({ postId, commentId, reason, details }) {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
   }
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) {
-    throw new Error('Please log in to report this post.');
+    throw new Error('Please log in to report this.');
+  }
+
+  const payload = {
+    reporter_id: userData.user.id,
+    reason: reason.trim(),
+    details: details?.trim() || null,
+  };
+
+  if (postId) {
+    payload.post_id = postId;
+  }
+
+  if (commentId) {
+    payload.comment_id = commentId;
   }
 
   const { error } = await supabase
     .from('community_reports')
-    .insert({
-      post_id: postId,
-      reporter_id: userData.user.id,
-      reason: reason.trim(),
-      details: details?.trim() || null,
-    });
+    .insert(payload);
 
   if (error) throw error;
 }

@@ -492,6 +492,11 @@ create policy "Users can send messages"
     auth.uid() = sender_id
     and sender_id <> receiver_id
     and length(trim(content)) > 0
+    and not exists (
+      select 1 from user_blocks
+      where blocker_id = receiver_id
+      and blocked_user_id = sender_id
+    )
   );
 
 drop policy if exists "Anyone can read reviews" on reviews;
@@ -1267,6 +1272,50 @@ create policy "Users can update own community comment likes"
 create index if not exists community_comment_likes_comment_id_idx on community_comment_likes(comment_id);
 create index if not exists community_comment_likes_user_id_idx on community_comment_likes(user_id);
 
+-- User Mutes (one-directional, per-user preference)
+create table if not exists user_mutes (
+  id uuid primary key default gen_random_uuid(),
+  muter_id uuid references auth.users(id) on delete cascade not null,
+  muted_user_id uuid references auth.users(id) on delete cascade not null,
+  created_at timestamptz default now(),
+  unique (muter_id, muted_user_id),
+  constraint user_mutes_no_self_mute check (muter_id <> muted_user_id)
+);
+
+-- RLS Policies for user_mutes
+alter table user_mutes enable row level security;
+
+create policy "Users can manage own mutes"
+  on user_mutes for all
+  to authenticated
+  using (auth.uid() = muter_id)
+  with check (auth.uid() = muter_id);
+
+create index if not exists user_mutes_muter_id_idx on user_mutes(muter_id);
+create index if not exists user_mutes_muted_user_id_idx on user_mutes(muted_user_id);
+
+-- User Blocks (one-directional, restrictive)
+create table if not exists user_blocks (
+  id uuid primary key default gen_random_uuid(),
+  blocker_id uuid references auth.users(id) on delete cascade not null,
+  blocked_user_id uuid references auth.users(id) on delete cascade not null,
+  created_at timestamptz default now(),
+  unique (blocker_id, blocked_user_id),
+  constraint user_blocks_no_self_block check (blocker_id <> blocked_user_id)
+);
+
+-- RLS Policies for user_blocks
+alter table user_blocks enable row level security;
+
+create policy "Users can manage own blocks"
+  on user_blocks for all
+  to authenticated
+  using (auth.uid() = blocker_id)
+  with check (auth.uid() = blocker_id);
+
+create index if not exists user_blocks_blocker_id_idx on user_blocks(blocker_id);
+create index if not exists user_blocks_blocked_user_id_idx on user_blocks(blocked_user_id);
+
 create table if not exists community_post_likes (
   id uuid primary key default gen_random_uuid(),
   post_id uuid references community_posts(id) on delete cascade not null,
@@ -1284,11 +1333,39 @@ alter table community_comments add column if not exists parent_comment_id uuid r
 
 create table if not exists community_reports (
   id uuid primary key default gen_random_uuid(),
-  post_id uuid references community_posts(id) on delete cascade not null,
+  post_id uuid references community_posts(id) on delete cascade,
+  comment_id uuid references community_comments(id) on delete cascade,
   reporter_id uuid references auth.users(id) on delete cascade not null,
   reason text not null,
-  created_at timestamptz default now()
+  details text,
+  created_at timestamptz default now(),
+  constraint community_reports_either_post_or_comment check (
+    (post_id is not null and comment_id is null) or 
+    (post_id is null and comment_id is not null)
+  )
 );
+
+-- Add comment_id column if it doesn't exist (for existing tables)
+alter table community_reports add column if not exists comment_id uuid references community_comments(id) on delete cascade;
+alter table community_reports add column if not exists details text;
+
+-- Add constraint if it doesn't exist
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'community_reports_either_post_or_comment'
+      and conrelid = 'public.community_reports'::regclass
+  ) then
+    alter table community_reports
+      add constraint community_reports_either_post_or_comment check (
+        (post_id is not null and comment_id is null) or 
+        (post_id is null and comment_id is not null)
+      );
+  end if;
+end;
+$$;
 
 -- RLS Policies for community_posts
 alter table community_posts enable row level security;
