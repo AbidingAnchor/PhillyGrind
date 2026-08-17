@@ -15,6 +15,7 @@ function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const [status, setStatus] = useState('');
   const dropdownRef = useRef(null);
+  const unsubscribeRef = useRef(null);
   const navigate = useNavigate();
 
   const unreadCount = useMemo(() => (
@@ -24,7 +25,17 @@ function NotificationBell() {
   useEffect(() => {
     if (!user) {
       setNotifications([]);
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
       return undefined;
+    }
+
+    // Clean up previous subscription if exists
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
     }
 
     getNotifications(user.id)
@@ -34,7 +45,7 @@ function NotificationBell() {
       })
       .catch((error) => setStatus(error.message || 'Could not load notifications.'));
 
-    return subscribeToNotifications({
+    const unsubscribe = subscribeToNotifications({
       userId: user.id,
       onNotification: (notification) => {
         console.log('Realtime notification from Supabase', notification);
@@ -47,6 +58,15 @@ function NotificationBell() {
           .catch((error) => setStatus(error.message || 'Could not refresh notifications.'));
       },
     });
+
+    unsubscribeRef.current = unsubscribe;
+
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+    };
   }, [user]);
 
   useEffect(() => {
