@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CreditCard, Shield, BadgeCheck, Palette, User, Bell, FileText } from 'lucide-react';
 import { sendTwoFactorCode, toggleTwoFactorAuth, verifyTwoFactorCode } from '../lib/twoFactorApi.js';
 import { createConnectAccount } from '../lib/ordersApi.js';
 import { checkConnectStatus, getResumeUrl, uploadResume } from '../lib/profileApi.js';
@@ -177,8 +178,10 @@ function Settings() {
 
       <section className={payoutsConnected ? 'payout-profile-card connected' : 'payout-profile-card'}>
         <div>
-          <span className="eyebrow">Stripe Express</span>
-          <h2>{payoutsConnected ? 'Payouts connected' : hasStripeAccount ? 'Finish payout setup' : 'Set up payouts to receive payments'}</h2>
+          <div className="profile-section-heading">
+            <span className="eyebrow">Stripe Express</span>
+            <h2>{payoutsConnected ? 'Payouts connected' : hasStripeAccount ? 'Finish payout setup' : 'Set up payouts to receive payments'}</h2>
+          </div>
           <p>
             {payoutsConnected
               ? 'You can receive secure escrow payouts for gigs and marketplace sales through Stripe Express.'
@@ -198,8 +201,13 @@ function Settings() {
 
       <section className="profile-section-card">
         <div className="profile-section-heading">
-          <span className="eyebrow">Security</span>
-          <h2>Two-Factor Authentication</h2>
+          <div className="section-icon-wrapper">
+            <Shield size={20} />
+          </div>
+          <div>
+            <span className="eyebrow">Security</span>
+            <h2>Two-Factor Authentication</h2>
+          </div>
         </div>
         {twoFactorStep === 'idle' && (
           <div className="two-factor-toggle">
@@ -253,8 +261,13 @@ function Settings() {
 
       <section className="profile-section-card">
         <div className="profile-section-heading">
-          <span className="eyebrow">Identity Verification</span>
-          <h2>Verified Badge</h2>
+          <div className="section-icon-wrapper">
+            <BadgeCheck size={20} />
+          </div>
+          <div>
+            <span className="eyebrow">Identity Verification</span>
+            <h2>Verified Badge</h2>
+          </div>
         </div>
         {authProfile?.identity_verified ? (
           <div className="verification-badge-display">
@@ -299,8 +312,13 @@ function Settings() {
 
       <section className="profile-section-card">
         <div className="profile-section-heading">
-          <span className="eyebrow">Appearance</span>
-          <h2>Theme</h2>
+          <div className="section-icon-wrapper">
+            <Palette size={20} />
+          </div>
+          <div>
+            <span className="eyebrow">Appearance</span>
+            <h2>Theme</h2>
+          </div>
         </div>
         <div className="theme-toggle-row">
           <p>Switch between light and dark mode to match your preference.</p>
@@ -310,8 +328,13 @@ function Settings() {
 
       <section className="profile-section-card">
         <div className="profile-section-heading">
-          <span className="eyebrow">Profile</span>
-          <h2>Available Now Badge</h2>
+          <div className="section-icon-wrapper">
+            <User size={20} />
+          </div>
+          <div>
+            <span className="eyebrow">Profile</span>
+            <h2>Available Now Badge</h2>
+          </div>
         </div>
         <div className="two-factor-toggle">
           <div>
@@ -333,8 +356,13 @@ function Settings() {
 
       <section className="profile-section-card">
         <div className="profile-section-heading">
-          <span className="eyebrow">Notifications</span>
-          <h2>Notification Bell</h2>
+          <div className="section-icon-wrapper">
+            <Bell size={20} />
+          </div>
+          <div>
+            <span className="eyebrow">Notifications</span>
+            <h2>Notification Bell</h2>
+          </div>
         </div>
         <div className="notification-bell-row">
           <p>View your notifications for messages, reactions, and other activity using the bell icon in the top navigation.</p>
@@ -343,8 +371,13 @@ function Settings() {
 
       <section className="profile-section-card">
         <div className="profile-section-heading">
-          <span className="eyebrow">Career</span>
-          <h2>Resume</h2>
+          <div className="section-icon-wrapper">
+            <FileText size={20} />
+          </div>
+          <div>
+            <span className="eyebrow">Career</span>
+            <h2>Resume</h2>
+          </div>
         </div>
         {getProfileResumePath(authProfile) ? (
           <div className="resume-upload-card">
