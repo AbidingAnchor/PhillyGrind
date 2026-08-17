@@ -233,6 +233,7 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
   const [showReportModal, setShowReportModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [showAllReplies, setShowAllReplies] = useState(false);
 
   const reactionTotal = getReactionTotalCount(reactionBreakdown);
 
@@ -468,16 +469,38 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
 
         {comment.replies && comment.replies.length > 0 && (
           <div className="feed-comment-replies">
-            {comment.replies.map((reply) => (
-              <CommentItem
-                key={reply.id}
-                comment={reply}
-                currentUser={currentUser}
-                onReply={onReply}
-                onDelete={onDelete}
-                depth={depth + 1}
-              />
-            ))}
+            {showAllReplies ? (
+              comment.replies.map((reply) => (
+                <CommentItem
+                  key={reply.id}
+                  comment={reply}
+                  currentUser={currentUser}
+                  onReply={onReply}
+                  onDelete={onDelete}
+                  depth={depth + 1}
+                />
+              ))
+            ) : (
+              <>
+                <CommentItem
+                  key={comment.replies[0].id}
+                  comment={comment.replies[0]}
+                  currentUser={currentUser}
+                  onReply={onReply}
+                  onDelete={onDelete}
+                  depth={depth + 1}
+                />
+                {comment.replies.length > 1 && (
+                  <button
+                    type="button"
+                    className="feed-comment-show-more-replies"
+                    onClick={() => setShowAllReplies(true)}
+                  >
+                    See {comment.replies.length - 1} more {comment.replies.length - 1 === 1 ? 'reply' : 'replies'}
+                  </button>
+                )}
+              </>
+            )}
           </div>
         )}
       </div>
@@ -831,7 +854,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
             onClick={handleToggleComments}
           >
             <MessageCircle size={16} />
-            <span>{comments.length}</span>
+            <span>{showComments ? comments.length : (post.comment_count || 0)}</span>
           </button>
           <button
             type="button"
@@ -862,7 +885,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
               onClick={handleToggleComments}
             >
               <MessageCircle size={18} />
-              <span>{comments.length}</span>
+              <span>{showComments ? comments.length : (post.comment_count || 0)}</span>
             </button>
             <button
               type="button"

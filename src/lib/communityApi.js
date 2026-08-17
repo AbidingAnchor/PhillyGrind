@@ -93,17 +93,58 @@ export async function getCommunityPosts(filters = {}) {
 
   const { neighborhood = 'Any' } = filters;
 
-  let query = supabase
-    .from('community_posts')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (neighborhood && neighborhood !== 'Any') {
-    query = query.eq('neighborhood', neighborhood);
-  }
+  // Use RPC to get posts with comment counts
+  let query = supabase.rpc('get_community_posts_with_counts', {
+    p_neighborhood: neighborhood === 'Any' ? null : neighborhood
+  });
 
   const { data, error } = await query;
-  if (error) throw error;
+  if (error) {
+    console.error('[getCommunityPosts] RPC error, falling back to basic query:', error);
+    // Fallback to basic query if RPC doesn't exist
+    let basicQuery = supabase
+      .from('community_posts')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (neighborhood && neighborhood !== 'Any') {
+      basicQuery = basicQuery.eq('neighborhood', neighborhood);
+    }
+
+    const { data: basicData, error: basicError } = await basicQuery;
+    if (basicError) throw basicError;
+
+    const posts = basicData ?? [];
+    
+    // Filter out posts from blocked/muted users
+    const filteredUserIds = await getFilteredUsers();
+    const filteredPosts = posts.filter((post) => !filteredUserIds.includes(post.user_id));
+
+    // Manually fetch comment counts for each post
+    const postIds = filteredPosts.map(p => p.id);
+    const { data: commentCounts, error: countError } = postIds.length > 0
+      ? await supabase
+          .from('community_comments')
+          .select('post_id')
+          .in('post_id', postIds)
+      : { data: [], error: null };
+
+    if (countError) console.error('[getCommunityPosts] Error fetching comment counts:', countError);
+
+    const countsByPost = {};
+    if (commentCounts) {
+      commentCounts.forEach(c => {
+        countsByPost[c.post_id] = (countsByPost[c.post_id] || 0) + 1;
+      });
+    }
+
+    const postsWithCounts = filteredPosts.map(post => ({
+      ...post,
+      comment_count: countsByPost[post.id] || 0
+    }));
+
+    return attachAuthorInfo(postsWithCounts);
+  }
 
   const posts = data ?? [];
   
