@@ -586,7 +586,7 @@ async function handleAdminCommunityPosts(req, res) {
       .order('created_at', { ascending: false }),
     supabaseAdmin
       .from('community_reports')
-      .select('id,reason,details,created_at,post_id,reporter_id')
+      .select('id,reason,subreason,details,created_at,post_id,comment_id,reporter_id')
       .order('created_at', { ascending: false }),
   ]);
 
@@ -626,6 +626,16 @@ async function handleAdminCommunityPosts(req, res) {
 
   const reportPostsById = Object.fromEntries((reportPosts ?? []).map((post) => [post.id, post]));
 
+  // Get comment content for reports
+  const commentIds = [...new Set(reports.map((report) => report.comment_id).filter(Boolean))];
+  const { data: reportComments, error: reportCommentsError } = commentIds.length
+    ? await supabaseAdmin.from('community_comments').select('id,content').in('id', commentIds)
+    : { data: [], error: null };
+
+  if (reportCommentsError) throw reportCommentsError;
+
+  const reportCommentsById = Object.fromEntries((reportComments ?? []).map((comment) => [comment.id, comment]));
+
   sendJson(res, 200, {
     posts: posts.map((post) => ({
       ...post,
@@ -635,6 +645,7 @@ async function handleAdminCommunityPosts(req, res) {
       ...report,
       reporterName: reporterProfilesById[report.reporter_id]?.name || 'Unknown',
       postContent: reportPostsById[report.post_id]?.content || '',
+      commentContent: reportCommentsById[report.comment_id]?.content || '',
     })),
   });
 }

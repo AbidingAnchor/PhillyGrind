@@ -20,66 +20,188 @@ function withTimeout(promise, milliseconds, message) {
   });
 }
 
-function ReportModal({ isOpen, onClose, onSubmit }) {
-  const [reason, setReason] = useState('Spam');
-  const [details, setDetails] = useState('');
+function ReportModal({ isOpen, onClose, onSubmit, reportType = 'post' }) {
+  const [step, setStep] = useState(1);
+  const [reason, setReason] = useState('');
+  const [subreason, setSubreason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const reportCategories = {
+    'Spam': ['Misleading information', 'Repeated posts', 'Fake account'],
+    'Harassment or bullying': ['Targeted at me', 'Targeted at someone else', 'Repeated unwanted contact'],
+    'Hate speech or violence': ['Hate speech', 'Violence or threats', 'Dangerous organization'],
+    'Scam or fraud': ['Financial scam', 'Identity theft', 'Phishing attempt'],
+    'Inappropriate or adult content': ['Adult content', 'Sexual violence', 'Inappropriate behavior'],
+    'Something else': ['Other issue']
+  };
 
   if (!isOpen) return null;
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  function handleBack() {
+    if (step === 2) {
+      setStep(1);
+      setSubreason('');
+    }
+  }
+
+  async function handleSubmit() {
     setSubmitting(true);
     try {
-      await onSubmit({ reason, details });
-      onClose();
-      setReason('Spam');
-      setDetails('');
+      await onSubmit({ reason, subreason });
+      setStep(3); // Success step
     } catch (error) {
       alert(error.message);
-    } finally {
       setSubmitting(false);
     }
   }
+
+  function handleClose() {
+    setStep(1);
+    setReason('');
+    setSubreason('');
+    setSubmitting(false);
+    onClose();
+  }
+
+  return (
+    <div className="modal-overlay" onClick={handleClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>
+            {step === 1 && `Report ${reportType}`}
+            {step === 2 && 'Tell us more'}
+            {step === 3 && 'Report submitted'}
+          </h3>
+          <button type="button" className="modal-close" onClick={handleClose}>
+            <X size={20} />
+          </button>
+        </div>
+        
+        {step === 1 && (
+          <div className="modal-body">
+            <p style={{ marginBottom: '16px', color: 'var(--muted)' }}>Why are you reporting this {reportType}?</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {Object.keys(reportCategories).map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    setReason(category);
+                    setStep(2);
+                  }}
+                  style={{
+                    textAlign: 'left',
+                    justifyContent: 'flex-start',
+                    padding: '12px 16px',
+                    background: reason === category ? 'var(--mint)' : 'var(--card)',
+                    borderColor: reason === category ? 'var(--green)' : 'var(--line)'
+                  }}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="modal-body">
+            <p style={{ marginBottom: '16px', color: 'var(--muted)' }}>What specifically is the issue?</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {reportCategories[reason]?.map((sub) => (
+                <button
+                  key={sub}
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    setSubreason(sub);
+                    handleSubmit();
+                  }}
+                  disabled={submitting}
+                  style={{
+                    textAlign: 'left',
+                    justifyContent: 'flex-start',
+                    padding: '12px 16px',
+                    background: subreason === sub ? 'var(--mint)' : 'var(--card)',
+                    borderColor: subreason === sub ? 'var(--green)' : 'var(--line)'
+                  }}
+                >
+                  {sub}
+                </button>
+              ))}
+            </div>
+            <div className="modal-actions" style={{ marginTop: '16px' }}>
+              <button type="button" className="secondary-button" onClick={handleBack} disabled={submitting}>
+                Back
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="modal-body" style={{ textAlign: 'center', padding: '32px' }}>
+            <div style={{ 
+              width: '64px', 
+              height: '64px', 
+              borderRadius: '50%', 
+              background: 'var(--mint)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              margin: '0 auto 16px'
+            }}>
+              <span style={{ fontSize: '32px' }}>✓</span>
+            </div>
+            <h3 style={{ marginBottom: '8px' }}>Thanks for your report</h3>
+            <p style={{ color: 'var(--muted)', marginBottom: '24px' }}>
+              We've received your report and will review it shortly. Thanks for helping keep our community safe.
+            </p>
+            <button type="button" className="primary-button" onClick={handleClose}>
+              Done
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BlockConfirmationModal({ isOpen, onClose, onConfirm, userName, isUnblock = false }) {
+  if (!isOpen) return null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Report Post</h3>
+          <h3>{isUnblock ? `Unblock ${userName}?` : `Block ${userName}?`}</h3>
           <button type="button" className="modal-close" onClick={onClose}>
             <X size={20} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="modal-body">
-          <label>
-            Reason
-            <select value={reason} onChange={(e) => setReason(e.target.value)}>
-              <option value="Spam">Spam</option>
-              <option value="Scam">Scam</option>
-              <option value="Harassment">Harassment</option>
-              <option value="Inappropriate">Inappropriate</option>
-              <option value="Other">Other</option>
-            </select>
-          </label>
-          <label>
-            Details (optional)
-            <textarea
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-              placeholder="Provide additional context..."
-              rows={3}
-            />
-          </label>
+        <div className="modal-body">
+          <p style={{ marginBottom: '24px', color: 'var(--muted)' }}>
+            {isUnblock 
+              ? `You'll be able to see their posts and comments again. They'll also be able to message you.`
+              : `They won't be able to message you, and you won't see their posts or comments. You can unblock them anytime.`
+            }
+          </p>
           <div className="modal-actions">
             <button type="button" className="secondary-button" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="primary-button danger" disabled={submitting}>
-              {submitting ? 'Submitting...' : 'Submit Report'}
+            <button 
+              type="button" 
+              className={isUnblock ? "primary-button" : "primary-button danger"} 
+              onClick={() => {
+                onConfirm();
+                onClose();
+              }}
+            >
+              {isUnblock ? 'Unblock' : 'Block'}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
@@ -107,6 +229,8 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
   const [reactionsLoaded, setReactionsLoaded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   const reactionTotal = getReactionTotalCount(reactionBreakdown);
 
@@ -125,6 +249,18 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
     }
     loadReactionStatus();
   }, [comment.id]);
+
+  useEffect(() => {
+    async function loadBlockStatus() {
+      try {
+        const blocked = await isUserBlocked(comment.user_id);
+        setIsBlocked(blocked);
+      } catch (error) {
+        console.error('Failed to load block status:', error);
+      }
+    }
+    loadBlockStatus();
+  }, [comment.user_id]);
 
   async function handleReactionSelect(reactionType) {
     try {
@@ -167,11 +303,18 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
   }
 
   async function handleBlockUser() {
-    if (!window.confirm(`Block ${comment.authorName}? They won't be able to message you and you won't see their posts or comments.`)) return;
-    
+    setShowBlockModal(true);
+  }
+
+  async function confirmBlock() {
     try {
-      await blockUser(comment.user_id);
-      alert(`${comment.authorName} has been blocked.`);
+      if (isBlocked) {
+        await unblockUser(comment.user_id);
+        setIsBlocked(false);
+      } else {
+        await blockUser(comment.user_id);
+        setIsBlocked(true);
+      }
       setShowMenu(false);
     } catch (error) {
       alert(error.message);
@@ -179,6 +322,7 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
   }
 
   async function handleReport() {
+    console.log('[CommentItem] handleReport called for comment:', comment.id, 'comment:', comment);
     setShowReportModal(true);
     setShowMenu(false);
   }
@@ -194,10 +338,16 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
     }
   }
 
-  async function handleReportSubmit({ reason, details }) {
-    await submitCommunityReport({ commentId: comment.id, reason, details });
-    alert('Comment reported successfully. Thank you for helping keep our community safe.');
-    setShowReportModal(false);
+  async function handleReportSubmit({ reason, subreason }) {
+    console.log('[CommentItem] handleReportSubmit called with:', { commentId: comment.id, reason, subreason });
+    try {
+      await submitCommunityReport({ commentId: comment.id, reason, subreason });
+      console.log('[CommentItem] Report submitted successfully');
+      setShowReportModal(false);
+    } catch (error) {
+      console.error('[CommentItem] Report submission failed:', error);
+      alert(error.message);
+    }
   }
 
   const isReply = depth > 0;
@@ -242,8 +392,12 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
                     <button type="button" onClick={handleMuteUser}>
                       Mute {comment.authorName}
                     </button>
-                    <button type="button" onClick={handleBlockUser}>
-                      Block {comment.authorName}
+                    <button 
+                      type="button" 
+                      onClick={handleBlockUser}
+                      style={isBlocked ? { color: '#dc2626' } : {}}
+                    >
+                      {isBlocked ? `Unblock ${comment.authorName}` : `Block ${comment.authorName}`}
                     </button>
                   </>
                 )}
@@ -328,8 +482,19 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
 
       {showReportModal && (
         <ReportModal
+          isOpen={showReportModal}
           onClose={() => setShowReportModal(false)}
           onSubmit={handleReportSubmit}
+          reportType="comment"
+        />
+      )}
+      {showBlockModal && (
+        <BlockConfirmationModal
+          isOpen={showBlockModal}
+          onClose={() => setShowBlockModal(false)}
+          onConfirm={confirmBlock}
+          userName={comment.authorName}
+          isUnblock={isBlocked}
         />
       )}
     </div>
@@ -344,11 +509,13 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   const [newComment, setNewComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const [reactionBreakdown, setReactionBreakdown] = useState([]);
   const [reactionsLoaded, setReactionsLoaded] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   const reactionTotal = getReactionTotalCount(reactionBreakdown);
 
@@ -383,6 +550,18 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
     }
     loadReactionStatus();
   }, [post.id]);
+
+  useEffect(() => {
+    async function loadBlockStatus() {
+      try {
+        const blocked = await isUserBlocked(post.authorId);
+        setIsBlocked(blocked);
+      } catch (error) {
+        console.error('Failed to load block status:', error);
+      }
+    }
+    loadBlockStatus();
+  }, [post.authorId]);
 
   async function handleLike() {
     console.log('[Community PostCard] handleLike called', { 
@@ -512,13 +691,40 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   }
 
   async function handleReport() {
+    console.log('[PostCard] handleReport called for post:', post.id, 'post:', post);
     setShowReportModal(true);
     setShowMenu(false);
   }
 
-  async function handleReportSubmit({ reason, details }) {
-    await submitCommunityReport({ postId: post.id, reason, details });
-    alert('Post reported successfully. Thank you for helping keep our community safe.');
+  async function handleReportSubmit({ reason, subreason }) {
+    console.log('[PostCard] handleReportSubmit called with:', { postId: post.id, reason, subreason });
+    try {
+      await submitCommunityReport({ postId: post.id, reason, subreason });
+      console.log('[PostCard] Report submitted successfully');
+      setShowReportModal(false);
+    } catch (error) {
+      console.error('[PostCard] Report submission failed:', error);
+      alert(error.message);
+    }
+  }
+
+  async function handleBlockUser() {
+    setShowBlockModal(true);
+  }
+
+  async function confirmBlock() {
+    try {
+      if (isBlocked) {
+        await unblockUser(post.authorId);
+        setIsBlocked(false);
+      } else {
+        await blockUser(post.authorId);
+        setIsBlocked(true);
+      }
+      setShowMenu(false);
+    } catch (error) {
+      alert(error.message);
+    }
   }
 
   const isOwnPost = currentUser?.id === post.authorId;
@@ -564,6 +770,16 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
                 <Flag size={14} />
                 Report
               </button>
+              {!isOwnPost && (
+                <button
+                  type="button"
+                  className="feed-post-menu-item"
+                  onClick={handleBlockUser}
+                  style={isBlocked ? { color: '#dc2626' } : {}}
+                >
+                  {isBlocked ? 'Unblock' : 'Block'} {post.authorName}
+                </button>
+              )}
               {isOwnPost && (
                 <button
                   type="button"
@@ -703,7 +919,17 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         isOpen={showReportModal}
         onClose={() => setShowReportModal(false)}
         onSubmit={handleReportSubmit}
+        reportType="post"
       />
+      {showBlockModal && (
+        <BlockConfirmationModal
+          isOpen={showBlockModal}
+          onClose={() => setShowBlockModal(false)}
+          onConfirm={confirmBlock}
+          userName={post.authorName}
+          isUnblock={isBlocked}
+        />
+      )}
 
       {toastMessage && (
         <Toast message={toastMessage} onClose={() => setToastMessage(null)} />

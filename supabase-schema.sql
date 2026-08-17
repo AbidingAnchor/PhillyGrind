@@ -497,6 +497,11 @@ create policy "Users can send messages"
       where blocker_id = receiver_id
       and blocked_user_id = sender_id
     )
+    and not exists (
+      select 1 from user_blocks
+      where blocker_id = sender_id
+      and blocked_user_id = receiver_id
+    )
   );
 
 drop policy if exists "Anyone can read reviews" on reviews;
@@ -1345,9 +1350,10 @@ create table if not exists community_reports (
   )
 );
 
--- Add comment_id column if it doesn't exist (for existing tables)
+-- Add comment_id column if it doesn't exist (for existing tables
 alter table community_reports add column if not exists comment_id uuid references community_comments(id) on delete cascade;
 alter table community_reports add column if not exists details text;
+alter table community_reports add column if not exists subreason text;
 
 -- Add constraint if it doesn't exist
 do $$

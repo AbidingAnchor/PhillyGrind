@@ -607,7 +607,7 @@ export async function toggleCommunityPostReaction(postId, reactionType = 'like')
     return reactionType;
   }
 
-export async function submitCommunityReport({ postId, commentId, reason, details }) {
+export async function submitCommunityReport({ postId, commentId, reason, subreason, details }) {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
   }
@@ -620,6 +620,7 @@ export async function submitCommunityReport({ postId, commentId, reason, details
   const payload = {
     reporter_id: userData.user.id,
     reason: reason.trim(),
+    subreason: subreason?.trim() || null,
     details: details?.trim() || null,
   };
 

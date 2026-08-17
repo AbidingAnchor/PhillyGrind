@@ -158,8 +158,10 @@ export default function AdminCommunity() {
             <thead>
               <tr>
                 <th>Reporter</th>
+                <th>Category</th>
                 <th>Reason</th>
-                <th>Post Preview</th>
+                <th>Content Preview</th>
+                <th>Type</th>
                 <th>Date</th>
                 <th />
               </tr>
@@ -167,7 +169,7 @@ export default function AdminCommunity() {
             <tbody>
               {reports.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="empty-state">No community reports yet.</td>
+                  <td colSpan={7} className="empty-state">No community reports yet.</td>
                 </tr>
               )}
               {reports.map((report) => (
@@ -177,10 +179,18 @@ export default function AdminCommunity() {
                     <span className="admin-report-reason">{report.reason}</span>
                   </td>
                   <td>
+                    <span className="admin-report-subreason">{report.subreason || 'N/A'}</span>
+                  </td>
+                  <td>
                     <div className="admin-post-content">
-                      {report.postContent?.substring(0, 80)}
-                      {report.postContent?.length > 80 && '...'}
+                      {(report.postContent || report.commentContent)?.substring(0, 80)}
+                      {(report.postContent || report.commentContent)?.length > 80 && '...'}
                     </div>
+                  </td>
+                  <td>
+                    <span className={`admin-report-type ${report.post_id ? 'post' : 'comment'}`}>
+                      {report.post_id ? 'Post' : 'Comment'}
+                    </span>
                   </td>
                   <td>{new Date(report.created_at).toLocaleDateString()}</td>
                   <td>
@@ -194,15 +204,17 @@ export default function AdminCommunity() {
                         {dismissingId === report.id ? <Loader2 size={14} className="spin" /> : <EyeOff size={14} />}
                         Dismiss
                       </button>
-                      <button
-                        type="button"
-                        className="admin-table-btn danger"
-                        disabled={deletingId === report.post_id}
-                        onClick={() => handleDeleteReportedPost(report)}
-                      >
-                        {deletingId === report.post_id ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />}
-                        Delete Post
-                      </button>
+                      {report.post_id && (
+                        <button
+                          type="button"
+                          className="admin-table-btn danger"
+                          disabled={deletingId === report.post_id}
+                          onClick={() => handleDeleteReportedPost(report)}
+                        >
+                          {deletingId === report.post_id ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />}
+                          Delete Post
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
