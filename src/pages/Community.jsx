@@ -273,16 +273,16 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
     <article className="feed-post-card">
       <div className="feed-post-header">
         <Link to={`/profile/${post.authorId}`} className="feed-post-author">
-          {post.authorAvatarUrl ? (
-            <img src={post.authorAvatarUrl} alt={post.authorName} className="feed-post-avatar" />
-          ) : (
-            <div 
-              className="feed-post-avatar-placeholder" 
-              style={{ backgroundColor: getUserAvatarColor(post.authorId, post.authorName) }}
-            >
-              {post.authorName.charAt(0)}
-            </div>
-          )}
+              {post.authorAvatarUrl ? (
+                <img src={post.authorAvatarUrl} alt={post.authorName} className="feed-post-avatar" />
+              ) : (
+                <div 
+                  className="feed-post-avatar-placeholder" 
+                  style={{ backgroundColor: getUserAvatarColor(post.authorId, post.authorName) }}
+                >
+                  {post.authorName?.charAt(0) || '?'}
+                </div>
+              )}
           <div className="feed-post-author-info">
             <span className="feed-post-author-name">{post.authorName}</span>
             <div className="feed-post-meta">
@@ -421,7 +421,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
                       className="feed-comment-avatar-placeholder"
                       style={{ backgroundColor: getUserAvatarColor(comment.user_id, comment.authorName) }}
                     >
-                      {comment.authorName.charAt(0)}
+                      {comment.authorName?.charAt(0) || '?'}
                     </div>
                   )}
                   <div className="feed-comment-content">

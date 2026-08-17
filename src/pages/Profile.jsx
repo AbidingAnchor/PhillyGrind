@@ -640,7 +640,7 @@ function Profile() {
                                     className="feed-post-avatar-placeholder" 
                                     style={{ backgroundColor: getUserAvatarColor(post.authorId, post.authorName) }}
                                   >
-                                    {post.authorName.charAt(0)}
+                                    {post.authorName?.charAt(0) || '?'}
                                   </div>
                                 )}
                                 <div className="feed-post-author-info">
