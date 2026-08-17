@@ -16,6 +16,7 @@ function NotificationBell() {
   const [status, setStatus] = useState('');
   const dropdownRef = useRef(null);
   const unsubscribeRef = useRef(null);
+  const isSubscribedRef = useRef(false);
   const navigate = useNavigate();
 
   const unreadCount = useMemo(() => (
@@ -28,14 +29,14 @@ function NotificationBell() {
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
+        isSubscribedRef.current = false;
       }
       return undefined;
     }
 
-    // Clean up previous subscription if exists
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-      unsubscribeRef.current = null;
+    // Prevent double subscription
+    if (isSubscribedRef.current) {
+      return undefined;
     }
 
     getNotifications(user.id)
@@ -60,11 +61,13 @@ function NotificationBell() {
     });
 
     unsubscribeRef.current = unsubscribe;
+    isSubscribedRef.current = true;
 
     return () => {
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
         unsubscribeRef.current = null;
+        isSubscribedRef.current = false;
       }
     };
   }, [user]);

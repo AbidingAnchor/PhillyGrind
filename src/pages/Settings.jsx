@@ -4,7 +4,6 @@ import { createConnectAccount } from '../lib/ordersApi.js';
 import { checkConnectStatus, getResumeUrl, uploadResume } from '../lib/profileApi.js';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
-import NotificationBell from '../components/NotificationBell.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 
 function resumeFilename(path) {
@@ -338,8 +337,7 @@ function Settings() {
           <h2>Notification Bell</h2>
         </div>
         <div className="notification-bell-row">
-          <p>View your notifications for messages, reactions, and other activity.</p>
-          <NotificationBell />
+          <p>View your notifications for messages, reactions, and other activity using the bell icon in the top navigation.</p>
         </div>
       </section>
 
