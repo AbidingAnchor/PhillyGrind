@@ -59,6 +59,9 @@ function ChatModal({ listing, onClose, receiverId: receiverIdOverride, receiverL
       receiverId,
       userId: user.id,
       onMessage: (message) => {
+        if (message.sender_id !== userId && message.receiver_id !== userId) return;
+        if (message.sender_id !== receiverId && message.receiver_id !== receiverId) return;
+        
         getProfilesByIds([message.sender_id, message.receiver_id])
           .then((profilesById) => {
             const namedMessage = {

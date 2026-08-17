@@ -47,8 +47,8 @@ function Messages() {
             >
               <span className="conversation-icon"><MessageCircle size={20} /></span>
               <span className="conversation-content">
-                <strong>{conversation.listing.title}</strong>
-                <span>{conversation.listing.type === 'gig' ? 'Gig' : 'Job'} conversation with {conversation.otherUserName}</span>
+                <strong>{conversation.otherUserName}</strong>
+                <span>{conversation.listing.type === 'gig' ? 'Gig' : conversation.listing.type === 'marketplace' ? 'Marketplace' : 'Job'} conversation</span>
                 <p>{conversation.lastMessage.content}</p>
               </span>
               <time>{new Date(conversation.lastMessage.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</time>

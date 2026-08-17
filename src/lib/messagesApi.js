@@ -43,22 +43,23 @@ function groupConversationMessages(messages, userId, listingsById, profilesById)
   for (const message of messages) {
     const otherUserId = message.sender_id === userId ? message.receiver_id : message.sender_id;
     const otherUserName = profilesById.get(otherUserId) || 'PhillyGrind user';
-    const key = `${message.listing_id}:${otherUserId}`;
+    const key = otherUserId;
     const current = grouped.get(key);
 
     if (!current || new Date(message.created_at) > new Date(current.lastMessage.created_at)) {
+      const listing = listingsById.get(message.listing_id) || {
+        id: message.listing_id,
+        title: 'Listing unavailable',
+        company: otherUserName,
+        user_id: otherUserId,
+        type: 'listing',
+      };
       grouped.set(key, {
         id: key,
         listingId: message.listing_id,
         otherUserId,
         otherUserName,
-        listing: listingsById.get(message.listing_id) || {
-          id: message.listing_id,
-          title: 'Listing unavailable',
-          company: otherUserName,
-          user_id: otherUserId,
-          type: 'listing',
-        },
+        listing,
         lastMessage: message,
       });
     }
@@ -77,7 +78,6 @@ export async function getMessages({ listingId, receiverId, userId }) {
   const { data, error } = await supabase
     .from('messages')
     .select('id,sender_id,receiver_id,listing_id,content,created_at')
-    .eq('listing_id', listingId)
     .order('created_at', { ascending: true });
 
   if (error) throw error;
