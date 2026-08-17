@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from './lib/auth.jsx';
 import { isAdminUser } from './lib/adminApi.js';
 import OnboardingModal from './components/OnboardingModal.jsx';
+import NotificationBell from './components/NotificationBell.jsx';
 
 const navItems = [
   { to: '/', label: 'Community', tour: 'community', id: 'nav-community' },
@@ -87,6 +88,7 @@ function App() {
               <Link className="nav-profile-link" to="/profile" id="nav-profile" data-tour="profile" onClick={() => setOpen(false)}>
                 {displayName}
               </Link>
+              <NotificationBell />
               <Link className="nav-profile-link" to="/settings" id="nav-settings" onClick={() => setOpen(false)}>
                 Settings
               </Link>

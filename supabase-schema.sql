@@ -230,6 +230,9 @@ alter table notifications
 alter table notifications
   add column if not exists sender_id uuid references auth.users(id) on delete cascade;
 
+alter table notifications
+  add column if not exists post_id uuid;
+
 alter table orders
   add column if not exists worker_marked_complete_at timestamptz;
 
@@ -1148,6 +1151,63 @@ create trigger on_message_notify_listing_poster
   after insert on public.messages
   for each row execute function public.notify_listing_poster_on_message();
 
+create or replace function public.notify_on_comment_reply()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  post_author uuid;
+  parent_comment_author uuid;
+  post_content text;
+begin
+  -- Get post author
+  select user_id, content
+  into post_author, post_content
+  from public.community_posts
+  where id = new.post_id;
+
+  -- Notify post author if not the commenter
+  if post_author is not null and post_author <> new.user_id then
+    insert into public.notifications (user_id, type, message, post_id, sender_id)
+    values (
+      post_author,
+      'comment',
+      'Someone commented on your post "' || coalesce(substring(post_content, 1, 50), 'post') || '..."',
+      new.post_id,
+      new.user_id
+    );
+  end if;
+
+  -- If this is a reply to a comment, notify the parent comment author
+  if new.parent_comment_id is not null then
+    select user_id
+    into parent_comment_author
+    from public.community_comments
+    where id = new.parent_comment_id;
+
+    if parent_comment_author is not null and parent_comment_author <> new.user_id and parent_comment_author <> post_author then
+      insert into public.notifications (user_id, type, message, post_id, sender_id)
+      values (
+        parent_comment_author,
+        'comment_reply',
+        'Someone replied to your comment on a post',
+        new.post_id,
+        new.user_id
+      );
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_comment_notify_reply on public.community_comments;
+create trigger on_comment_notify_reply
+  after insert on public.community_comments
+  for each row execute function public.notify_on_comment_reply();
+
 -- ---------------------------------------------------------------------------
 -- Community Feature - Neighborhood Social Feed
 -- ---------------------------------------------------------------------------
@@ -1166,6 +1226,7 @@ create table if not exists community_comments (
   id uuid primary key default gen_random_uuid(),
   post_id uuid references community_posts(id) on delete cascade not null,
   user_id uuid references auth.users(id) on delete cascade not null,
+  parent_comment_id uuid references community_comments(id) on delete cascade,
   content text not null,
   created_at timestamptz default now()
 );
@@ -1181,6 +1242,9 @@ create table if not exists community_post_likes (
 
 -- Add reaction_type column if it doesn't exist (for existing tables)
 alter table community_post_likes add column if not exists reaction_type text not null default 'like';
+
+-- Add parent_comment_id column if it doesn't exist (for existing tables)
+alter table community_comments add column if not exists parent_comment_id uuid references community_comments(id) on delete cascade;
 
 create table if not exists community_reports (
   id uuid primary key default gen_random_uuid(),
