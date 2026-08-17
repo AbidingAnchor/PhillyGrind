@@ -1873,6 +1873,10 @@ a.bid-card {
   font-size: 1.45rem;
 }
 
+[data-theme="dark"] .chat-header h2 {
+  color: var(--ink);
+}
+
 .chat-header p {
   margin: 8px 0 0;
   color: var(--muted);
@@ -1890,6 +1894,10 @@ a.bid-card {
   background: var(--background);
   color: var(--navy);
   cursor: pointer;
+}
+
+[data-theme="dark"] .chat-close {
+  color: var(--ink);
 }
 
 .chat-thread {
