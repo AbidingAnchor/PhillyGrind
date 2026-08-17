@@ -171,6 +171,7 @@ export async function getCommunityComments(postId) {
       ...comment,
       authorName: 'PhillyGrind user',
       authorAvatarUrl: '',
+      replies: [],
     }));
   }
 
@@ -185,7 +186,7 @@ export async function getCommunityComments(postId) {
   
   const profilesById = Object.fromEntries((profiles ?? []).map((profile) => [profile.id, profile]));
   
-  const result = comments.map((comment) => {
+  const commentsWithAuthor = comments.map((comment) => {
     const profile = profilesById[comment.user_id];
     const authorName = safeDisplayName(profile?.name);
     console.log('[getCommunityComments] comment:', comment.id, 'user_id:', comment.user_id, 'profile found:', !!profile, 'profile.name:', profile?.name, 'authorName:', authorName);
@@ -195,11 +196,37 @@ export async function getCommunityComments(postId) {
       authorName,
       authorAvatarUrl: profile?.avatar_url || '',
       relativeTime: formatRelativeTime(comment.created_at),
+      replies: [],
     };
   });
   
-  console.log('[getCommunityComments] final result:', result);
-  return result;
+  // Build hierarchical structure
+  const commentMap = new Map();
+  const topLevelComments = [];
+  
+  // First pass: create map and identify top-level comments
+  commentsWithAuthor.forEach((comment) => {
+    commentMap.set(comment.id, { ...comment, replies: [] });
+  });
+  
+  // Second pass: build tree structure
+  commentsWithAuthor.forEach((comment) => {
+    const commentWithReplies = commentMap.get(comment.id);
+    if (comment.parent_comment_id) {
+      const parent = commentMap.get(comment.parent_comment_id);
+      if (parent) {
+        parent.replies.push(commentWithReplies);
+      } else {
+        // Parent not found, treat as top-level
+        topLevelComments.push(commentWithReplies);
+      }
+    } else {
+      topLevelComments.push(commentWithReplies);
+    }
+  });
+  
+  console.log('[getCommunityComments] final result (hierarchical):', topLevelComments);
+  return topLevelComments;
 }
 
 export async function getCommunityLikeCount(postId) {
@@ -416,7 +443,7 @@ export async function createCommunityPost(post, photoFile = null) {
   }
 }
 
-export async function createCommunityComment(postId, content) {
+export async function createCommunityComment(postId, content, parentCommentId = null) {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
   }
@@ -431,6 +458,10 @@ export async function createCommunityComment(postId, content) {
     user_id: userData.user.id,
     content: content.trim(),
   };
+
+  if (parentCommentId) {
+    payload.parent_comment_id = parentCommentId;
+  }
 
   const { data, error } = await supabase
     .from('community_comments')
@@ -603,6 +634,164 @@ export async function deleteCommunityPost(id) {
     .eq('user_id', userData.user.id);
 
   if (error) throw error;
+}
+
+export async function getCommentReactionBreakdown(commentId) {
+  if (!hasSupabaseConfig) return [];
+
+  const { data, error } = await supabase
+    .from('community_comment_likes')
+    .select('reaction_type')
+    .eq('comment_id', commentId);
+
+  if (error) throw error;
+
+  const breakdown = {};
+  (data || []).forEach((like) => {
+    const type = normalizeReactionType(like.reaction_type) || 'like';
+    breakdown[type] = (breakdown[type] || 0) + 1;
+  });
+
+  const result = Object.entries(breakdown)
+    .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => b.count - a.count);
+
+  console.log('[getCommentReactionBreakdown] commentId:', commentId, 'raw rows:', data, 'breakdown:', result);
+
+  return result;
+}
+
+export async function getUserCommentReaction(commentId) {
+  if (!hasSupabaseConfig) return null;
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) return null;
+
+  const { data, error } = await supabase
+    .from('community_comment_likes')
+    .select('reaction_type')
+    .eq('comment_id', commentId)
+    .eq('user_id', userData.user.id)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data?.reaction_type) return null;
+  return normalizeReactionType(data.reaction_type);
+}
+
+export async function toggleCommentReaction(commentId, reactionType = 'like') {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw new Error('You must be logged in to react to comments.');
+  }
+
+  // Check if already reacted
+  const { data: existingLike } = await supabase
+    .from('community_comment_likes')
+    .select('id, reaction_type')
+    .eq('comment_id', commentId)
+    .eq('user_id', userData.user.id)
+    .maybeSingle();
+
+  if (existingLike) {
+    // If same reaction, remove it (toggle off)
+    if (existingLike.reaction_type === reactionType) {
+      console.log('[toggleCommentReaction] DELETE path (toggle off):', {
+        commentId,
+        userId: userData.user.id,
+        reactionType,
+        existingLikeId: existingLike.id,
+      });
+      
+      const { error: deleteError } = await supabase
+        .from('community_comment_likes')
+        .delete()
+        .eq('id', existingLike.id);
+
+      if (deleteError) throw deleteError;
+
+      return null;
+    }
+
+    console.log('[toggleCommentReaction] UPDATE path (switch reaction):', {
+      commentId,
+      userId: userData.user.id,
+      from: existingLike.reaction_type,
+      to: reactionType,
+      existingLikeId: existingLike.id,
+    });
+
+    const { error: updateError } = await supabase
+      .from('community_comment_likes')
+      .update({ reaction_type: reactionType })
+      .eq('id', existingLike.id);
+
+    if (updateError) throw updateError;
+
+    return reactionType;
+  }
+
+  console.log('[toggleCommentReaction] INSERT path (new reaction):', {
+    commentId,
+    userId: userData.user.id,
+    reactionType,
+  });
+
+  const { error: insertError } = await supabase
+      .from('community_comment_likes')
+      .insert({
+        comment_id: commentId,
+        user_id: userData.user.id,
+        reaction_type: reactionType,
+      });
+
+    if (insertError) throw insertError;
+
+    return reactionType;
+}
+
+export async function removeCommentReaction(commentId) {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw new Error('You must be logged in to remove reactions.');
+  }
+
+  console.log('[removeCommentReaction] DELETE path (explicit remove):', {
+    commentId,
+    userId: userData.user.id,
+  });
+
+  // Get existing reaction to delete
+  const { data: existingLike } = await supabase
+    .from('community_comment_likes')
+    .select('id, reaction_type')
+    .eq('comment_id', commentId)
+    .eq('user_id', userData.user.id)
+    .maybeSingle();
+
+  if (!existingLike) {
+    console.log('[removeCommentReaction] No existing reaction to remove');
+    return null;
+  }
+
+  console.log('[removeCommentReaction] Deleting existing reaction:', existingLike.reaction_type);
+
+  const { error: deleteError } = await supabase
+    .from('community_comment_likes')
+    .delete()
+    .eq('id', existingLike.id);
+
+  if (deleteError) throw deleteError;
+
+  return null;
 }
 
 export async function deleteCommunityComment(id) {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward } from 'lucide-react';
-import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, removeCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl, getReactionBreakdown } from '../lib/communityApi.js';
+import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, removeCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, getUserCommentReaction, toggleCommentReaction, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl, getReactionBreakdown, getCommentReactionBreakdown } from '../lib/communityApi.js';
 import { useAuth } from '../lib/auth.jsx';
 import { getReactionTotalCount, getUserAvatarColor } from '../lib/reactions.js';
 import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
@@ -93,6 +93,159 @@ function Toast({ message, onClose }) {
   return (
     <div className="toast-notification">
       {message}
+    </div>
+  );
+}
+
+function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [submittingReply, setSubmittingReply] = useState(false);
+  const [userReaction, setUserReaction] = useState(null);
+  const [reactionBreakdown, setReactionBreakdown] = useState([]);
+  const [reactionsLoaded, setReactionsLoaded] = useState(false);
+
+  const reactionTotal = getReactionTotalCount(reactionBreakdown);
+
+  useEffect(() => {
+    async function loadReactionStatus() {
+      try {
+        const reaction = await getUserCommentReaction(comment.id);
+        setUserReaction(reaction);
+        const breakdown = await getCommentReactionBreakdown(comment.id);
+        setReactionBreakdown(breakdown);
+      } catch (error) {
+        console.error('Failed to load comment reaction status:', error);
+      } finally {
+        setReactionsLoaded(true);
+      }
+    }
+    loadReactionStatus();
+  }, [comment.id]);
+
+  async function handleReactionSelect(reactionType) {
+    try {
+      const newReaction = await toggleCommentReaction(comment.id, reactionType);
+      setUserReaction(newReaction);
+      const breakdown = await getCommentReactionBreakdown(comment.id);
+      setReactionBreakdown(breakdown);
+    } catch (error) {
+      console.error('Failed to toggle comment reaction:', error);
+      alert(error.message);
+    }
+  }
+
+  async function handleSubmitReply(e) {
+    e.preventDefault();
+    if (!replyText.trim()) return;
+
+    setSubmittingReply(true);
+    try {
+      await onReply(comment.id, replyText);
+      setReplyText('');
+      setShowReplyForm(false);
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setSubmittingReply(false);
+    }
+  }
+
+  const isReply = depth > 0;
+
+  return (
+    <div className={isReply ? 'feed-comment-reply' : 'feed-comment'}>
+      {comment.authorAvatarUrl ? (
+        <img 
+          src={comment.authorAvatarUrl} 
+          alt={comment.authorName} 
+          className={isReply ? 'feed-comment-reply-avatar' : 'feed-comment-avatar'} 
+        />
+      ) : (
+        <div 
+          className={isReply ? 'feed-comment-reply-avatar-placeholder' : 'feed-comment-avatar-placeholder'}
+          style={{ backgroundColor: getUserAvatarColor(comment.user_id, comment.authorName) }}
+        >
+          {comment.authorName?.charAt(0) || '?'}
+        </div>
+      )}
+      <div className={isReply ? 'feed-comment-reply-content' : 'feed-comment-content'}>
+        <div className={isReply ? 'feed-comment-reply-header' : 'feed-comment-header'}>
+          <span className={isReply ? 'feed-comment-reply-author' : 'feed-comment-author'}>
+            {comment.authorName}
+          </span>
+          <span className={isReply ? 'feed-comment-reply-time' : 'feed-comment-time'}>
+            {comment.relativeTime}
+          </span>
+          {currentUser?.id === comment.user_id && (
+            <button
+              type="button"
+              className="feed-comment-delete"
+              onClick={() => onDelete(comment.id)}
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+        <p>{comment.content}</p>
+        
+        {reactionsLoaded && (
+          <div className="feed-comment-reactions">
+            <PostReactionControl
+              userReaction={userReaction}
+              onReactionSelect={handleReactionSelect}
+              reactionBreakdown={reactionBreakdown}
+              reactionTotal={reactionTotal}
+            />
+          </div>
+        )}
+        
+        {!isReply && (
+          <div className="feed-comment-reply-actions">
+            <button
+              type="button"
+              className="feed-comment-reply-button"
+              onClick={() => setShowReplyForm(!showReplyForm)}
+            >
+              {showReplyForm ? 'Cancel' : 'Reply'}
+            </button>
+          </div>
+        )}
+
+        {showReplyForm && (
+          <form onSubmit={handleSubmitReply} className="feed-comment-reply-form">
+            <textarea
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              placeholder="Write a reply..."
+              rows={2}
+              disabled={submittingReply}
+            />
+            <button 
+              type="submit" 
+              className="feed-comment-reply-submit" 
+              disabled={submittingReply || !replyText.trim()}
+            >
+              {submittingReply ? '...' : 'Reply'}
+            </button>
+          </form>
+        )}
+
+        {comment.replies && comment.replies.length > 0 && (
+          <div className="feed-comment-replies">
+            {comment.replies.map((reply) => (
+              <CommentItem
+                key={reply.id}
+                comment={reply}
+                currentUser={currentUser}
+                onReply={onReply}
+                onDelete={onDelete}
+                depth={depth + 1}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -237,7 +390,9 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
     setSubmittingComment(true);
     try {
       const comment = await createCommunityComment(post.id, newComment);
-      setComments([...comments, comment]);
+      // Reload comments to get the hierarchical structure
+      const loadedComments = await getCommunityComments(post.id);
+      setComments(loadedComments);
       setNewComment('');
     } catch (error) {
       alert(error.message);
@@ -246,12 +401,25 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
     }
   }
 
+  async function handleReply(parentCommentId, replyText) {
+    try {
+      await createCommunityComment(post.id, replyText, parentCommentId);
+      // Reload comments to get the updated hierarchical structure
+      const loadedComments = await getCommunityComments(post.id);
+      setComments(loadedComments);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async function handleDeleteComment(commentId) {
     if (!window.confirm('Delete this comment?')) return;
 
     try {
       await deleteCommunityComment(commentId);
-      setComments(comments.filter((c) => c.id !== commentId));
+      // Reload comments to get the updated hierarchical structure
+      const loadedComments = await getCommunityComments(post.id);
+      setComments(loadedComments);
     } catch (error) {
       alert(error.message);
     }
@@ -413,34 +581,13 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
           ) : (
             <div className="feed-comments-list">
               {comments.map((comment) => (
-                <div key={comment.id} className="feed-comment">
-                  {comment.authorAvatarUrl ? (
-                    <img src={comment.authorAvatarUrl} alt={comment.authorName} className="feed-comment-avatar" />
-                  ) : (
-                    <div 
-                      className="feed-comment-avatar-placeholder"
-                      style={{ backgroundColor: getUserAvatarColor(comment.user_id, comment.authorName) }}
-                    >
-                      {comment.authorName?.charAt(0) || '?'}
-                    </div>
-                  )}
-                  <div className="feed-comment-content">
-                    <div className="feed-comment-header">
-                      <span className="feed-comment-author">{comment.authorName}</span>
-                      <span className="feed-comment-time">{comment.relativeTime}</span>
-                      {currentUser?.id === comment.user_id && (
-                        <button
-                          type="button"
-                          className="feed-comment-delete"
-                          onClick={() => handleDeleteComment(comment.id)}
-                        >
-                          <X size={12} />
-                        </button>
-                      )}
-                    </div>
-                    <p>{comment.content}</p>
-                  </div>
-                </div>
+                <CommentItem
+                  key={comment.id}
+                  comment={comment}
+                  currentUser={currentUser}
+                  onReply={handleReply}
+                  onDelete={handleDeleteComment}
+                />
               ))}
             </div>
           )}
