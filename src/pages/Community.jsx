@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff } from 'lucide-react';
+import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft } from 'lucide-react';
 import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, removeCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, getUserCommentReaction, toggleCommentReaction, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl, getReactionBreakdown, getCommentReactionBreakdown } from '../lib/communityApi.js';
 import { muteUser, blockUser } from '../lib/moderationApi.js';
 import { useAuth } from '../lib/auth.jsx';
@@ -68,11 +68,23 @@ function ReportModal({ isOpen, onClose, onSubmit, reportType = 'post' }) {
     <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>
-            {step === 1 && `Report ${reportType}`}
-            {step === 2 && 'Tell us more'}
-            {step === 3 && 'Report submitted'}
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {step === 2 && (
+              <button 
+                type="button" 
+                className="modal-back-button" 
+                onClick={handleBack}
+                disabled={submitting}
+              >
+                <ArrowLeft size={18} />
+              </button>
+            )}
+            <h3>
+              {step === 1 && `Report ${reportType}`}
+              {step === 2 && 'Tell us more'}
+              {step === 3 && 'Report submitted'}
+            </h3>
+          </div>
           <button type="button" className="modal-close" onClick={handleClose}>
             <X size={20} />
           </button>
