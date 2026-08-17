@@ -222,7 +222,7 @@ function Settings() {
           </div>
           {twoFactorStep === 'idle' && (
             <button
-              className={twoFactorEnabled ? 'secondary-button' : 'primary-button'}
+              className="primary-button"
               type="button"
               onClick={() => twoFactorEnabled ? handleToggleTwoFactor() : handleSendTwoFactorCode()}
               disabled={twoFactorSending}
@@ -349,7 +349,7 @@ function Settings() {
             </div>
           </div>
           <button
-            className={showAvailableNow ? 'secondary-button' : 'primary-button'}
+            className="primary-button"
             type="button"
             onClick={handleToggleAvailableNow}
           >
@@ -396,7 +396,7 @@ function Settings() {
                   View
                 </a>
               )}
-              <label className="secondary-button resume-replace-button">
+              <label className="primary-button resume-replace-button">
                 Replace
                 <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleResumeUpload} hidden />
               </label>

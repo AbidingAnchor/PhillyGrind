@@ -4714,6 +4714,22 @@ body {
   border-top-color: rgba(255, 255, 255, 0.10);
 }
 
+@media (max-width: 768px) {
+  .settings-row-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .settings-row-left {
+    width: 100%;
+  }
+
+  .settings-row-text {
+    width: 100%;
+  }
+}
+
 .section-icon-wrapper {
   display: inline-flex;
   align-items: center;
