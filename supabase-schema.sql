@@ -1229,6 +1229,8 @@ create table if not exists community_posts (
   photo_url text,
   neighborhood text not null,
   like_count int default 0,
+  share_count int default 0,
+  shared_post_id uuid references community_posts(id) on delete set null,
   created_at timestamptz default now()
 );
 
@@ -1696,3 +1698,7 @@ create policy "Authenticated can delete own community photos"
     bucket_id = 'community-photos'
     and auth.uid()::text = (storage.objects.name)[1]
   );
+
+-- Add share_count and shared_post_id columns to existing community_posts table
+alter table community_posts add column if not exists share_count int default 0;
+alter table community_posts add column if not exists shared_post_id uuid references community_posts(id) on delete set null;

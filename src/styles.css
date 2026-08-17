@@ -8926,6 +8926,43 @@ body {
   color: #4ade80;
 }
 
+.mention-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  margin-top: 4px;
+}
+
+[data-theme="dark"] .mention-dropdown {
+  background: var(--card);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.mention-dropdown-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.mention-dropdown-item:hover {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+[data-theme="dark"] .mention-dropdown-item:hover {
+  background: rgba(34, 197, 94, 0.15);
+}
+
 @media (max-width: 640px) {
   .feed-comment-replies {
     margin-left: 32px;

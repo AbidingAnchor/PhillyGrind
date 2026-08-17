@@ -222,7 +222,7 @@ function Toast({ message, onClose }) {
   );
 }
 
-function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
+function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0, allCommenters = [] }) {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
@@ -234,6 +234,10 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [showAllReplies, setShowAllReplies] = useState(false);
+  const [mentionSuggestions, setMentionSuggestions] = useState([]);
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionStartIndex, setMentionStartIndex] = useState(-1);
 
   const reactionTotal = getReactionTotalCount(reactionBreakdown);
 
@@ -283,16 +287,61 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
 
     setSubmittingReply(true);
     try {
-      // If this is a reply (depth > 0), pass the author name for @mention
-      const parentAuthorName = isReply ? comment.authorName : null;
-      await onReply(comment.id, replyText, parentAuthorName);
+      await onReply(comment.id, replyText);
       setReplyText('');
       setShowReplyForm(false);
+      setShowMentionDropdown(false);
     } catch (error) {
       alert(error.message);
     } finally {
       setSubmittingReply(false);
     }
+  }
+
+  function handleReplyTextChange(e) {
+    const text = e.target.value;
+    const cursorPosition = e.target.selectionStart;
+    
+    // Find the @ symbol before cursor
+    let atIndex = -1;
+    for (let i = cursorPosition - 1; i >= 0; i--) {
+      if (text[i] === '@') {
+        atIndex = i;
+        break;
+      }
+      // Stop if we hit a space or newline (mention must be continuous)
+      if (text[i] === ' ' || text[i] === '\n') {
+        break;
+      }
+    }
+
+    if (atIndex !== -1) {
+      const query = text.substring(atIndex + 1, cursorPosition);
+      setMentionQuery(query);
+      setMentionStartIndex(atIndex);
+      
+      // Filter commenters based on query
+      const filtered = allCommenters.filter(name => 
+        name.toLowerCase().includes(query.toLowerCase())
+      );
+      setMentionSuggestions(filtered);
+      setShowMentionDropdown(filtered.length > 0);
+    } else {
+      setShowMentionDropdown(false);
+      setMentionSuggestions([]);
+      setMentionQuery('');
+    }
+
+    setReplyText(text);
+  }
+
+  function insertMention(name) {
+    const before = replyText.substring(0, mentionStartIndex);
+    const after = replyText.substring(mentionStartIndex + mentionQuery.length + 1);
+    const newText = before + '@' + name + ' ' + after;
+    setReplyText(newText);
+    setShowMentionDropdown(false);
+    setMentionSuggestions([]);
   }
 
   async function handleMuteUser() {
@@ -449,14 +498,27 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
         </div>
 
         {showReplyForm && (
-          <form onSubmit={handleSubmitReply} className="feed-comment-reply-form">
+          <form onSubmit={handleSubmitReply} className="feed-comment-reply-form" style={{ position: 'relative' }}>
             <textarea
               value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
+              onChange={handleReplyTextChange}
               placeholder="Write a reply..."
               rows={2}
               disabled={submittingReply}
             />
+            {showMentionDropdown && mentionSuggestions.length > 0 && (
+              <div className="mention-dropdown">
+                {mentionSuggestions.map((name, index) => (
+                  <div
+                    key={index}
+                    className="mention-dropdown-item"
+                    onClick={() => insertMention(name)}
+                  >
+                    @{name}
+                  </div>
+                ))}
+              </div>
+            )}
             <button 
               type="submit" 
               className="feed-comment-reply-submit" 
@@ -478,6 +540,7 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
                   onReply={onReply}
                   onDelete={onDelete}
                   depth={depth + 1}
+                  allCommenters={allCommenters}
                 />
               ))
             ) : (
@@ -514,15 +577,104 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
   );
 }
 
+function ShareComposerModal({ isOpen, onClose, originalPost, currentUser, onShare }) {
+  const [caption, setCaption] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await onShare(originalPost.id, caption);
+      setCaption('');
+      onClose();
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleCopyLink() {
+    const postUrl = `${window.location.origin}/community/post/${originalPost.id}`;
+    try {
+      await navigator.clipboard.writeText(postUrl);
+      alert('Link copied to clipboard!');
+    } catch (error) {
+      alert('Failed to copy link');
+    }
+  }
+
+  return createPortal(
+    isOpen && (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+          <div className="modal-header">
+            <h3>Share to Feed</h3>
+            <button type="button" className="modal-close" onClick={onClose}>
+              <X size={20} />
+            </button>
+          </div>
+          <div className="modal-body">
+            <div style={{ marginBottom: '16px', padding: '12px', background: 'var(--muted-bg)', borderRadius: '8px', border: '1px solid var(--line)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                {originalPost.authorAvatarUrl ? (
+                  <img src={originalPost.authorAvatarUrl} alt={originalPost.authorName} style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
+                ) : (
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: getUserAvatarColor(originalPost.authorId, originalPost.authorName), display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '14px' }}>
+                    {originalPost.authorName?.charAt(0) || '?'}
+                  </div>
+                )}
+                <span style={{ fontWeight: '500', fontSize: '0.9rem' }}>{originalPost.authorName}</span>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                {originalPost.content}
+              </p>
+            </div>
+            <form onSubmit={handleSubmit}>
+              <textarea
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="Add a caption (optional)..."
+                rows={3}
+                style={{ width: '100%', padding: '12px', border: '1px solid var(--line)', borderRadius: '8px', fontFamily: 'inherit', fontSize: '0.95rem', resize: 'vertical', marginBottom: '16px' }}
+              />
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={handleCopyLink}
+                >
+                  Copy Link
+                </button>
+                <button
+                  type="submit"
+                  className="primary-button"
+                  disabled={submitting}
+                >
+                  {submitting ? 'Sharing...' : 'Share to Feed'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    ),
+    document.body
+  );
+}
+
 function PostCard({ post, currentUser, onLike, onDelete }) {
   const [liked, setLiked] = useState(false);
   const [userReaction, setUserReaction] = useState(null);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([]);
+  const [allCommenters, setAllCommenters] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
+  const [showShareComposer, setShowShareComposer] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
@@ -636,14 +788,14 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   }
 
   async function handleShare() {
-    const postUrl = `${window.location.origin}/community/post/${post.id}`;
-    try {
-      await navigator.clipboard.writeText(postUrl);
-      setToastMessage('Link copied!');
-    } catch (error) {
-      console.error('Failed to copy link:', error);
-      setToastMessage('Failed to copy link');
-    }
+    setShowShareComposer(true);
+  }
+
+  async function handleSharePost(originalPostId, caption) {
+    // This will be implemented with the API function
+    console.log('Sharing post:', originalPostId, 'with caption:', caption);
+    // For now, just close the modal
+    setShowShareComposer(false);
   }
 
   async function handleToggleComments() {
@@ -652,6 +804,21 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       try {
         const loadedComments = await getCommunityComments(post.id);
         setComments(loadedComments);
+        
+        // Extract distinct commenter names for @mention autocomplete
+        const commenterNames = new Set();
+        const extractCommenters = (commentList) => {
+          commentList.forEach(comment => {
+            if (comment.authorName) {
+              commenterNames.add(comment.authorName);
+            }
+            if (comment.replies && comment.replies.length > 0) {
+              extractCommenters(comment.replies);
+            }
+          });
+        };
+        extractCommenters(loadedComments);
+        setAllCommenters(Array.from(commenterNames));
       } catch (error) {
         console.error('Failed to load comments:', error);
       } finally {
@@ -679,18 +846,11 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
     }
   }
 
-  async function handleReply(parentCommentId, replyText, parentAuthorName = null) {
+  async function handleReply(parentCommentId, replyText) {
     try {
-      // If replying to a reply (depth > 0), find the top-level parent
-      let finalParentId = parentCommentId;
-      let finalReplyText = replyText;
-
-      if (parentAuthorName) {
-        // Add @mention when replying to a reply
-        finalReplyText = `@${parentAuthorName} ${replyText}`;
-      }
-
       // Find the top-level parent if we're replying to a nested reply
+      let finalParentId = parentCommentId;
+
       const findTopLevelParent = (commentId, commentList) => {
         for (const comment of commentList) {
           if (comment.id === commentId) {
@@ -717,7 +877,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         finalParentId = topLevelParentId;
       }
 
-      await createCommunityComment(post.id, finalReplyText, finalParentId);
+      await createCommunityComment(post.id, replyText, finalParentId);
       // Reload comments to get the updated hierarchical structure
       const loadedComments = await getCommunityComments(post.id);
       setComments(loadedComments);
@@ -938,6 +1098,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
                   currentUser={currentUser}
                   onReply={handleReply}
                   onDelete={handleDeleteComment}
+                  allCommenters={allCommenters}
                 />
               ))}
             </div>
@@ -970,16 +1131,20 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         onSubmit={handleReportSubmit}
         reportType="post"
       />
-      {showBlockModal && (
-        <BlockConfirmationModal
-          isOpen={showBlockModal}
-          onClose={() => setShowBlockModal(false)}
-          onConfirm={confirmBlock}
-          userName={post.authorName}
-          isUnblock={isBlocked}
-        />
-      )}
-
+      <BlockConfirmationModal
+        isOpen={showBlockModal}
+        onClose={() => setShowBlockModal(false)}
+        onConfirm={confirmBlock}
+        userName={post.authorName}
+        isUnblock={isBlocked}
+      />
+      <ShareComposerModal
+        isOpen={showShareComposer}
+        onClose={() => setShowShareComposer(false)}
+        originalPost={post}
+        currentUser={currentUser}
+        onShare={handleSharePost}
+      />
       {toastMessage && (
         <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
       )}
