@@ -473,12 +473,12 @@ main {
 
 .listing-card p {
   margin: 0;
-  color: #374151;
+  color: #1f2937;
   line-height: 1.55;
 }
 
 [data-theme="dark"] .listing-card p {
-  color: #d1d5db;
+  color: #e5e7eb;
 }
 
 .pill {
@@ -546,12 +546,39 @@ main {
   padding: 10px 15px;
   font-weight: 800;
   cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filter:hover {
+  background: #f9fafb;
+  border-color: var(--green);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(17, 184, 121, 0.15);
 }
 
 .filter.active {
-  background: var(--navy);
+  background: linear-gradient(135deg, var(--green), #0b8f62);
   color: #fff;
-  border-color: var(--navy);
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(17, 184, 121, 0.3);
+}
+
+[data-theme="dark"] .filter {
+  background: #1f2937;
+  color: #e5e7eb;
+  border-color: #374151;
+}
+
+[data-theme="dark"] .filter:hover {
+  background: #374151;
+  border-color: #4ade80;
+}
+
+[data-theme="dark"] .filter.active {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #fff;
+  border-color: transparent;
 }
 
 .browse-controls {
@@ -589,6 +616,42 @@ main {
 .browse-controls-checkbox input[type='checkbox'] {
   width: auto;
   padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.browse-controls-checkbox input[type='checkbox']:checked {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.browse-controls-checkbox input[type='checkbox']:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+[data-theme="dark"] .browse-controls-checkbox input[type='checkbox'] {
+  background: #1f2937;
+  border-color: #4b5563;
+}
+
+[data-theme="dark"] .browse-controls-checkbox input[type='checkbox']:checked {
+  background: #22c55e;
+  border-color: #22c55e;
 }
 
 .browse-controls input,
@@ -1086,6 +1149,12 @@ main {
   border-radius: 16px;
   background: linear-gradient(135deg, #ecfdf5, #fff);
   box-shadow: 0 16px 36px rgba(17, 24, 39, 0.08);
+}
+
+[data-theme="dark"] .payout-profile-card {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), var(--card));
+  border-color: rgba(74, 222, 128, 0.3);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3);
 }
 
 .payout-profile-card.connected {
