@@ -164,6 +164,8 @@ export async function getCommunityComments(postId) {
   const comments = data ?? [];
   const userIds = [...new Set(comments.map((comment) => comment.user_id).filter(Boolean))];
   
+  console.log('[getCommunityComments] postId:', postId, 'comments:', comments.length, 'userIds:', userIds);
+  
   if (!userIds.length) {
     return comments.map((comment) => ({
       ...comment,
@@ -179,14 +181,25 @@ export async function getCommunityComments(postId) {
 
   if (profileError) throw profileError;
 
+  console.log('[getCommunityComments] profiles fetched:', profiles?.length, 'profiles:', profiles);
+  
   const profilesById = Object.fromEntries((profiles ?? []).map((profile) => [profile.id, profile]));
   
-  return comments.map((comment) => ({
-    ...comment,
-    authorName: safeDisplayName(profilesById[comment.user_id]?.name),
-    authorAvatarUrl: profilesById[comment.user_id]?.avatar_url || '',
-    relativeTime: formatRelativeTime(comment.created_at),
-  }));
+  const result = comments.map((comment) => {
+    const profile = profilesById[comment.user_id];
+    const authorName = safeDisplayName(profile?.name);
+    console.log('[getCommunityComments] comment:', comment.id, 'user_id:', comment.user_id, 'profile found:', !!profile, 'profile.name:', profile?.name, 'authorName:', authorName);
+    
+    return {
+      ...comment,
+      authorName,
+      authorAvatarUrl: profile?.avatar_url || '',
+      relativeTime: formatRelativeTime(comment.created_at),
+    };
+  });
+  
+  console.log('[getCommunityComments] final result:', result);
+  return result;
 }
 
 export async function getCommunityLikeCount(postId) {
