@@ -283,7 +283,9 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
 
     setSubmittingReply(true);
     try {
-      await onReply(comment.id, replyText);
+      // If this is a reply (depth > 0), pass the author name for @mention
+      const parentAuthorName = isReply ? comment.authorName : null;
+      await onReply(comment.id, replyText, parentAuthorName);
       setReplyText('');
       setShowReplyForm(false);
     } catch (error) {
@@ -436,17 +438,15 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
           </div>
         )}
         
-        {!isReply && (
-          <div className="feed-comment-reply-actions">
-            <button
-              type="button"
-              className="feed-comment-reply-button"
-              onClick={() => setShowReplyForm(!showReplyForm)}
-            >
-              {showReplyForm ? 'Cancel' : 'Reply'}
-            </button>
-          </div>
-        )}
+        <div className="feed-comment-reply-actions">
+          <button
+            type="button"
+            className="feed-comment-reply-button"
+            onClick={() => setShowReplyForm(!showReplyForm)}
+          >
+            {showReplyForm ? 'Cancel' : 'Reply'}
+          </button>
+        </div>
 
         {showReplyForm && (
           <form onSubmit={handleSubmitReply} className="feed-comment-reply-form">
@@ -481,25 +481,13 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0 }) {
                 />
               ))
             ) : (
-              <>
-                <CommentItem
-                  key={comment.replies[0].id}
-                  comment={comment.replies[0]}
-                  currentUser={currentUser}
-                  onReply={onReply}
-                  onDelete={onDelete}
-                  depth={depth + 1}
-                />
-                {comment.replies.length > 1 && (
-                  <button
-                    type="button"
-                    className="feed-comment-show-more-replies"
-                    onClick={() => setShowAllReplies(true)}
-                  >
-                    See {comment.replies.length - 1} more {comment.replies.length - 1 === 1 ? 'reply' : 'replies'}
-                  </button>
-                )}
-              </>
+              <button
+                type="button"
+                className="feed-comment-show-more-replies"
+                onClick={() => setShowAllReplies(true)}
+              >
+                View {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
+              </button>
             )}
           </div>
         )}
@@ -691,9 +679,45 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
     }
   }
 
-  async function handleReply(parentCommentId, replyText) {
+  async function handleReply(parentCommentId, replyText, parentAuthorName = null) {
     try {
-      await createCommunityComment(post.id, replyText, parentCommentId);
+      // If replying to a reply (depth > 0), find the top-level parent
+      let finalParentId = parentCommentId;
+      let finalReplyText = replyText;
+
+      if (parentAuthorName) {
+        // Add @mention when replying to a reply
+        finalReplyText = `@${parentAuthorName} ${replyText}`;
+      }
+
+      // Find the top-level parent if we're replying to a nested reply
+      const findTopLevelParent = (commentId, commentList) => {
+        for (const comment of commentList) {
+          if (comment.id === commentId) {
+            return comment.id; // This is already top-level
+          }
+          if (comment.replies) {
+            for (const reply of comment.replies) {
+              if (reply.id === commentId) {
+                return comment.id; // Found it as a reply, return parent
+              }
+              // Check nested replies
+              const nested = findTopLevelParent(commentId, [reply]);
+              if (nested && nested !== commentId) {
+                return nested;
+              }
+            }
+          }
+        }
+        return parentCommentId; // Fallback
+      };
+
+      const topLevelParentId = findTopLevelParent(parentCommentId, comments);
+      if (topLevelParentId !== parentCommentId) {
+        finalParentId = topLevelParentId;
+      }
+
+      await createCommunityComment(post.id, finalReplyText, finalParentId);
       // Reload comments to get the updated hierarchical structure
       const loadedComments = await getCommunityComments(post.id);
       setComments(loadedComments);

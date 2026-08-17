@@ -8912,6 +8912,20 @@ body {
   text-decoration: underline;
 }
 
+.comment-mention {
+  color: var(--green);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.comment-mention:hover {
+  text-decoration: underline;
+}
+
+[data-theme="dark"] .comment-mention {
+  color: #4ade80;
+}
+
 @media (max-width: 640px) {
   .feed-comment-replies {
     margin-left: 32px;
