@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff } from 'lucide-react';
 import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, removeCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, getUserCommentReaction, toggleCommentReaction, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl, getReactionBreakdown, getCommentReactionBreakdown } from '../lib/communityApi.js';
 import { muteUser, blockUser } from '../lib/moderationApi.js';
 import { useAuth } from '../lib/auth.jsx';
@@ -27,12 +28,12 @@ function ReportModal({ isOpen, onClose, onSubmit, reportType = 'post' }) {
   const [submitting, setSubmitting] = useState(false);
 
   const reportCategories = {
-    'Spam': ['Misleading information', 'Repeated posts', 'Fake account'],
-    'Harassment or bullying': ['Targeted at me', 'Targeted at someone else', 'Repeated unwanted contact'],
-    'Hate speech or violence': ['Hate speech', 'Violence or threats', 'Dangerous organization'],
-    'Scam or fraud': ['Financial scam', 'Identity theft', 'Phishing attempt'],
-    'Inappropriate or adult content': ['Adult content', 'Sexual violence', 'Inappropriate behavior'],
-    'Something else': ['Other issue']
+    'Spam': { icon: AlertCircle, subs: ['Misleading information', 'Repeated posts', 'Fake account'] },
+    'Harassment or bullying': { icon: Shield, subs: ['Targeted at me', 'Targeted at someone else', 'Repeated unwanted contact'] },
+    'Hate speech or violence': { icon: Ban, subs: ['Hate speech', 'Violence or threats', 'Dangerous organization'] },
+    'Scam or fraud': { icon: AlertTriangle, subs: ['Financial scam', 'Identity theft', 'Phishing attempt'] },
+    'Inappropriate or adult content': { icon: EyeOff, subs: ['Adult content', 'Sexual violence', 'Inappropriate behavior'] },
+    'Something else': { icon: MessageSquareOff, subs: ['Other issue'] }
   };
 
   if (!isOpen) return null;
@@ -63,7 +64,7 @@ function ReportModal({ isOpen, onClose, onSubmit, reportType = 'post' }) {
     onClose();
   }
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
@@ -79,26 +80,27 @@ function ReportModal({ isOpen, onClose, onSubmit, reportType = 'post' }) {
         
         {step === 1 && (
           <div className="modal-body">
-            <p style={{ marginBottom: '16px', color: 'var(--muted)' }}>Why are you reporting this {reportType}?</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {Object.keys(reportCategories).map((category) => (
+            <p style={{ marginBottom: '24px', color: 'var(--muted)', fontSize: '0.95rem' }}>Why are you reporting this {reportType}?</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {Object.entries(reportCategories).map(([category, { icon: Icon }]) => (
                 <button
                   key={category}
                   type="button"
-                  className="secondary-button"
+                  className="report-category-button"
                   onClick={() => {
                     setReason(category);
                     setStep(2);
                   }}
                   style={{
-                    textAlign: 'left',
-                    justifyContent: 'flex-start',
-                    padding: '12px 16px',
-                    background: reason === category ? 'var(--mint)' : 'var(--card)',
-                    borderColor: reason === category ? 'var(--green)' : 'var(--line)'
+                    background: reason === category 
+                      ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%)' 
+                      : 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
+                    borderColor: reason === category ? 'var(--green)' : 'var(--line)',
+                    boxShadow: reason === category ? '0 0 0 1px var(--green), 0 4px 12px rgba(34, 197, 94, 0.15)' : 'none'
                   }}
                 >
-                  {category}
+                  <Icon size={20} style={{ color: reason === category ? 'var(--green)' : 'var(--muted)' }} />
+                  <span>{category}</span>
                 </button>
               ))}
             </div>
@@ -107,31 +109,31 @@ function ReportModal({ isOpen, onClose, onSubmit, reportType = 'post' }) {
 
         {step === 2 && (
           <div className="modal-body">
-            <p style={{ marginBottom: '16px', color: 'var(--muted)' }}>What specifically is the issue?</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {reportCategories[reason]?.map((sub) => (
+            <p style={{ marginBottom: '24px', color: 'var(--muted)', fontSize: '0.95rem' }}>What specifically is the issue?</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {reportCategories[reason]?.subs.map((sub) => (
                 <button
                   key={sub}
                   type="button"
-                  className="secondary-button"
+                  className="report-subreason-button"
                   onClick={() => {
                     setSubreason(sub);
                     handleSubmit();
                   }}
                   disabled={submitting}
                   style={{
-                    textAlign: 'left',
-                    justifyContent: 'flex-start',
-                    padding: '12px 16px',
-                    background: subreason === sub ? 'var(--mint)' : 'var(--card)',
-                    borderColor: subreason === sub ? 'var(--green)' : 'var(--line)'
+                    background: subreason === sub 
+                      ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%)' 
+                      : 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
+                    borderColor: subreason === sub ? 'var(--green)' : 'var(--line)',
+                    boxShadow: subreason === sub ? '0 0 0 1px var(--green), 0 4px 12px rgba(34, 197, 94, 0.15)' : 'none'
                   }}
                 >
                   {sub}
                 </button>
               ))}
             </div>
-            <div className="modal-actions" style={{ marginTop: '16px' }}>
+            <div className="modal-actions" style={{ marginTop: '24px' }}>
               <button type="button" className="secondary-button" onClick={handleBack} disabled={submitting}>
                 Back
               </button>
@@ -163,14 +165,15 @@ function ReportModal({ isOpen, onClose, onSubmit, reportType = 'post' }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
 function BlockConfirmationModal({ isOpen, onClose, onConfirm, userName, isUnblock = false }) {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
@@ -203,7 +206,8 @@ function BlockConfirmationModal({ isOpen, onClose, onConfirm, userName, isUnbloc
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
