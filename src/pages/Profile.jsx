@@ -452,7 +452,8 @@ function Profile() {
                 <StarRating rating={profileData.rating.average} count={profileData.rating.count} />
                 <span>{profileData.rating.count} review{profileData.rating.count === 1 ? '' : 's'}</span>
               </div>
-              {profileData.profile?.availability && <span className={`availability-badge ${profileData.profile.availability === 'Available Now' ? 'available' : profileData.profile.availability === 'Not Available' ? 'unavailable' : ''}`}>{profileData.profile.availability}</span>}
+              {profileData.profile?.availability === 'Available Now' && profileData.profile?.show_available_now && <span className="availability-badge available">{profileData.profile.availability}</span>}
+              {profileData.profile?.availability && profileData.profile?.availability !== 'Available Now' && <span className={`availability-badge ${profileData.profile.availability === 'Not Available' ? 'unavailable' : ''}`}>{profileData.profile.availability}</span>}
               {!isOwnProfile && isLoggedIn && (
                 <button 
                   className="profile-edit-button" 

@@ -221,6 +221,9 @@ alter table profiles
 alter table profiles
   add column if not exists accent_color text not null default '#22c55e';
 
+alter table profiles
+  add column if not exists show_available_now boolean not null default false;
+
 alter table notifications
   add column if not exists listing_type text;
 

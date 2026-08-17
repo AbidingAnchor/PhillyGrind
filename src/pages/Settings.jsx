@@ -29,6 +29,7 @@ function Settings() {
   const [twoFactorError, setTwoFactorError] = useState('');
   const [isLandlord, setIsLandlord] = useState(false);
   const [housingListings, setHousingListings] = useState([]);
+  const [showAvailableNow, setShowAvailableNow] = useState(false);
 
   const hasStripeAccount = Boolean(authProfile?.stripe_account_id);
   const payoutsConnected = Boolean(hasStripeAccount && authProfile?.stripe_onboarding_complete);
@@ -37,6 +38,7 @@ function Settings() {
     if (!authProfile) return;
 
     setTwoFactorEnabled(authProfile.two_factor_enabled || false);
+    setShowAvailableNow(authProfile.show_available_now || false);
     const resumeStoragePath = getProfileResumePath(authProfile);
     if (resumeStoragePath) {
       getResumeUrl(resumeStoragePath).then(setResumeUrl).catch(console.warn);
@@ -144,6 +146,24 @@ function Settings() {
       setProfileStatus(err.message || 'Could not upload resume.');
     } finally {
       event.target.value = '';
+    }
+  }
+
+  async function handleToggleAvailableNow() {
+    setProfileStatus('');
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ show_available_now: !showAvailableNow })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      setShowAvailableNow(!showAvailableNow);
+      setProfileStatus(`Available Now badge ${!showAvailableNow ? 'enabled' : 'disabled'}.`);
+      await refreshProfile();
+    } catch (err) {
+      setProfileStatus(err.message || 'Could not update availability settings.');
     }
   }
 
@@ -286,6 +306,29 @@ function Settings() {
         <div className="theme-toggle-row">
           <p>Switch between light and dark mode to match your preference.</p>
           <ThemeToggle />
+        </div>
+      </section>
+
+      <section className="profile-section-card">
+        <div className="profile-section-heading">
+          <span className="eyebrow">Profile</span>
+          <h2>Available Now Badge</h2>
+        </div>
+        <div className="two-factor-toggle">
+          <div>
+            <p>
+              {showAvailableNow
+                ? 'The "Available Now" badge is shown on your profile when your availability is set to "Available Now".'
+                : 'Show the "Available Now" badge on your profile when your availability is set to "Available Now".'}
+            </p>
+          </div>
+          <button
+            className={showAvailableNow ? 'secondary-button' : 'primary-button'}
+            type="button"
+            onClick={handleToggleAvailableNow}
+          >
+            {showAvailableNow ? 'Disable Badge' : 'Enable Badge'}
+          </button>
         </div>
       </section>
 
