@@ -177,47 +177,50 @@ function Settings() {
       {profileStatus && <p className="form-status">{profileStatus}</p>}
 
       <section className={payoutsConnected ? 'payout-profile-card connected' : 'payout-profile-card'}>
-        <div>
-          <div className="profile-section-heading">
-            <span className="eyebrow">Stripe Express</span>
-            <h2>{payoutsConnected ? 'Payouts connected' : hasStripeAccount ? 'Finish payout setup' : 'Set up payouts to receive payments'}</h2>
+        <div className="settings-row-content">
+          <div className="settings-row-left">
+            <div className="section-icon-wrapper">
+              <CreditCard size={20} />
+            </div>
+            <div className="settings-row-text">
+              <span className="eyebrow">Stripe Express</span>
+              <h2>{payoutsConnected ? 'Payouts connected' : hasStripeAccount ? 'Finish payout setup' : 'Set up payouts to receive payments'}</h2>
+              <p className="settings-row-description">
+                {payoutsConnected
+                  ? 'You can receive secure escrow payouts for gigs and marketplace sales through Stripe Express.'
+                  : hasStripeAccount
+                    ? 'Finish Stripe Express onboarding so buyers and hirers can pay into escrow and PhillyGrind can release payouts to you.'
+                    : 'Connect Stripe Express to accept Secure Checkout on marketplace listings and escrow payments on gigs.'}
+              </p>
+            </div>
           </div>
-          <p>
-            {payoutsConnected
-              ? 'You can receive secure escrow payouts for gigs and marketplace sales through Stripe Express.'
-              : hasStripeAccount
-                ? 'Finish Stripe Express onboarding so buyers and hirers can pay into escrow and PhillyGrind can release payouts to you.'
-                : 'Connect Stripe Express to accept Secure Checkout on marketplace listings and escrow payments on gigs.'}
-          </p>
+          {payoutsConnected ? (
+            <span className="payout-ready-badge">Payouts connected ✓</span>
+          ) : (
+            <button className="primary-button" type="button" onClick={handleConnectPayouts} disabled={connectingPayouts}>
+              {connectingPayouts ? 'Connecting...' : hasStripeAccount ? 'Finish Stripe' : 'Connect Stripe'}
+            </button>
+          )}
         </div>
-        {payoutsConnected ? (
-          <span className="payout-ready-badge">Payouts connected ✓</span>
-        ) : (
-          <button className="primary-button" type="button" onClick={handleConnectPayouts} disabled={connectingPayouts}>
-            {connectingPayouts ? 'Connecting...' : hasStripeAccount ? 'Finish Stripe' : 'Connect Stripe'}
-          </button>
-        )}
       </section>
 
       <section className="profile-section-card">
-        <div className="profile-section-heading">
-          <div className="section-icon-wrapper">
-            <Shield size={20} />
-          </div>
-          <div>
-            <span className="eyebrow">Security</span>
-            <h2>Two-Factor Authentication</h2>
-          </div>
-        </div>
-        {twoFactorStep === 'idle' && (
-          <div className="two-factor-toggle">
-            <div>
-              <p>
+        <div className="settings-row-content">
+          <div className="settings-row-left">
+            <div className="section-icon-wrapper">
+              <Shield size={20} />
+            </div>
+            <div className="settings-row-text">
+              <span className="eyebrow">Security</span>
+              <h2>Two-Factor Authentication</h2>
+              <p className="settings-row-description">
                 {twoFactorEnabled
                   ? 'Two-factor authentication is enabled. You will need to enter a verification code sent to your email when logging in.'
                   : 'Add an extra layer of security to your account by requiring a verification code when logging in.'}
               </p>
             </div>
+          </div>
+          {twoFactorStep === 'idle' && (
             <button
               className={twoFactorEnabled ? 'secondary-button' : 'primary-button'}
               type="button"
@@ -226,62 +229,68 @@ function Settings() {
             >
               {twoFactorSending ? 'Processing...' : twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
             </button>
-          </div>
-        )}
-        {twoFactorStep === 'verify' && (
-          <div className="two-factor-verify">
-            <p>We sent a 6-digit code to <strong>{authProfile.email}</strong>. Enter it below to confirm you want to enable 2FA.</p>
-            <div className="two-factor-code-input">
-              <input
-                type="text"
-                value={twoFactorCode}
-                onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="000000"
-                maxLength={6}
-              />
-              <button className="primary-button" type="button" onClick={handleVerifyTwoFactorCode} disabled={twoFactorSending || twoFactorCode.length !== 6}>
-                {twoFactorSending ? 'Verifying...' : 'Verify'}
-              </button>
-            </div>
-            <button className="text-link" type="button" onClick={resetTwoFactorFlow}>Cancel</button>
-            {twoFactorError && <p className="error-text">{twoFactorError}</p>}
-          </div>
-        )}
-        {twoFactorStep === 'confirm' && (
-          <div className="two-factor-confirm">
-            <p>Verification successful! Click below to complete enabling two-factor authentication.</p>
-            <button className="primary-button" type="button" onClick={handleToggleTwoFactor} disabled={twoFactorSending}>
-              {twoFactorSending ? 'Enabling...' : 'Confirm Enable 2FA'}
-            </button>
-            <button className="text-link" type="button" onClick={resetTwoFactorFlow}>Cancel</button>
+          )}
+        </div>
+        {twoFactorStep !== 'idle' && (
+          <div className="settings-expanded-content">
+            {twoFactorStep === 'verify' && (
+              <div className="two-factor-verify">
+                <p>We sent a 6-digit code to <strong>{authProfile.email}</strong>. Enter it below to confirm you want to enable 2FA.</p>
+                <div className="two-factor-code-input">
+                  <input
+                    type="text"
+                    value={twoFactorCode}
+                    onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    maxLength={6}
+                  />
+                  <button className="primary-button" type="button" onClick={handleVerifyTwoFactorCode} disabled={twoFactorSending || twoFactorCode.length !== 6}>
+                    {twoFactorSending ? 'Verifying...' : 'Verify'}
+                  </button>
+                </div>
+                <button className="text-link" type="button" onClick={resetTwoFactorFlow}>Cancel</button>
+                {twoFactorError && <p className="error-text">{twoFactorError}</p>}
+              </div>
+            )}
+            {twoFactorStep === 'confirm' && (
+              <div className="two-factor-confirm">
+                <p>Verification successful! Click below to complete enabling two-factor authentication.</p>
+                <button className="primary-button" type="button" onClick={handleToggleTwoFactor} disabled={twoFactorSending}>
+                  {twoFactorSending ? 'Enabling...' : 'Confirm Enable 2FA'}
+                </button>
+                <button className="text-link" type="button" onClick={resetTwoFactorFlow}>Cancel</button>
+              </div>
+            )}
           </div>
         )}
         {twoFactorError && twoFactorStep === 'idle' && <p className="error-text">{twoFactorError}</p>}
       </section>
 
       <section className="profile-section-card">
-        <div className="profile-section-heading">
-          <div className="section-icon-wrapper">
-            <BadgeCheck size={20} />
+        <div className="settings-row-content">
+          <div className="settings-row-left">
+            <div className="section-icon-wrapper">
+              <BadgeCheck size={20} />
+            </div>
+            <div className="settings-row-text">
+              <span className="eyebrow">Identity Verification</span>
+              <h2>Verified Badge</h2>
+              <p className="settings-row-description">
+                {authProfile?.identity_verified
+                  ? 'Your identity has been verified. Your profile and listings display a verified badge to build trust with the PhillyGrind community.'
+                  : authProfile?.verification_status === 'pending'
+                    ? 'Your identity verification is being processed. This typically takes a few minutes.'
+                    : isLandlord
+                      ? 'Get a blue verified badge on your profile and Housing listings by verifying your identity with Stripe Identity.'
+                      : 'Identity verification is currently available for landlords who have posted Housing listings.'}
+              </p>
+            </div>
           </div>
-          <div>
-            <span className="eyebrow">Identity Verification</span>
-            <h2>Verified Badge</h2>
-          </div>
-        </div>
-        {authProfile?.identity_verified ? (
-          <div className="verification-badge-display">
+          {authProfile?.identity_verified ? (
             <span className="verified-badge">✓ Verified</span>
-            <p>Your identity has been verified. Your profile and listings display a verified badge to build trust with the PhillyGrind community.</p>
-          </div>
-        ) : authProfile?.verification_status === 'pending' ? (
-          <div className="verification-pending">
-            <span className="pending-badge">Pending Verification</span>
-            <p>Your identity verification is being processed. This typically takes a few minutes. You'll be notified once it's complete.</p>
-          </div>
-        ) : isLandlord ? (
-          <div className="verification-action">
-            <p>Get a blue verified badge on your profile and Housing listings by verifying your identity with Stripe Identity. This builds trust with renters and shows you're a legitimate landlord.</p>
+          ) : authProfile?.verification_status === 'pending' ? (
+            <span className="pending-badge">Pending</span>
+          ) : isLandlord ? (
             <button className="primary-button" type="button" onClick={async () => {
               try {
                 const token = (await supabase.auth.getSession()).data.session?.access_token;
@@ -301,48 +310,43 @@ function Settings() {
             }}>
               Get Verified ($2)
             </button>
-          </div>
-        ) : (
-          <div className="verification-coming-soon">
+          ) : (
             <span className="coming-soon-badge">Coming Soon</span>
-            <p>Identity verification is currently available for landlords who have posted Housing listings. Post a Housing listing to unlock verification.</p>
-          </div>
-        )}
+          )}
+        </div>
       </section>
 
       <section className="profile-section-card">
-        <div className="profile-section-heading">
-          <div className="section-icon-wrapper">
-            <Palette size={20} />
+        <div className="settings-row-content">
+          <div className="settings-row-left">
+            <div className="section-icon-wrapper">
+              <Palette size={20} />
+            </div>
+            <div className="settings-row-text">
+              <span className="eyebrow">Appearance</span>
+              <h2>Theme</h2>
+              <p className="settings-row-description">Switch between light and dark mode to match your preference.</p>
+            </div>
           </div>
-          <div>
-            <span className="eyebrow">Appearance</span>
-            <h2>Theme</h2>
-          </div>
-        </div>
-        <div className="theme-toggle-row">
-          <p>Switch between light and dark mode to match your preference.</p>
           <ThemeToggle />
         </div>
       </section>
 
       <section className="profile-section-card">
-        <div className="profile-section-heading">
-          <div className="section-icon-wrapper">
-            <User size={20} />
-          </div>
-          <div>
-            <span className="eyebrow">Profile</span>
-            <h2>Available Now Badge</h2>
-          </div>
-        </div>
-        <div className="two-factor-toggle">
-          <div>
-            <p>
-              {showAvailableNow
-                ? 'The "Available Now" badge is shown on your profile when your availability is set to "Available Now".'
-                : 'Show the "Available Now" badge on your profile when your availability is set to "Available Now".'}
-            </p>
+        <div className="settings-row-content">
+          <div className="settings-row-left">
+            <div className="section-icon-wrapper">
+              <User size={20} />
+            </div>
+            <div className="settings-row-text">
+              <span className="eyebrow">Profile</span>
+              <h2>Available Now Badge</h2>
+              <p className="settings-row-description">
+                {showAvailableNow
+                  ? 'The "Available Now" badge is shown on your profile when your availability is set to "Available Now".'
+                  : 'Show the "Available Now" badge on your profile when your availability is set to "Available Now".'}
+              </p>
+            </div>
           </div>
           <button
             className={showAvailableNow ? 'secondary-button' : 'primary-button'}
@@ -355,57 +359,55 @@ function Settings() {
       </section>
 
       <section className="profile-section-card">
-        <div className="profile-section-heading">
-          <div className="section-icon-wrapper">
-            <Bell size={20} />
+        <div className="settings-row-content">
+          <div className="settings-row-left">
+            <div className="section-icon-wrapper">
+              <Bell size={20} />
+            </div>
+            <div className="settings-row-text">
+              <span className="eyebrow">Notifications</span>
+              <h2>Notification Bell</h2>
+              <p className="settings-row-description">View your notifications for messages, reactions, and other activity using the bell icon in the top navigation.</p>
+            </div>
           </div>
-          <div>
-            <span className="eyebrow">Notifications</span>
-            <h2>Notification Bell</h2>
-          </div>
-        </div>
-        <div className="notification-bell-row">
-          <p>View your notifications for messages, reactions, and other activity using the bell icon in the top navigation.</p>
         </div>
       </section>
 
       <section className="profile-section-card">
-        <div className="profile-section-heading">
-          <div className="section-icon-wrapper">
-            <FileText size={20} />
-          </div>
-          <div>
-            <span className="eyebrow">Career</span>
-            <h2>Resume</h2>
-          </div>
-        </div>
-        {getProfileResumePath(authProfile) ? (
-          <div className="resume-upload-card">
-            <div>
-              <strong>{resumeFilename(getProfileResumePath(authProfile))}</strong>
-              <p className="detail-note">Private resume stored in your profile. Attached automatically when you Quick Apply.</p>
+        <div className="settings-row-content">
+          <div className="settings-row-left">
+            <div className="section-icon-wrapper">
+              <FileText size={20} />
             </div>
+            <div className="settings-row-text">
+              <span className="eyebrow">Career</span>
+              <h2>Resume</h2>
+              <p className="settings-row-description">
+                {getProfileResumePath(authProfile)
+                  ? `Uploaded: ${resumeFilename(getProfileResumePath(authProfile))}`
+                  : 'Upload a PDF or Word resume to use Quick Apply on job listings.'}
+              </p>
+            </div>
+          </div>
+          {getProfileResumePath(authProfile) ? (
             <div className="resume-upload-actions">
               {resumeUrl && (
                 <a className="text-link" href={resumeUrl} target="_blank" rel="noreferrer">
-                  View resume
+                  View
                 </a>
               )}
-              <label className="secondary-detail-button resume-replace-button">
+              <label className="secondary-button resume-replace-button">
                 Replace
                 <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleResumeUpload} hidden />
               </label>
             </div>
-          </div>
-        ) : (
-          <div className="resume-upload-card">
-            <p className="detail-note">Upload a PDF or Word resume to use Quick Apply on job listings. PDF or Word document (.pdf, .doc, .docx), 5MB max.</p>
+          ) : (
             <label className="primary-button resume-upload-button">
               Upload Resume
               <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleResumeUpload} hidden />
             </label>
-          </div>
-        )}
+          )}
+        </div>
       </section>
     </section>
   );

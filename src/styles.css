@@ -1139,13 +1139,11 @@ main {
 }
 
 .payout-profile-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: block;
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: clamp(22px, 4vw, 34px);
+  padding: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   transition: box-shadow 0.2s, border-color 0.2s;
 }
@@ -4626,9 +4624,8 @@ body {
 }
 
 .profile-section-card {
-  display: grid;
-  gap: 20px;
-  padding: clamp(22px, 4vw, 34px);
+  display: block;
+  padding: 16px;
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -4652,14 +4649,79 @@ body {
   box-shadow: 0 4px 16px rgba(74, 222, 128, 0.2);
 }
 
+.settings-row-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.settings-row-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-row-text {
+  min-width: 0;
+}
+
+.settings-row-text .eyebrow {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+  margin-bottom: 2px;
+}
+
+[data-theme="dark"] .settings-row-text .eyebrow {
+  color: var(--muted);
+}
+
+.settings-row-text h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+[data-theme="dark"] .settings-row-text h2 {
+  color: var(--ink);
+}
+
+.settings-row-description {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
+[data-theme="dark"] .settings-row-description {
+  color: var(--muted);
+}
+
+.settings-expanded-content {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+[data-theme="dark"] .settings-expanded-content {
+  border-top-color: rgba(255, 255, 255, 0.10);
+}
+
 .section-icon-wrapper {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   background: rgba(34, 197, 94, 0.1);
-  border-radius: 10px;
+  border-radius: 8px;
   color: #22c55e;
   flex-shrink: 0;
 }
