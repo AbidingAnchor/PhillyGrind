@@ -98,20 +98,13 @@ function ReportModal({ isOpen, onClose, onSubmit, reportType = 'post' }) {
                 <button
                   key={category}
                   type="button"
-                  className="report-category-button"
+                  className={`report-category-button ${reason === category ? 'selected' : ''}`}
                   onClick={() => {
                     setReason(category);
                     setStep(2);
                   }}
-                  style={{
-                    background: reason === category 
-                      ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%)' 
-                      : 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
-                    borderColor: reason === category ? 'var(--green)' : 'var(--line)',
-                    boxShadow: reason === category ? '0 0 0 1px var(--green), 0 4px 12px rgba(34, 197, 94, 0.15)' : 'none'
-                  }}
                 >
-                  <Icon size={20} style={{ color: reason === category ? 'var(--green)' : 'var(--muted)' }} />
+                  <Icon size={20} />
                   <span>{category}</span>
                 </button>
               ))}
@@ -127,19 +120,12 @@ function ReportModal({ isOpen, onClose, onSubmit, reportType = 'post' }) {
                 <button
                   key={sub}
                   type="button"
-                  className="report-subreason-button"
+                  className={`report-subreason-button ${subreason === sub ? 'selected' : ''}`}
                   onClick={() => {
                     setSubreason(sub);
                     handleSubmit();
                   }}
                   disabled={submitting}
-                  style={{
-                    background: subreason === sub 
-                      ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%)' 
-                      : 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
-                    borderColor: subreason === sub ? 'var(--green)' : 'var(--line)',
-                    boxShadow: subreason === sub ? '0 0 0 1px var(--green), 0 4px 12px rgba(34, 197, 94, 0.15)' : 'none'
-                  }}
                 >
                   {sub}
                 </button>

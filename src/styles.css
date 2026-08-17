@@ -6153,11 +6153,26 @@ body {
   width: 100%;
 }
 
+.report-category-button svg {
+  color: var(--muted);
+  transition: color 0.2s ease;
+}
+
 .report-category-button:hover:not(:disabled) {
   background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(34, 197, 94, 0.03) 100%);
   border-color: var(--green);
   transform: translateY(-1px);
   box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2), 0 4px 12px rgba(34, 197, 94, 0.15);
+}
+
+.report-category-button.selected {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green), 0 4px 12px rgba(34, 197, 94, 0.15);
+}
+
+.report-category-button.selected svg {
+  color: var(--green);
 }
 
 [data-theme="dark"] .report-category-button {
@@ -6167,6 +6182,11 @@ body {
 
 [data-theme="dark"] .report-category-button:hover:not(:disabled) {
   background: linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(34, 197, 94, 0.05) 100%);
+  border-color: var(--green);
+}
+
+[data-theme="dark"] .report-category-button.selected {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.08) 100%);
   border-color: var(--green);
 }
 
@@ -6193,6 +6213,12 @@ body {
   box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2), 0 4px 12px rgba(34, 197, 94, 0.15);
 }
 
+.report-subreason-button.selected {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 100%);
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green), 0 4px 12px rgba(34, 197, 94, 0.15);
+}
+
 [data-theme="dark"] .report-subreason-button {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
   border-color: rgba(255, 255, 255, 0.1);
@@ -6200,6 +6226,11 @@ body {
 
 [data-theme="dark"] .report-subreason-button:hover:not(:disabled) {
   background: linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(34, 197, 94, 0.05) 100%);
+  border-color: var(--green);
+}
+
+[data-theme="dark"] .report-subreason-button.selected {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.08) 100%);
   border-color: var(--green);
 }
 
