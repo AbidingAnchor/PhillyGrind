@@ -345,26 +345,46 @@ async function handleAdminReports(req, res) {
   if (!admin) return;
 
   const status = req.query.status || 'pending';
-  let query = supabaseAdmin
+
+  // Query both reports (listings/users) and community_reports (posts/comments)
+  let reportsQuery = supabaseAdmin
     .from('reports')
     .select('*')
     .order('created_at', { ascending: false });
 
+  let communityReportsQuery = supabaseAdmin
+    .from('community_reports')
+    .select('*')
+    .order('created_at', { ascending: false });
+
   if (status !== 'all') {
-    query = query.eq('status', status);
+    reportsQuery = reportsQuery.eq('status', status);
+    communityReportsQuery = communityReportsQuery.eq('status', status);
   }
 
-  const { data: reports, error } = await query;
-  if (error) throw error;
+  const [{ data: reports, error: reportsError }, { data: communityReports, error: communityReportsError }] = await Promise.all([
+    reportsQuery,
+    communityReportsQuery,
+  ]);
 
-  const reporterIds = [...new Set((reports ?? []).map((report) => report.reporter_id).filter(Boolean))];
+  if (reportsError) throw reportsError;
+  if (communityReportsError) throw communityReportsError;
+
+  // Get reporter profiles for both report types
+  const reporterIds = [
+    ...new Set([
+      ...(reports ?? []).map((report) => report.reporter_id).filter(Boolean),
+      ...(communityReports ?? []).map((report) => report.reporter_id).filter(Boolean),
+    ]),
+  ];
   const { data: reporters } = reporterIds.length
     ? await supabaseAdmin.from('profiles').select('id,name,email').in('id', reporterIds)
     : { data: [] };
 
   const reportersById = Object.fromEntries((reporters ?? []).map((profile) => [profile.id, profile]));
 
-  const enriched = await Promise.all((reports ?? []).map(async (report) => {
+  // Enrich regular reports (listings/users)
+  const enrichedReports = await Promise.all((reports ?? []).map(async (report) => {
     let subjectTitle = '';
     if (report.reported_type === 'listing') {
       const table = report.listing_type === 'gig'
@@ -396,7 +416,45 @@ async function handleAdminReports(req, res) {
     };
   }));
 
-  sendJson(res, 200, { reports: enriched });
+  // Enrich community reports (posts/comments)
+  const enrichedCommunityReports = await Promise.all((communityReports ?? []).map(async (report) => {
+    let subjectTitle = '';
+    let reportedType = '';
+    
+    if (report.post_id) {
+      reportedType = 'community_post';
+      const { data: post } = await supabaseAdmin
+        .from('community_posts')
+        .select('content')
+        .eq('id', report.post_id)
+        .maybeSingle();
+      subjectTitle = post?.content?.substring(0, 100) || 'Post content';
+    } else if (report.comment_id) {
+      reportedType = 'community_comment';
+      const { data: comment } = await supabaseAdmin
+        .from('community_comments')
+        .select('content')
+        .eq('id', report.comment_id)
+        .maybeSingle();
+      subjectTitle = comment?.content?.substring(0, 100) || 'Comment content';
+    }
+
+    return {
+      ...report,
+      reported_type: reportedType,
+      source: 'community',
+      reporterName: reportersById[report.reporter_id]?.name || 'User',
+      subjectTitle,
+      reason: report.subreason ? `${report.reason}: ${report.subreason}` : report.reason,
+    };
+  }));
+
+  // Merge and sort by created_at
+  const allReports = [...enrichedReports, ...enrichedCommunityReports].sort(
+    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+  );
+
+  sendJson(res, 200, { reports: allReports });
 }
 
 async function handleAdminSuspendUser(req, res, admin) {
@@ -457,48 +515,75 @@ async function handleAdminReportAction(req, res, admin) {
     return;
   }
 
+  // Try to find report in either reports or community_reports table
   const { data: report, error: fetchError } = await supabaseAdmin
     .from('reports')
     .select('*')
     .eq('id', reportId)
-    .single();
+    .maybeSingle();
 
-  if (fetchError) throw fetchError;
+  let isCommunityReport = false;
+  let finalReport = report;
+
+  if (fetchError || !report) {
+    // Try community_reports table
+    const { data: communityReport, error: communityFetchError } = await supabaseAdmin
+      .from('community_reports')
+      .select('*')
+      .eq('id', reportId)
+      .maybeSingle();
+
+    if (communityFetchError) throw communityFetchError;
+    if (!communityReport) {
+      sendJson(res, 404, { error: 'Report not found.' });
+      return;
+    }
+
+    isCommunityReport = true;
+    finalReport = communityReport;
+  }
 
   const statusMap = { dismiss: 'dismissed', warn: 'warned', remove: 'removed' };
   const { error: updateError } = await supabaseAdmin
-    .from('reports')
+    .from(isCommunityReport ? 'community_reports' : 'reports')
     .update({
       status: statusMap[action],
-      resolved_at: new Date().toISOString(),
-      resolved_by: admin.id,
     })
     .eq('id', reportId);
 
   if (updateError) throw updateError;
 
-  if (action === 'remove' && report.reported_type === 'listing') {
-    const table = report.listing_type === 'gig'
-      ? 'gigs'
-      : report.listing_type === 'marketplace'
-        ? 'marketplace_listings'
-        : 'jobs';
+  if (action === 'remove') {
+    if (!isCommunityReport && finalReport.reported_type === 'listing') {
+      const table = finalReport.listing_type === 'gig'
+        ? 'gigs'
+        : finalReport.listing_type === 'marketplace'
+          ? 'marketplace_listings'
+          : 'jobs';
 
-    if (report.listing_type === 'marketplace') {
-      await supabaseAdmin
-        .from(table)
-        .update({ status: 'removed', moderation_status: 'removed' })
-        .eq('id', report.reported_id);
-    } else {
-      await supabaseAdmin.from(table).delete().eq('id', report.reported_id);
+      if (finalReport.listing_type === 'marketplace') {
+        await supabaseAdmin
+          .from(table)
+          .update({ status: 'removed', moderation_status: 'removed' })
+          .eq('id', finalReport.reported_id);
+      } else {
+        await supabaseAdmin.from(table).delete().eq('id', finalReport.reported_id);
+      }
+    } else if (isCommunityReport) {
+      // Remove community post or comment
+      if (finalReport.post_id) {
+        await supabaseAdmin.from('community_posts').delete().eq('id', finalReport.post_id);
+      } else if (finalReport.comment_id) {
+        await supabaseAdmin.from('community_comments').delete().eq('id', finalReport.comment_id);
+      }
     }
   }
 
-  if (action === 'warn' && report.reported_type === 'user') {
+  if (action === 'warn' && !isCommunityReport && finalReport.reported_type === 'user') {
     await supabaseAdmin.from('notifications').insert({
-      user_id: report.reported_id,
+      user_id: finalReport.reported_id,
       type: 'admin_warning',
-      message: warnMessage?.trim() || report.reason,
+      message: warnMessage?.trim() || finalReport.reason,
     });
   }
 

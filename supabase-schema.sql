@@ -1344,7 +1344,9 @@ create table if not exists community_reports (
   comment_id uuid references community_comments(id) on delete cascade,
   reporter_id uuid references auth.users(id) on delete cascade not null,
   reason text not null,
+  subreason text,
   details text,
+  status text not null default 'pending' check (status in ('pending', 'dismissed', 'warned', 'removed')),
   created_at timestamptz default now(),
   constraint community_reports_either_post_or_comment check (
     (post_id is not null and comment_id is null) or 
@@ -1356,6 +1358,7 @@ create table if not exists community_reports (
 alter table community_reports add column if not exists comment_id uuid references community_comments(id) on delete cascade;
 alter table community_reports add column if not exists details text;
 alter table community_reports add column if not exists subreason text;
+alter table community_reports add column if not exists status text not null default 'pending' check (status in ('pending', 'dismissed', 'warned', 'removed'));
 
 -- Add constraint if it doesn't exist
 do $$
