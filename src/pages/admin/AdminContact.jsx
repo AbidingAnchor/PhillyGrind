@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
-import { MessageSquare, Loader2, Check, AlertCircle } from 'lucide-react';
-import { getContactSubmissions, updateContactSubmissionStatus } from '../../lib/contactApi.js';
-import AdminDetailModal from '../../components/AdminDetailModal.jsx';
+import { MessageSquare, Loader2, Check, AlertCircle, User, Clock, Mail, Reply, Trash2, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { 
+  getContactSubmissions, 
+  sendContactReply, 
+  resolveContact, 
+  deleteContact,
+  getContactReplies 
+} from '../../lib/contactApi.js';
 
 export default function AdminContact() {
   const [submissions, setSubmissions] = useState([]);
@@ -12,6 +18,12 @@ export default function AdminContact() {
   const [error, setError] = useState('');
   const [actingId, setActingId] = useState('');
   const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [showReplyModal, setShowReplyModal] = useState(false);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [submittingReply, setSubmittingReply] = useState(false);
+  const [repliesMap, setRepliesMap] = useState({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [expandedSubmissions, setExpandedSubmissions] = useState(new Set());
 
   async function loadSubmissions() {
     try {
@@ -54,6 +66,74 @@ export default function AdminContact() {
     }
   }
 
+  async function handleReply(submission) {
+    setSelectedSubmission(submission);
+    setShowReplyModal(true);
+  }
+
+  async function handleSubmitReply(e) {
+    e.preventDefault();
+    if (!selectedSubmission || !replyMessage.trim()) return;
+    
+    setSubmittingReply(true);
+    try {
+      await sendContactReply(selectedSubmission.id, replyMessage);
+      setReplyMessage('');
+      setShowReplyModal(false);
+      await loadSubmissions();
+      
+      // Reload replies for this submission
+      const replies = await getContactReplies(selectedSubmission.id);
+      setRepliesMap(prev => ({ ...prev, [selectedSubmission.id]: replies }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmittingReply(false);
+    }
+  }
+
+  async function handleResolve(id) {
+    setActingId(id);
+    setError('');
+    try {
+      await resolveContact(id);
+      await loadSubmissions();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActingId('');
+    }
+  }
+
+  async function handleDelete(id) {
+    setActingId(id);
+    setError('');
+    try {
+      await deleteContact(id);
+      await loadSubmissions();
+      setShowDeleteConfirm(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActingId('');
+    }
+  }
+
+  async function toggleExpand(id) {
+    const newExpanded = new Set(expandedSubmissions);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+      // Load replies if not already loaded
+      if (!repliesMap[id]) {
+        const replies = await getContactReplies(id);
+        setRepliesMap(prev => ({ ...prev, [id]: replies }));
+      }
+    }
+    setExpandedSubmissions(newExpanded);
+  }
+
   const categoryOptions = [
     { value: 'all', label: 'All Categories' },
     { value: 'general', label: 'General' },
@@ -65,8 +145,8 @@ export default function AdminContact() {
 
   const statusOptions = [
     { value: 'all', label: 'All Statuses' },
-    { value: 'new', label: 'New' },
-    { value: 'in_progress', label: 'In Progress' },
+    { value: 'open', label: 'Open' },
+    { value: 'responded', label: 'Responded' },
     { value: 'resolved', label: 'Resolved' },
   ];
 
@@ -79,8 +159,8 @@ export default function AdminContact() {
   };
 
   const statusLabels = {
-    new: 'New',
-    in_progress: 'In Progress',
+    open: 'Open',
+    responded: 'Responded',
     resolved: 'Resolved',
   };
 
@@ -130,113 +210,180 @@ export default function AdminContact() {
       )}
 
       {!loading && submissions.length > 0 && (
-        <div className="profile-section-card admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Message</th>
-                <th>Status</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredSubmissions.map((submission) => {
-                const busy = actingId === submission.id;
-                return (
-                  <tr 
-                    key={submission.id}
-                    onClick={() => setSelectedSubmission(submission)}
-                    style={{ cursor: 'pointer' }}
+        <div className="admin-report-list">
+          {filteredSubmissions.map((submission) => {
+            const busy = actingId === submission.id;
+            const isExpanded = expandedSubmissions.has(submission.id);
+            const replies = repliesMap[submission.id] || [];
+            return (
+              <article key={submission.id} className="report-card" data-status={submission.status}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="report-status-badge" data-status={submission.status}>
+                    {statusLabels[submission.status] || submission.status}
+                  </span>
+                  <span className="report-type-tag">{categoryLabels[submission.category] || submission.category}</span>
+                </div>
+                <div className="report-reason">{submission.name}</div>
+                <div className="report-content-quote">
+                  {submission.message}
+                </div>
+                <div className="report-meta">
+                  <div className="report-meta-item">
+                    <Mail size={14} />
+                    <span>{submission.email}</span>
+                  </div>
+                  <div className="report-meta-item">
+                    <Clock size={14} />
+                    <span>{new Date(submission.created_at).toLocaleString()}</span>
+                  </div>
+                </div>
+                
+                {isExpanded && replies.length > 0 && (
+                  <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
+                    {replies.map((reply) => (
+                      <div key={reply.id} style={{ marginBottom: '12px', padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px' }}>
+                          Admin · {new Date(reply.sent_at).toLocaleString()}
+                        </div>
+                        <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)' }}>
+                          {reply.message}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="report-actions">
+                  <button
+                    type="button"
+                    className="btn-report-dismiss"
+                    onClick={() => toggleExpand(submission.id)}
                   >
-                    <td className="admin-category-cell">
-                      <span className="admin-category-badge">{categoryLabels[submission.category] || submission.category}</span>
-                    </td>
-                    <td>{submission.name}</td>
-                    <td>
-                      <a href={`mailto:${submission.email}`} className="admin-email-link" onClick={(e) => e.stopPropagation()}>{submission.email}</a>
-                    </td>
-                    <td className="admin-message-cell">{submission.message}</td>
-                    <td>
-                      <span className={`admin-status-badge ${submission.status === 'new' ? 'danger' : submission.status === 'in_progress' ? 'warning' : 'active'}`}>
-                        {statusLabels[submission.status] || submission.status}
-                      </span>
-                    </td>
-                    <td>{new Date(submission.created_at).toLocaleString()}</td>
-                    <td className="admin-table-actions" onClick={(e) => e.stopPropagation()}>
-                      {submission.status === 'new' && (
-                        <button
-                          type="button"
-                          className="admin-table-btn"
-                          disabled={busy}
-                          onClick={() => handleUpdateStatus(submission.id, 'in_progress')}
-                          title="Mark as In Progress"
-                        >
-                          {busy ? <Loader2 size={14} className="spin" /> : <AlertCircle size={14} />}
-                        </button>
-                      )}
-                      {submission.status === 'in_progress' && (
-                        <button
-                          type="button"
-                          className="admin-table-btn"
-                          disabled={busy}
-                          onClick={() => handleUpdateStatus(submission.id, 'resolved')}
-                          title="Mark as Resolved"
-                        >
-                          {busy ? <Loader2 size={14} className="spin" /> : <Check size={14} />}
-                        </button>
-                      )}
-                      {submission.status === 'resolved' && (
-                        <span className="admin-reviewed-badge">Resolved</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    {isExpanded ? 'Collapse' : replies.length > 0 ? `View Replies (${replies.length})` : 'No Replies'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-report-warn"
+                    onClick={() => handleReply(submission)}
+                  >
+                    <Reply size={14} style={{ marginRight: '4px' }} />
+                    Reply
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-report-dismiss"
+                    onClick={() => handleResolve(submission.id)}
+                    disabled={busy}
+                  >
+                    {busy ? <Loader2 size={14} className="spin" /> : 'Resolve'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-report-remove"
+                    onClick={() => {
+                      setSelectedSubmission(submission);
+                      setShowDeleteConfirm(true);
+                    }}
+                    disabled={busy}
+                  >
+                    <Trash2 size={14} style={{ marginRight: '4px' }} />
+                    Delete
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
 
-      <AdminDetailModal
-        isOpen={!!selectedSubmission}
-        onClose={() => setSelectedSubmission(null)}
-        title="Contact Submission Details"
-      >
-        {selectedSubmission && (
-          <>
-            <div className="admin-detail-row">
-              <span className="admin-detail-label">Category</span>
-              <span className="admin-detail-value">{categoryLabels[selectedSubmission.category] || selectedSubmission.category}</span>
+      {showReplyModal && selectedSubmission && (
+        createPortal(
+          <div className="modal-overlay" onClick={() => setShowReplyModal(false)}>
+            <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+              <div className="modal-header">
+                <h3>Reply to {selectedSubmission.name}</h3>
+                <button type="button" className="modal-close" onClick={() => setShowReplyModal(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="modal-body">
+                <form onSubmit={handleSubmitReply}>
+                  <div style={{ marginBottom: '16px', padding: '12px', background: 'var(--muted-bg)', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '4px' }}>
+                      Original message:
+                    </div>
+                    <div style={{ fontSize: '14px', color: 'var(--ink)' }}>
+                      {selectedSubmission.message}
+                    </div>
+                  </div>
+                  <textarea
+                    value={replyMessage}
+                    onChange={(e) => setReplyMessage(e.target.value)}
+                    placeholder="Write your reply..."
+                    rows={5}
+                    style={{ width: '100%', padding: '12px', border: '1px solid var(--line)', borderRadius: '8px', fontFamily: 'inherit', fontSize: '0.95rem', resize: 'vertical', marginBottom: '16px' }}
+                  />
+                  <div className="modal-actions">
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setShowReplyModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="primary-button"
+                      disabled={submittingReply || !replyMessage.trim()}
+                    >
+                      {submittingReply ? 'Sending...' : 'Send Reply'}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
-            <div className="admin-detail-row">
-              <span className="admin-detail-label">Name</span>
-              <span className="admin-detail-value">{selectedSubmission.name}</span>
+          </div>,
+          document.body
+        )
+      )}
+
+      {showDeleteConfirm && selectedSubmission && (
+        createPortal(
+          <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
+            <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+              <div className="modal-header">
+                <h3>Confirm Delete</h3>
+                <button type="button" className="modal-close" onClick={() => setShowDeleteConfirm(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="modal-body">
+                <p style={{ marginBottom: '20px' }}>
+                  Delete this contact submission from {selectedSubmission.name}? This action cannot be undone.
+                </p>
+                <div className="modal-actions">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => setShowDeleteConfirm(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-report-remove"
+                    onClick={() => handleDelete(selectedSubmission.id)}
+                    disabled={actingId === selectedSubmission.id}
+                  >
+                    {actingId === selectedSubmission.id ? <Loader2 size={14} className="spin" /> : 'Delete'}
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="admin-detail-row">
-              <span className="admin-detail-label">Email</span>
-              <span className="admin-detail-value">
-                <a href={`mailto:${selectedSubmission.email}`}>{selectedSubmission.email}</a>
-              </span>
-            </div>
-            <div className="admin-detail-row">
-              <span className="admin-detail-label">Status</span>
-              <span className="admin-detail-value">{statusLabels[selectedSubmission.status] || selectedSubmission.status}</span>
-            </div>
-            <div className="admin-detail-row">
-              <span className="admin-detail-label">Created</span>
-              <span className="admin-detail-value">{new Date(selectedSubmission.created_at).toLocaleString()}</span>
-            </div>
-            <div className="admin-detail-row">
-              <span className="admin-detail-label">Message</span>
-              <span className="admin-detail-value">{selectedSubmission.message}</span>
-            </div>
-          </>
-        )}
-      </AdminDetailModal>
+          </div>,
+          document.body
+        )
+      )}
     </div>
   );
 }

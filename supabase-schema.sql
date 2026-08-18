@@ -1506,13 +1506,42 @@ create table if not exists contact_submissions (
   email text not null,
   category text not null check (category in ('general', 'data_deletion', 'fair_housing_complaint', 'dispute_report', 'other')),
   message text not null,
-  status text not null default 'new' check (status in ('new', 'in_progress', 'resolved')),
+  status text not null default 'open' check (status in ('open', 'responded', 'resolved')),
+  resolved_at timestamptz,
   user_id uuid references auth.users(id) on delete set null,
   created_at timestamptz default now()
 );
 
 -- Add user_id column if it doesn't exist (for existing contact_submissions tables)
 alter table contact_submissions add column if not exists user_id uuid references auth.users(id) on delete set null;
+alter table contact_submissions add column if not exists resolved_at timestamptz;
+
+-- Update status column constraint for existing databases
+do $$
+begin
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'contact_submissions_status_check'
+      and conrelid = 'public.contact_submissions'::regclass
+  ) then
+    alter table contact_submissions drop constraint contact_submissions_status_check;
+  end if;
+  
+  alter table contact_submissions
+    add constraint contact_submissions_status_check
+    check (status in ('open', 'responded', 'resolved'));
+end;
+$$;
+
+-- Contact Replies Table
+create table if not exists contact_replies (
+  id uuid primary key default gen_random_uuid(),
+  contact_id uuid not null references contact_submissions(id) on delete cascade,
+  message text not null,
+  sent_at timestamptz not null default now(),
+  sent_by uuid references auth.users(id)
+);
 
 alter table contact_submissions enable row level security;
 

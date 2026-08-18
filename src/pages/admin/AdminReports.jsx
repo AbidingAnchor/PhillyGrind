@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ClipboardList, Loader2 } from 'lucide-react';
+import { ClipboardList, Loader2, User, Clock } from 'lucide-react';
 import { adminReportAction, getAdminReports } from '../../lib/adminApi.js';
 
 export default function AdminReports() {
@@ -72,33 +72,43 @@ export default function AdminReports() {
         {reports.map((report) => {
           const busy = actingId === report.id;
           return (
-            <article key={report.id} className="profile-section-card admin-report-card">
-              <div className="admin-report-top">
-                <span className={`admin-status-badge ${report.status === 'pending' ? 'open' : 'active'}`}>
+            <article key={report.id} className="report-card" data-status={report.status}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="report-status-badge" data-status={report.status}>
                   {report.status}
                 </span>
-                <span className="admin-activity-type">{report.reported_type} · {report.source}</span>
+                <span className="report-type-tag">{report.reported_type}</span>
+                {report.source && (
+                  <span className="report-type-tag">· {report.source}</span>
+                )}
               </div>
-              <h3>{report.subjectTitle}</h3>
-              <p>{report.reason}</p>
-              <div className="admin-report-meta">
-                <span>Reporter: {report.reporterName}</span>
-                <span>{new Date(report.created_at).toLocaleString()}</span>
+              <div className="report-reason">{report.reason}</div>
+              <div className="report-content-quote">
+                {report.subjectTitle}
+              </div>
+              <div className="report-meta">
+                <div className="report-meta-item">
+                  <User size={14} />
+                  <span>{report.reporterName}</span>
+                </div>
+                <div className="report-meta-item">
+                  <Clock size={14} />
+                  <span>{new Date(report.created_at).toLocaleString()}</span>
+                </div>
               </div>
               {report.status === 'pending' && (
-                <div className="admin-table-actions">
+                <div className="report-actions">
                   <button
                     type="button"
-                    className="admin-table-btn"
+                    className="btn-report-dismiss"
                     disabled={busy}
                     onClick={() => handleAction(report.id, 'dismiss')}
                   >
-                    {busy ? <Loader2 size={14} className="spin" /> : null}
-                    Dismiss
+                    {busy ? <Loader2 size={14} className="spin" /> : 'Dismiss'}
                   </button>
                   <button
                     type="button"
-                    className="admin-table-btn warn"
+                    className="btn-report-warn"
                     disabled={busy}
                     onClick={() => handleAction(report.id, 'warn')}
                   >
@@ -106,7 +116,7 @@ export default function AdminReports() {
                   </button>
                   <button
                     type="button"
-                    className="admin-table-btn danger"
+                    className="btn-report-remove"
                     disabled={busy}
                     onClick={() => handleAction(report.id, 'remove')}
                   >

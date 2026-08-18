@@ -74,8 +74,100 @@ export async function getNewContactCount() {
   const { count, error } = await supabase
     .from('contact_submissions')
     .select('*', { count: 'exact', head: true })
-    .eq('status', 'new');
+    .eq('status', 'open');
 
   if (error) throw new Error(error.message);
   return count ?? 0;
+}
+
+export async function sendContactReply(contactId, message) {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw new Error('You must be logged in to send replies.');
+  }
+
+  // Insert reply
+  const { data: reply, error: replyError } = await supabase
+    .from('contact_replies')
+    .insert({
+      contact_id: contactId,
+      message: message.trim(),
+      sent_by: userData.user.id,
+    })
+    .select()
+    .single();
+
+  if (replyError) throw new Error(replyError.message);
+
+  // Update contact status to 'responded'
+  const { error: updateError } = await supabase
+    .from('contact_submissions')
+    .update({ status: 'responded' })
+    .eq('id', contactId);
+
+  if (updateError) throw new Error(updateError.message);
+
+  // Get contact submission details for email
+  const { data: contact, error: fetchError } = await supabase
+    .from('contact_submissions')
+    .select('*')
+    .eq('id', contactId)
+    .single();
+
+  if (fetchError) throw new Error(fetchError.message);
+
+  // Send reply email via Resend
+  try {
+    await fetch('/api/two-factor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'send-contact-reply',
+        to: contact.email,
+        name: contact.name,
+        message: message.trim(),
+      }),
+    });
+  } catch (error) {
+    console.error('Failed to send reply email:', error);
+    // Don't throw - reply is still saved in database
+  }
+
+  return reply;
+}
+
+export async function resolveContact(contactId) {
+  const { data, error } = await supabase
+    .from('contact_submissions')
+    .update({ 
+      status: 'resolved',
+      resolved_at: new Date().toISOString(),
+    })
+    .eq('id', contactId)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function deleteContact(contactId) {
+  const { error } = await supabase
+    .from('contact_submissions')
+    .delete()
+    .eq('id', contactId);
+
+  if (error) throw new Error(error.message);
+  return { success: true };
+}
+
+export async function getContactReplies(contactId) {
+  const { data, error } = await supabase
+    .from('contact_replies')
+    .select('*')
+    .eq('contact_id', contactId)
+    .order('sent_at', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
 }
