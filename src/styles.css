@@ -8963,6 +8963,84 @@ body {
   background: rgba(34, 197, 94, 0.15);
 }
 
+.shared-post-card {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--muted-bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+[data-theme="dark"] .shared-post-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.shared-post-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.shared-post-avatar,
+.shared-post-avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.shared-post-author-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shared-post-author {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.shared-post-time {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.shared-post-content {
+  margin-bottom: 12px;
+}
+
+.shared-post-content p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.shared-post-photo {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.shared-post-unavailable {
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
+  background: var(--muted-bg);
+  border-radius: 8px;
+  border: 1px dashed var(--line);
+}
+
 @media (max-width: 640px) {
   .feed-comment-replies {
     margin-left: 32px;

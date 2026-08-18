@@ -2,7 +2,25 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft } from 'lucide-react';
-import { getCommunityPosts, getCommunityComments, getUserReaction, toggleCommunityPostReaction, removeCommunityPostReaction, submitCommunityReport, createCommunityPost, deleteCommunityPost, deleteCommunityComment, createCommunityComment, getUserCommentReaction, toggleCommentReaction, COMMUNITY_NEIGHBORHOODS, getCommunityPhotoPublicUrl, getReactionBreakdown, getCommentReactionBreakdown } from '../lib/communityApi.js';
+import { 
+  getCommunityPosts,
+  getCommunityComments,
+  getUserReaction,
+  toggleCommunityPostReaction,
+  removeCommunityPostReaction,
+  submitCommunityReport,
+  createCommunityPost,
+  deleteCommunityPost,
+  deleteCommunityComment,
+  createCommunityComment,
+  getUserCommentReaction,
+  toggleCommentReaction,
+  COMMUNITY_NEIGHBORHOODS,
+  getCommunityPhotoPublicUrl,
+  getReactionBreakdown,
+  getCommentReactionBreakdown,
+  shareCommunityPost,
+} from '../lib/communityApi.js';
 import { muteUser, blockUser } from '../lib/moderationApi.js';
 import { useAuth } from '../lib/auth.jsx';
 import { getReactionTotalCount, getUserAvatarColor } from '../lib/reactions.js';
@@ -792,10 +810,13 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   }
 
   async function handleSharePost(originalPostId, caption) {
-    // This will be implemented with the API function
-    console.log('Sharing post:', originalPostId, 'with caption:', caption);
-    // For now, just close the modal
-    setShowShareComposer(false);
+    try {
+      await shareCommunityPost(originalPostId, caption);
+      setToastMessage('Post shared to your feed!');
+      setShowShareComposer(false);
+    } catch (error) {
+      alert(error.message);
+    }
   }
 
   async function handleToggleComments() {
@@ -1013,6 +1034,37 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       {post.photo_url && (
         <img src={getCommunityPhotoPublicUrl(post.photo_url)} alt="Post photo" className="feed-post-photo" />
       )}
+
+      {post.original_post ? (
+        <div className="shared-post-card">
+          <div className="shared-post-header">
+            {post.original_post.authorAvatarUrl ? (
+              <img src={post.original_post.authorAvatarUrl} alt={post.original_post.authorName} className="shared-post-avatar" />
+            ) : (
+              <div 
+                className="shared-post-avatar-placeholder"
+                style={{ backgroundColor: getUserAvatarColor(post.original_post.authorId, post.original_post.authorName) }}
+              >
+                {post.original_post.authorName?.charAt(0) || '?'}
+              </div>
+            )}
+            <div className="shared-post-author-info">
+              <span className="shared-post-author">{post.original_post.authorName}</span>
+              <span className="shared-post-time">{new Date(post.original_post.created_at).toLocaleDateString()}</span>
+            </div>
+          </div>
+          <div className="shared-post-content">
+            <p>{post.original_post.content}</p>
+          </div>
+          {post.original_post.photo_url && (
+            <img src={getCommunityPhotoPublicUrl(post.original_post.photo_url)} alt="Original post photo" className="shared-post-photo" />
+          )}
+        </div>
+      ) : post.shared_post_id ? (
+        <div className="shared-post-unavailable">
+          This post is no longer available
+        </div>
+      ) : null}
 
       {reactionsLoaded && reactionTotal > 0 && (
         <div className="feed-post-reaction-summary">

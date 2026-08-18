@@ -143,7 +143,7 @@ export async function getCommunityPosts(filters = {}) {
       comment_count: countsByPost[post.id] || 0
     }));
 
-    return attachAuthorInfo(postsWithCounts);
+    return postsWithCounts;
   }
 
   const posts = data ?? [];
@@ -152,7 +152,48 @@ export async function getCommunityPosts(filters = {}) {
   const filteredUserIds = await getFilteredUsers();
   const filteredPosts = posts.filter((post) => !filteredUserIds.includes(post.user_id));
 
-  return attachAuthorInfo(filteredPosts);
+  // Fetch original post data for shared posts
+  const sharedPostIds = filteredPosts
+    .filter(post => post.shared_post_id)
+    .map(post => post.shared_post_id);
+
+  let originalPostsMap = {};
+  if (sharedPostIds.length > 0) {
+    const { data: originalPosts, error: originalError } = await supabase
+      .from('community_posts')
+      .select('*')
+      .in('id', sharedPostIds);
+
+    if (!originalError && originalPosts) {
+      originalPosts.forEach(original => {
+        originalPostsMap[original.id] = original;
+      });
+    }
+  }
+
+  // Attach original post data to shared posts
+  const postsWithOriginalData = filteredPosts.map(post => {
+    if (post.shared_post_id && originalPostsMap[post.shared_post_id]) {
+      return {
+        ...post,
+        original_post: originalPostsMap[post.shared_post_id]
+      };
+    }
+    return post;
+  });
+
+  // Attach author info to all posts (including original posts in shared posts)
+  const postsWithAuthors = await attachAuthorInfo(postsWithOriginalData);
+  
+  // Also attach author info to original posts
+  for (const post of postsWithAuthors) {
+    if (post.original_post) {
+      const [originalWithAuthor] = await attachAuthorInfo([post.original_post]);
+      post.original_post = originalWithAuthor;
+    }
+  }
+
+  return postsWithAuthors;
 }
 
 export async function getCommunityPost(id) {
@@ -526,6 +567,51 @@ export async function createCommunityComment(postId, content, parentCommentId = 
 
   // Update like_count on post (comment count)
   await supabase.rpc('increment_community_post_comment_count', { post_id: postId });
+
+  return data;
+}
+
+export async function shareCommunityPost(originalPostId, caption = '') {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw new Error('You must be logged in to share.');
+  }
+
+  // First, get the original post to get its neighborhood
+  const { data: originalPost, error: fetchError } = await supabase
+    .from('community_posts')
+    .select('neighborhood')
+    .eq('id', originalPostId)
+    .single();
+
+  if (fetchError) throw fetchError;
+  if (!originalPost) throw new Error('Original post not found');
+
+  // Create the shared post
+  const { data, error } = await supabase
+    .from('community_posts')
+    .insert({
+      user_id: userData.user.id,
+      content: caption || 'Shared a post',
+      neighborhood: originalPost.neighborhood,
+      shared_post_id: originalPostId,
+    })
+    .select('*')
+    .single();
+
+  if (error) throw error;
+
+  // Increment the original post's share count
+  const { error: updateError } = await supabase
+    .from('community_posts')
+    .update({ share_count: supabase.raw('share_count + 1') })
+    .eq('id', originalPostId);
+
+  if (updateError) console.error('Failed to increment share count:', updateError);
 
   return data;
 }
