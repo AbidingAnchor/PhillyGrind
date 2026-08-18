@@ -56,13 +56,15 @@ export default function TwoFactorVerification({ email, onVerified, onCancel }) {
 
   return (
     <div className="two-factor-verification">
-      <h2>Two-Factor Authentication</h2>
-      <p>We sent a 6-digit verification code to <strong>{email}</strong></p>
+      <h1>Two-Factor Authentication</h1>
+      <p className="auth-subtitle">We sent a 6-digit verification code to <strong>{email}</strong></p>
       <p className="detail-note">Enter the code below to complete your login. The code expires in 5 minutes.</p>
 
-      <form onSubmit={handleSubmit} className="two-factor-form">
-        <div className="two-factor-code-input">
+      <form onSubmit={handleSubmit} className="auth-form">
+        <div className="auth-input-group">
+          <label>Verification Code</label>
           <input
+            className="auth-input"
             type="text"
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
@@ -70,27 +72,38 @@ export default function TwoFactorVerification({ email, onVerified, onCancel }) {
             maxLength={6}
             autoFocus
           />
-          <button type="submit" className="primary-button" disabled={sending || code.length !== 6}>
-            {sending ? 'Verifying...' : 'Verify'}
-          </button>
         </div>
+
+        <button type="submit" className="auth-submit-btn" disabled={sending || code.length !== 6}>
+          {sending ? 'Verifying...' : 'Verify'}
+        </button>
 
         {error && <p className="error-text">{error}</p>}
 
-        <div className="two-factor-resend">
+        <div className="auth-divider">
+          <span>or</span>
+        </div>
+
+        <div className="auth-switch-link">
           <button
             type="button"
-            className="text-link"
             onClick={handleResend}
             disabled={resendCooldown > 0 || sending}
+            style={{ background: 'none', border: 'none', padding: 0, color: '#4ade80', fontWeight: '600', cursor: resendCooldown > 0 || sending ? 'not-allowed' : 'pointer' }}
           >
             {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
           </button>
         </div>
 
-        <button type="button" className="text-link" onClick={onCancel}>
-          Cancel
-        </button>
+        <div className="auth-switch-link">
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{ background: 'none', border: 'none', padding: 0, color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}
+          >
+            Cancel
+          </button>
+        </div>
       </form>
     </div>
   );

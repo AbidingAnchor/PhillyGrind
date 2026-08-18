@@ -58,24 +58,40 @@ function normalizePost(post) {
 }
 
 async function attachAuthorInfo(posts) {
+  console.log('[attachAuthorInfo] called with', posts?.length || 0, 'posts');
   const list = posts ?? [];
   if (!hasSupabaseConfig || !list.length) return list.map(normalizePost);
 
   const userIds = [...new Set(list.map((item) => item.user_id).filter(Boolean))];
+  console.log('[attachAuthorInfo] userIds to fetch:', userIds);
+  console.log('[attachAuthorInfo] Target post 7776d917-3717-4b47-9b52-755984430779 user_id in list:', userIds.includes('22271450-758a-4a46-843b-195eae5b8079'));
+
   if (!userIds.length) return list.map(normalizePost);
 
   const { data, error } = await supabase
-    .from('profiles')
+    .from('profiles_public')
     .select('id,name,avatar_url')
     .in('id', userIds);
 
   if (error) throw error;
 
+  console.log('[attachAuthorInfo] profiles returned from profiles_public:', data);
+  console.log('[attachAuthorInfo] Profile for 22271450-758a-4a46-843b-195eae5b8079 found:', data?.find(p => p.id === '22271450-758a-4a46-843b-195eae5b8079'));
+
   const profilesById = Object.fromEntries((data ?? []).map((profile) => [profile.id, profile]));
-  return list.map((post) => normalizePost({
-    ...post,
-    profiles: profilesById[post.user_id],
-  }));
+  console.log('[attachAuthorInfo] profilesById map keys:', Object.keys(profilesById));
+
+  const result = list.map((post) => {
+    const profile = profilesById[post.user_id];
+    console.log('[attachAuthorInfo] Mapping post', post.id, 'user_id:', post.user_id, 'profile found:', !!profile);
+    return normalizePost({
+      ...post,
+      profiles: profile,
+    });
+  });
+
+  console.log('[attachAuthorInfo] Target post 7776d917-3717-4b47-9b52-755984430779 in result:', result.find(p => p.id === '7776d917-3717-4b47-9b52-755984430779'));
+  return result;
 }
 
 export function getCommunityPhotoPublicUrl(path) {
@@ -143,7 +159,7 @@ export async function getCommunityPosts(filters = {}) {
       comment_count: countsByPost[post.id] || 0
     }));
 
-    return postsWithCounts;
+    return await attachAuthorInfo(postsWithCounts);
   }
 
   const posts = data ?? [];
@@ -270,7 +286,7 @@ export async function getCommunityComments(postId) {
   }
 
   const { data: profiles, error: profileError } = await supabase
-    .from('profiles')
+    .from('profiles_public')
     .select('id,name,avatar_url')
     .in('id', userIds);
 
@@ -324,7 +340,7 @@ export async function getCommunityComments(postId) {
 }
 
 export async function getCommunityLikeCount(postId) {
-  if (!hasSupabaseConfig) return 0;
+  if (!hasSupabaseConfig || !postId) return 0;
 
   const { count, error } = await supabase
     .from('community_post_likes')
@@ -336,7 +352,7 @@ export async function getCommunityLikeCount(postId) {
 }
 
 export async function getReactionBreakdown(postId) {
-  if (!hasSupabaseConfig) return [];
+  if (!hasSupabaseConfig || !postId) return [];
 
   const { data, error } = await supabase
     .from('community_post_likes')
@@ -361,7 +377,7 @@ export async function getReactionBreakdown(postId) {
 }
 
 export async function getUserReaction(postId) {
-  if (!hasSupabaseConfig) return null;
+  if (!hasSupabaseConfig || !postId) return null;
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) return null;
@@ -379,7 +395,7 @@ export async function getUserReaction(postId) {
 }
 
 export async function getUserLikeStatus(postId) {
-  if (!hasSupabaseConfig) return false;
+  if (!hasSupabaseConfig || !postId) return false;
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) return false;
@@ -538,7 +554,7 @@ export async function createCommunityPost(post, photoFile = null) {
 }
 
 export async function createCommunityComment(postId, content, parentCommentId = null) {
-  if (!hasSupabaseConfig) {
+  if (!hasSupabaseConfig || !postId) {
     throw new Error('Supabase credentials are missing.');
   }
 
@@ -617,7 +633,7 @@ export async function shareCommunityPost(originalPostId, caption = '') {
 }
 
 export async function removeCommunityPostReaction(postId) {
-  if (!hasSupabaseConfig) {
+  if (!hasSupabaseConfig || !postId) {
     throw new Error('Supabase credentials are missing.');
   }
 
@@ -658,7 +674,7 @@ export async function removeCommunityPostReaction(postId) {
 }
 
 export async function toggleCommunityPostReaction(postId, reactionType = 'like') {
-  if (!hasSupabaseConfig) {
+  if (!hasSupabaseConfig || !postId) {
     throw new Error('Supabase credentials are missing.');
   }
 
@@ -786,7 +802,7 @@ export async function deleteCommunityPost(id) {
 }
 
 export async function getCommentReactionBreakdown(commentId) {
-  if (!hasSupabaseConfig) return [];
+  if (!hasSupabaseConfig || !commentId) return [];
 
   const { data, error } = await supabase
     .from('community_comment_likes')
@@ -811,7 +827,7 @@ export async function getCommentReactionBreakdown(commentId) {
 }
 
 export async function getUserCommentReaction(commentId) {
-  if (!hasSupabaseConfig) return null;
+  if (!hasSupabaseConfig || !commentId) return null;
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) return null;
@@ -829,7 +845,7 @@ export async function getUserCommentReaction(commentId) {
 }
 
 export async function toggleCommentReaction(commentId, reactionType = 'like') {
-  if (!hasSupabaseConfig) {
+  if (!hasSupabaseConfig || !commentId) {
     throw new Error('Supabase credentials are missing.');
   }
 
@@ -904,7 +920,7 @@ export async function toggleCommentReaction(commentId, reactionType = 'like') {
 }
 
 export async function removeCommentReaction(commentId) {
-  if (!hasSupabaseConfig) {
+  if (!hasSupabaseConfig || !commentId) {
     throw new Error('Supabase credentials are missing.');
   }
 

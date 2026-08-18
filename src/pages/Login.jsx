@@ -58,37 +58,56 @@ function Login() {
   if (requiresTwoFactor && pendingUser) {
     return (
       <section className="auth-page">
-        <TwoFactorVerification
-          email={pendingUser.email}
-          onVerified={handleTwoFactorVerified}
-          onCancel={handleTwoFactorCancel}
-        />
+        <div className="bg-blob"></div>
+        <div className="auth-wordmark-wrap">
+          <div className="auth-wordmark">Philly<span>Grind</span></div>
+          <div className="auth-wordmark-shine" aria-hidden="true">Philly<span>Grind</span></div>
+        </div>
+        <div className="auth-tagline">Enter your verification code</div>
+        <div className="auth-form">
+          <TwoFactorVerification
+            email={pendingUser.email}
+            onVerified={handleTwoFactorVerified}
+            onCancel={handleTwoFactorCancel}
+          />
+        </div>
       </section>
     );
   }
 
   return (
     <section className="auth-page">
-      <div className="page-heading">
-        <span className="eyebrow">Welcome back</span>
-        <h1>Login</h1>
-        <p>Sign in to post jobs and gigs for the PhillyGrind community.</p>
+      <div className="bg-blob"></div>
+      <div className="auth-wordmark-wrap">
+        <div className="auth-wordmark">Philly<span>Grind</span></div>
+        <div className="auth-wordmark-shine" aria-hidden="true">Philly<span>Grind</span></div>
       </div>
+      <div className="auth-tagline">Sign in to connect with your Philly neighborhood.</div>
       <form className="auth-form" onSubmit={handleSubmit}>
-        <label>
-          Email
-          <input name="email" type="email" value={form.email} onChange={updateField} required />
-        </label>
-        <label>
-          Password
-          <input name="password" type="password" value={form.password} onChange={updateField} required />
-        </label>
-        <button className="primary-button" type="submit" disabled={submitting}>
+        <input 
+          className="auth-input" 
+          name="email" 
+          type="email" 
+          value={form.email} 
+          onChange={updateField} 
+          placeholder="Email"
+          required 
+        />
+        <input 
+          className="auth-input" 
+          name="password" 
+          type="password" 
+          value={form.password} 
+          onChange={updateField} 
+          placeholder="Password"
+          required 
+        />
+        <button className="auth-submit-btn" type="submit" disabled={submitting}>
           {submitting ? 'Logging in...' : 'Login'}
         </button>
         {status && <p className="form-status error-text">{status}</p>}
-        <p className="auth-switch">New to PhillyGrind? <Link to="/signup">Create an account</Link></p>
       </form>
+      <p className="auth-switch-link">New to PhillyGrind? <Link to="/signup">Create an account</Link></p>
     </section>
   );
 }

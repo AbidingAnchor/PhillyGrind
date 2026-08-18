@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Menu, PlusCircle, Shield } from 'lucide-react';
+import { Menu, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from './lib/auth.jsx';
 import { isAdminUser } from './lib/adminApi.js';
@@ -73,10 +73,6 @@ function App() {
               Messages
             </NavLink>
           )}
-          <Link className="nav-cta" id="nav-post-now" to="/gigs?tab=post" onClick={() => setOpen(false)}>
-            <PlusCircle size={18} />
-            Post Now
-          </Link>
           {isLoggedIn && (
             <div className="nav-user">
               {showAdminLink && (

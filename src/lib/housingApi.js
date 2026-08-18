@@ -57,8 +57,8 @@ async function attachLandlordInfo(listings) {
   if (!userIds.length) return list.map(normalizeListing);
 
   const { data, error } = await supabase
-    .from('profiles')
-    .select('id,name,avatar_url,created_at,landlord_verified,landlord_warning')
+    .from('profiles_public')
+    .select('id,name,avatar_url,created_at,landlord_verified')
     .in('id', userIds);
 
   if (error) throw error;
@@ -142,7 +142,7 @@ export async function getHousingListing(id) {
 }
 
 export async function getLandlordReportCount(listingId) {
-  if (!hasSupabaseConfig) return 0;
+  if (!hasSupabaseConfig || !listingId) return 0;
 
   const { count, error } = await supabase
     .from('landlord_reports')

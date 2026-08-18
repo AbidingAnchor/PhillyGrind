@@ -37,36 +37,52 @@ function SignUp() {
 
   return (
     <section className="auth-page">
-      <div className="page-heading">
-        <span className="eyebrow">Join PhillyGrind</span>
-        <h1>Sign Up</h1>
-        <p>Create an account to post jobs and gigs across Philadelphia.</p>
+      <div className="bg-blob"></div>
+      <div className="auth-wordmark-wrap">
+        <div className="auth-wordmark">Philly<span>Grind</span></div>
+        <div className="auth-wordmark-shine" aria-hidden="true">Philly<span>Grind</span></div>
       </div>
+      <div className="auth-tagline">Join the community built by Philly, for Philly.</div>
       <form className="auth-form" onSubmit={handleSubmit}>
-        <label>
-          Name
-          <input name="name" value={form.name} onChange={updateField} placeholder="Your name" required />
-        </label>
-        <label>
-          Email
-          <input name="email" type="email" value={form.email} onChange={updateField} required />
-        </label>
-        <label>
-          Password
-          <input name="password" type="password" value={form.password} onChange={updateField} minLength="6" required />
-        </label>
+        <input 
+          className="auth-input" 
+          name="name" 
+          value={form.name} 
+          onChange={updateField} 
+          placeholder="Name"
+          required 
+        />
+        <input 
+          className="auth-input" 
+          name="email" 
+          type="email" 
+          value={form.email} 
+          onChange={updateField} 
+          placeholder="Email"
+          required 
+        />
+        <input 
+          className="auth-input" 
+          name="password" 
+          type="password" 
+          value={form.password} 
+          onChange={updateField} 
+          placeholder="Password"
+          minLength="6" 
+          required 
+        />
         <label className="clickwrap-label">
           <input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} required />
           <span>
             I have read and agree to the <Link to="/terms">Terms of Service</Link> and <Link to="/privacy">Privacy Policy</Link>
           </span>
         </label>
-        <button className="primary-button" type="submit" disabled={submitting || !agreed}>
+        <button className="auth-submit-btn" type="submit" disabled={submitting || !agreed}>
           {submitting ? 'Creating account...' : 'Sign Up'}
         </button>
         {status && <p className="form-status">{status}</p>}
-        <p className="auth-switch">Already have an account? <Link to="/login">Login</Link></p>
       </form>
+      <p className="auth-switch-link">Already have an account? <Link to="/login">Login</Link></p>
     </section>
   );
 }

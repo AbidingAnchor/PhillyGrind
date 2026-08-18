@@ -275,7 +275,10 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0, allCo
         setReactionsLoaded(true);
       }
     }
-    loadReactionStatus();
+    // Only load reaction status if comment.id exists
+    if (comment.id) {
+      loadReactionStatus();
+    }
   }, [comment.id]);
 
   useEffect(() => {
@@ -287,8 +290,11 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0, allCo
         console.error('Failed to load block status:', error);
       }
     }
-    loadBlockStatus();
-  }, [comment.user_id]);
+    // Only check block status if user_id exists and it's not the current user's own comment
+    if (comment.user_id && currentUser?.id !== comment.user_id) {
+      loadBlockStatus();
+    }
+  }, [comment.user_id, currentUser?.id]);
 
   async function handleReactionSelect(reactionType) {
     try {
@@ -430,19 +436,40 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0, allCo
 
   return (
     <div className={isReply ? 'feed-comment-reply' : 'feed-comment'}>
-      {comment.authorAvatarUrl ? (
-        <img 
-          src={comment.authorAvatarUrl} 
-          alt={comment.authorName} 
-          className={isReply ? 'feed-comment-reply-avatar' : 'feed-comment-avatar'} 
-        />
+      {comment.user_id && comment.user_id !== 'undefined' && comment.user_id !== 'null' ? (
+        <Link to={`/profile/${comment.user_id}`}>
+          {comment.authorAvatarUrl ? (
+            <img
+              src={comment.authorAvatarUrl}
+              alt={comment.authorName}
+              className={isReply ? 'feed-comment-reply-avatar' : 'feed-comment-avatar'}
+            />
+          ) : (
+            <div
+              className={isReply ? 'feed-comment-reply-avatar-placeholder' : 'feed-comment-avatar-placeholder'}
+              style={{ backgroundColor: getUserAvatarColor(comment.user_id, comment.authorName) }}
+            >
+              {comment.authorName?.charAt(0) || '?'}
+            </div>
+          )}
+        </Link>
       ) : (
-        <div 
-          className={isReply ? 'feed-comment-reply-avatar-placeholder' : 'feed-comment-avatar-placeholder'}
-          style={{ backgroundColor: getUserAvatarColor(comment.user_id, comment.authorName) }}
-        >
-          {comment.authorName?.charAt(0) || '?'}
-        </div>
+        <>
+          {comment.authorAvatarUrl ? (
+            <img
+              src={comment.authorAvatarUrl}
+              alt={comment.authorName}
+              className={isReply ? 'feed-comment-reply-avatar' : 'feed-comment-avatar'}
+            />
+          ) : (
+            <div
+              className={isReply ? 'feed-comment-reply-avatar-placeholder' : 'feed-comment-avatar-placeholder'}
+              style={{ backgroundColor: getUserAvatarColor(comment.user_id, comment.authorName) }}
+            >
+              {comment.authorName?.charAt(0) || '?'}
+            </div>
+          )}
+        </>
       )}
       <div className={isReply ? 'feed-comment-reply-content' : 'feed-comment-content'}>
         <div className={isReply ? 'feed-comment-reply-header' : 'feed-comment-header'}>
@@ -734,7 +761,10 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         setReactionsLoaded(true);
       }
     }
-    loadReactionStatus();
+    // Only load reaction status if post.id exists
+    if (post.id) {
+      loadReactionStatus();
+    }
   }, [post.id]);
 
   useEffect(() => {
@@ -746,8 +776,11 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         console.error('Failed to load block status:', error);
       }
     }
-    loadBlockStatus();
-  }, [post.authorId]);
+    // Only check block status if authorId exists and it's not the current user's own post
+    if (post.authorId && currentUser?.id !== post.authorId) {
+      loadBlockStatus();
+    }
+  }, [post.authorId, currentUser?.id]);
 
   async function handleLike() {
     console.log('[Community PostCard] handleLike called', { 
@@ -965,25 +998,47 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   return (
     <article className="feed-post-card">
       <div className="feed-post-header">
-        <Link to={`/profile/${post.authorId}`} className="feed-post-author">
-              {post.authorAvatarUrl ? (
-                <img src={post.authorAvatarUrl} alt={post.authorName} className="feed-post-avatar" />
-              ) : (
-                <div 
-                  className="feed-post-avatar-placeholder" 
-                  style={{ backgroundColor: getUserAvatarColor(post.authorId, post.authorName) }}
-                >
-                  {post.authorName?.charAt(0) || '?'}
-                </div>
-              )}
-          <div className="feed-post-author-info">
-            <span className="feed-post-author-name">{post.authorName}</span>
-            <div className="feed-post-meta">
-              <span className="feed-post-neighborhood">{post.neighborhood}</span>
-              <span className="feed-post-time">· {post.relativeTime}</span>
+        {post.authorId && post.authorId !== 'undefined' && post.authorId !== 'null' ? (
+          <Link to={`/profile/${post.authorId}`} className="feed-post-author">
+            {post.authorAvatarUrl ? (
+              <img src={post.authorAvatarUrl} alt={post.authorName} className="feed-post-avatar" />
+            ) : (
+              <div
+                className="feed-post-avatar-placeholder"
+                style={{ backgroundColor: getUserAvatarColor(post.authorId, post.authorName) }}
+              >
+                {post.authorName?.charAt(0) || '?'}
+              </div>
+            )}
+            <div className="feed-post-author-info">
+              <span className="feed-post-author-name">{post.authorName}</span>
+              <div className="feed-post-meta">
+                <span className="feed-post-neighborhood">{post.neighborhood}</span>
+                <span className="feed-post-time">· {post.relativeTime}</span>
+              </div>
+            </div>
+          </Link>
+        ) : (
+          <div className="feed-post-author">
+            {post.authorAvatarUrl ? (
+              <img src={post.authorAvatarUrl} alt={post.authorName} className="feed-post-avatar" />
+            ) : (
+              <div
+                className="feed-post-avatar-placeholder"
+                style={{ backgroundColor: getUserAvatarColor(post.authorId, post.authorName) }}
+              >
+                {post.authorName?.charAt(0) || '?'}
+              </div>
+            )}
+            <div className="feed-post-author-info">
+              <span className="feed-post-author-name">{post.authorName}</span>
+              <div className="feed-post-meta">
+                <span className="feed-post-neighborhood">{post.neighborhood}</span>
+                <span className="feed-post-time">· {post.relativeTime}</span>
+              </div>
             </div>
           </div>
-        </Link>
+        )}
         <div className="feed-post-menu">
           <button
             type="button"

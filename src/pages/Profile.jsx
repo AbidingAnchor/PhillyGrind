@@ -79,7 +79,7 @@ function TagEditor({ label, placeholder, tags, onChange }) {
           ))}
         </div>
         <div className="tag-editor-input">
-          <input value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={handleKeyDown} placeholder={placeholder} />
+          <input value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={handleKeyDown} placeholder={placeholder} className="profile-editor-input" />
           <button type="button" onClick={addTag}>Add</button>
         </div>
       </div>
@@ -91,6 +91,7 @@ function Profile() {
   const { userId } = useParams();
   const { user, isLoggedIn, profile: authProfile, refreshProfile } = useAuth();
   const viewedUserId = userId || user?.id;
+
   const [profileData, setProfileData] = useState(null);
   const [listings, setListings] = useState([]);
   const [myBids, setMyBids] = useState([]);
@@ -125,7 +126,7 @@ function Profile() {
   ));
 
   useEffect(() => {
-    if (!viewedUserId) return;
+    if (!viewedUserId || viewedUserId === 'undefined' || viewedUserId === 'null') return;
 
     setLoading(true);
     setError('');
@@ -163,7 +164,7 @@ function Profile() {
   }, [isOwnProfile]);
 
   useEffect(() => {
-    if (!viewedUserId) return;
+    if (!viewedUserId || viewedUserId === 'undefined' || viewedUserId === 'null') return;
 
     async function loadMarketplaceData() {
       try {
@@ -191,7 +192,7 @@ function Profile() {
   }, [viewedUserId]);
 
   useEffect(() => {
-    if (!viewedUserId) return;
+    if (!viewedUserId || viewedUserId === 'undefined' || viewedUserId === 'null') return;
 
     async function loadHousingData() {
       try {
@@ -207,7 +208,7 @@ function Profile() {
   }, [viewedUserId]);
 
   useEffect(() => {
-    if (!viewedUserId) return;
+    if (!viewedUserId || viewedUserId === 'undefined' || viewedUserId === 'null') return;
 
     async function loadCommunityPosts() {
       if (!canViewActivity(user?.id, viewedUserId)) {
@@ -235,7 +236,7 @@ function Profile() {
   }, [viewedUserId, user?.id]);
 
   async function loadMoreCommunityPosts() {
-    if (loadingCommunityPosts || !hasMoreCommunityPosts) return;
+    if (loadingCommunityPosts || !hasMoreCommunityPosts || !viewedUserId || viewedUserId === 'undefined' || viewedUserId === 'null') return;
 
     setLoadingCommunityPosts(true);
     try {
@@ -899,17 +900,17 @@ function Profile() {
                     )}
                     <label>
                       Profile photo
-                      <input type="file" accept="image/jpeg,image/png" onChange={handleAvatarUpload} />
+                      <input type="file" accept="image/jpeg,image/png" onChange={handleAvatarUpload} className="profile-editor-file-input" />
                       <span className="detail-note">JPG or PNG, 2MB max. Publicly visible on your profile.</span>
                     </label>
                     <label>
                       Bio
-                      <textarea name="bio" value={form.bio} onChange={updateField} rows="5" placeholder="Tell Philly what kind of work you do best." />
+                      <textarea name="bio" value={form.bio} onChange={updateField} className="profile-editor-textarea" placeholder="Tell Philly what kind of work you do best." />
                     </label>
                     <TagEditor label="Skills" placeholder="Moving, cleaning, bartending..." tags={form.skills} onChange={(skills) => setForm((current) => ({ ...current, skills }))} />
                     <label>
                       Availability
-                      <select name="availability" value={form.availability} onChange={updateField}>
+                      <select name="availability" value={form.availability} onChange={updateField} className="profile-editor-select">
                         <option value="">Select availability</option>
                         {availabilityOptions.map((option) => <option key={option} value={option}>{option}</option>)}
                       </select>
@@ -917,7 +918,7 @@ function Profile() {
                     <TagEditor label="Neighborhoods served" placeholder="South Philly, Fishtown..." tags={form.neighborhoods} onChange={(neighborhoods) => setForm((current) => ({ ...current, neighborhoods }))} />
                     <label>
                       Your Neighborhood
-                      <select name="neighborhood" value={form.neighborhood} onChange={updateField}>
+                      <select name="neighborhood" value={form.neighborhood} onChange={updateField} className="profile-editor-select">
                         <option value="">Select your neighborhood</option>
                         {HOUSING_NEIGHBORHOODS.map((item) => (
                           <option key={item} value={item}>{item}</option>
