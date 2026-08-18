@@ -3,6 +3,7 @@ import { createListingWithModeration } from './adminApi.js';
 import { normalizeReactionType } from './reactions.js';
 import { checkCommunitySafety } from './moderationService.js';
 import { getFilteredUsers } from './moderationApi.js';
+import { REACTIONS } from './reactions.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -990,3 +991,33 @@ export async function deleteCommunityComment(id) {
 
   return comment.post_id;
 }
+
+export async function getPostReactorsList(postId) {
+  if (!hasSupabaseConfig || !postId) return [];
+
+  const { data, error } = await supabase
+    .from('community_post_likes')
+    .select('user_id, reaction_type')
+    .eq('post_id', postId);
+
+  if (error) throw error;
+
+  const userIds = [...new Set(data.map(r => r.user_id))];
+  const { data: profiles } = await supabase
+    .from('profiles_public')
+    .select('id, name, avatar_url')
+    .in('id', userIds);
+
+  const profilesById = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+
+  return data.map(r => ({
+    userId: r.user_id,
+    reactionType: r.reaction_type,
+    name: profilesById[r.user_id]?.name || 'Unknown',
+    avatarUrl: profilesById[r.user_id]?.avatar_url || null,
+  }));
+}
+
+export const REACTION_EMOJI = Object.fromEntries(
+  REACTIONS.map(r => [r.type, r.emoji])
+);

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft } from 'lucide-react';
-import { 
+import {
   getCommunityPosts,
   getCommunityComments,
   getUserReaction,
@@ -20,6 +20,8 @@ import {
   getReactionBreakdown,
   getCommentReactionBreakdown,
   shareCommunityPost,
+  getPostReactorsList,
+  REACTION_EMOJI,
 } from '../lib/communityApi.js';
 import { muteUser, blockUser, isUserBlocked } from '../lib/moderationApi.js';
 import { useAuth } from '../lib/auth.jsx';
@@ -712,6 +714,62 @@ function ShareComposerModal({ isOpen, onClose, originalPost, currentUser, onShar
   );
 }
 
+function ReactionsListModal({ postId, onClose }) {
+  const [reactors, setReactors] = useState([]);
+  const [activeTab, setActiveTab] = useState('all');
+
+  useEffect(() => {
+    getPostReactorsList(postId).then(setReactors);
+  }, [postId]);
+
+  const counts = reactors.reduce((acc, r) => {
+    acc[r.reactionType] = (acc[r.reactionType] || 0) + 1;
+    return acc;
+  }, {});
+
+  const filtered = activeTab === 'all' ? reactors : reactors.filter(r => r.reactionType === activeTab);
+
+  return createPortal(
+    (
+      <div className="reactions-modal-overlay" onClick={onClose}>
+        <div className="reactions-modal" onClick={e => e.stopPropagation()}>
+          <button className="reactions-modal-close" onClick={onClose}>
+            <X size={20} />
+          </button>
+          <div className="reactions-modal-tabs">
+            <button className={activeTab === 'all' ? 'active' : ''} onClick={() => setActiveTab('all')}>
+              All {reactors.length}
+            </button>
+            {Object.entries(counts).map(([type, count]) => (
+              <button key={type} className={activeTab === type ? 'active' : ''} onClick={() => setActiveTab(type)}>
+                {REACTION_EMOJI[type] || '❓'} {count}
+              </button>
+            ))}
+          </div>
+          <div className="reactions-modal-list">
+            {filtered.map(r => (
+              <Link key={r.userId} to={`/profile/${r.userId}`} className="reactions-modal-user" onClick={onClose}>
+                {r.avatarUrl ? (
+                  <img src={r.avatarUrl} className="reactions-modal-avatar" alt={r.name} />
+                ) : (
+                  <div
+                    className="reactions-modal-avatar-placeholder"
+                    style={{ backgroundColor: getUserAvatarColor(r.userId, r.name) }}
+                  >
+                    {r.name?.charAt(0) || '?'}
+                  </div>
+                )}
+                <span>{r.name}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    ),
+    document.body
+  );
+}
+
 function PostCard({ post, currentUser, onLike, onDelete }) {
   const [liked, setLiked] = useState(false);
   const [userReaction, setUserReaction] = useState(null);
@@ -729,6 +787,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
   const [reactionBreakdown, setReactionBreakdown] = useState([]);
   const [reactionsLoaded, setReactionsLoaded] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [showReactionsModal, setShowReactionsModal] = useState(false);
 
   const reactionTotal = getReactionTotalCount(reactionBreakdown);
 
@@ -1125,7 +1184,11 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       ) : null}
 
       {reactionsLoaded && reactionTotal > 0 && (
-        <div className="feed-post-reaction-summary">
+        <div
+          className="feed-post-reaction-summary"
+          onClick={() => setShowReactionsModal(true)}
+          style={{ cursor: 'pointer' }}
+        >
           <ReactionBreakdown breakdown={reactionBreakdown} userReaction={userReaction} />
         </div>
       )}
@@ -1252,9 +1315,13 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         isOpen={showShareComposer}
         onClose={() => setShowShareComposer(false)}
         originalPost={post}
-        currentUser={currentUser}
-        onShare={handleSharePost}
       />
+      {showReactionsModal && (
+        <ReactionsListModal
+          postId={post.id}
+          onClose={() => setShowReactionsModal(false)}
+        />
+      )}
       {toastMessage && (
         <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
       )}
