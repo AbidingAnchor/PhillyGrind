@@ -1543,6 +1543,33 @@ create table if not exists contact_replies (
   sent_by uuid references auth.users(id)
 );
 
+alter table contact_replies enable row level security;
+
+-- RLS Policies for contact_replies
+create policy "Admins can read contact replies"
+  on contact_replies for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from profiles
+      where profiles.id = auth.uid()
+      and profiles.email = 'drewnegron95@gmail.com'
+    )
+  );
+
+create policy "Admins can insert contact replies"
+  on contact_replies for insert
+  to authenticated
+  with check (
+    exists (
+      select 1
+      from profiles
+      where profiles.id = auth.uid()
+      and profiles.email = 'drewnegron95@gmail.com'
+    )
+  );
+
 alter table contact_submissions enable row level security;
 
 -- RLS Policies for contact_submissions
@@ -1575,6 +1602,18 @@ create policy "Admins can update contact submissions"
     )
   )
   with check (
+    exists (
+      select 1
+      from profiles
+      where profiles.id = auth.uid()
+      and profiles.email = 'drewnegron95@gmail.com'
+    )
+  );
+
+create policy "Admins can delete contact submissions"
+  on contact_submissions for delete
+  to authenticated
+  using (
     exists (
       select 1
       from profiles

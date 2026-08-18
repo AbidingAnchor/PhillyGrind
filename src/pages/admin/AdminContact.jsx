@@ -110,6 +110,7 @@ export default function AdminContact() {
   }
 
   async function handleDelete(id) {
+    console.log('[ContactDelete] confirm clicked for', id);
     setActingId(id);
     setError('');
     try {
@@ -118,6 +119,7 @@ export default function AdminContact() {
       await loadCounts(); // Refetch badge counts
       setShowDeleteConfirm(false);
     } catch (err) {
+      console.error('[ContactDelete] failed:', err);
       setError(err.message);
     } finally {
       setActingId('');
