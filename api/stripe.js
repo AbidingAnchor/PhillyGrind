@@ -10,6 +10,9 @@ import {
   stripe,
   supabaseAdmin,
 } from './_utils.js';
+import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
+
+const limiter = createRateLimiter(20, '60 s');
 
 const boostPrices = {
   basic: 1999,
@@ -487,6 +490,9 @@ async function createIdentityVerificationSession(req, res, user) {
 
 export default async function handler(req, res) {
   if (!requireMethod(req, res)) return;
+
+  const identifier = req.headers['x-forwarded-for'] || 'anonymous';
+  if (!(await checkRateLimit(limiter, identifier, res))) return;
 
   const action = req.query.action;
   const authRequiredActions = new Set([

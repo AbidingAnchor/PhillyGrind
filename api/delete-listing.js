@@ -11,6 +11,9 @@ import {
   moderateText,
   MODERATION_REJECT_MESSAGE,
 } from './_utils/moderation.js';
+import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
+
+const limiter = createRateLimiter(30, '60 s');
 
 // Add error logging middleware
 function logError(context, error) {
@@ -317,6 +320,9 @@ async function handleUserDeleteListing(req, res, user) {
 }
 
 export default async function handler(req, res) {
+  const identifier = req.headers['x-forwarded-for'] || 'anonymous';
+  if (!(await checkRateLimit(limiter, identifier, res))) return;
+
   try {
     console.log('[API] Request received:', {
       method: req.method,

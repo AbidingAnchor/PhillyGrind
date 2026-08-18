@@ -6,6 +6,9 @@ import {
 } from './_utils.js';
 import { sendEmail, emailShell } from './_utils/email.js';
 import { analyzePhotoBuffer } from './_utils/photoAnalysis.js';
+import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
+
+const limiter = createRateLimiter(30, '60 s');
 
 const ADMIN_EMAIL = 'drewnegron95@gmail.com';
 const HANDOFF_WINDOW_MS = 2 * 60 * 60 * 1000;
@@ -593,6 +596,9 @@ export default async function handler(req, res) {
     }
     return;
   }
+
+  const identifier = req.headers['x-forwarded-for'] || 'anonymous';
+  if (!(await checkRateLimit(limiter, identifier, res))) return;
 
   const user = await getUserFromRequest(req);
   if (!user) {

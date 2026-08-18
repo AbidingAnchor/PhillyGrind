@@ -1,4 +1,7 @@
 import { requireMethod, sendJson, supabaseAdmin } from './_utils.js';
+import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
+
+const limiter = createRateLimiter(60, '60 s');
 
 
 const ADZUNA_ENDPOINT = 'https://api.adzuna.com/v1/api/jobs/us/search/1';
@@ -69,6 +72,9 @@ async function handleBidCounts(req, res) {
 }
 
 export default async function handler(req, res) {
+  const identifier = req.headers['x-forwarded-for'] || 'anonymous';
+  if (!(await checkRateLimit(limiter, identifier, res))) return;
+
   try {
     if (req.method === 'POST' && req.query.action === 'bid-counts') {
       if (!requireMethod(req, res, 'POST')) return;

@@ -1,5 +1,8 @@
 import { getUserFromRequest, requireMethod, sendJson, supabaseAdmin } from './_utils.js';
 import { createTwoFactorEmail, createContactEmail } from './_utils/emailTemplate.js';
+import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
+
+const limiter = createRateLimiter(5, '5 m');
 
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
@@ -9,6 +12,9 @@ function generateSixDigitCode() {
 
 export default async function handler(req, res) {
   if (!requireMethod(req, res, 'POST')) return;
+
+  const identifier = req.headers['x-forwarded-for'] || 'anonymous';
+  if (!(await checkRateLimit(limiter, identifier, res))) return;
 
   try {
     const { action } = req.body ?? {};

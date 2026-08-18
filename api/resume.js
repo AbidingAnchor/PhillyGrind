@@ -7,6 +7,9 @@ import {
   sendJson,
   supabaseAdmin,
 } from './_utils.js';
+import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
+
+const limiter = createRateLimiter(60, '60 s');
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const profileSelect = 'id,name,bio,skills,availability,neighborhoods,resume_path,resume_url,avatar_url,created_at';
@@ -178,6 +181,9 @@ async function handleGetResumeSignedUrl(req, res, user) {
 }
 
 export default async function handler(req, res) {
+  const identifier = req.headers['x-forwarded-for'] || 'anonymous';
+  if (!(await checkRateLimit(limiter, identifier, res))) return;
+
   if (!hasServerSupabaseConfig) {
     sendJson(res, 500, { error: 'Server Supabase configuration is missing.' });
     return;

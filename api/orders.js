@@ -8,6 +8,9 @@ import {
   stripe,
   supabaseAdmin,
 } from './_utils.js';
+import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
+
+const limiter = createRateLimiter(30, '60 s');
 
 async function releasePayment(req, res) {
   const user = await getUserFromRequest(req);
@@ -779,6 +782,9 @@ const adminPostActions = new Set([
 ]);
 
 export default async function handler(req, res) {
+  const identifier = req.headers['x-forwarded-for'] || 'anonymous';
+  if (!(await checkRateLimit(limiter, identifier, res))) return;
+
   try {
     if (!hasServerSupabaseConfig && req.query.action?.startsWith('admin-')) {
       sendJson(res, 500, { error: 'Server Supabase configuration is missing.' });

@@ -1,4 +1,7 @@
 import { getUserFromRequest, requireMethod, sendJson } from './_utils.js';
+import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
+
+const limiter = createRateLimiter(20, '60 s');
 
 const GROQ_CHAT_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -76,6 +79,9 @@ Never use generic fallback responses. If the AI call fails, that's a technical e
 
 export default async function handler(req, res) {
   if (!requireMethod(req, res)) return;
+
+  const identifier = req.headers['x-forwarded-for'] || 'anonymous';
+  if (!(await checkRateLimit(limiter, identifier, res))) return;
 
   try {
     const user = await getUserFromRequest(req);

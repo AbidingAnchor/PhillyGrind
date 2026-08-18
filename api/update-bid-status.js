@@ -1,7 +1,13 @@
 import { getUserFromRequest, requireMethod, sendJson, supabaseAdmin } from './_utils.js';
+import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
+
+const limiter = createRateLimiter(30, '60 s');
 
 export default async function handler(req, res) {
   if (!requireMethod(req, res)) return;
+
+  const identifier = req.headers['x-forwarded-for'] || 'anonymous';
+  if (!(await checkRateLimit(limiter, identifier, res))) return;
 
   try {
     const user = await getUserFromRequest(req);
