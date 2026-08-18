@@ -1,9 +1,74 @@
 import { getUserFromRequest, requireMethod, sendJson } from './_utils.js';
 import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
+import { createClient } from '@supabase/supabase-js';
 
 const limiter = createRateLimiter(20, '60 s');
 
 const GROQ_CHAT_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+const tools = [
+  {
+    type: "function",
+    function: {
+      name: "search_content",
+      description: "Search Community posts and comments by keyword to find specific content a user wants to report or ask about.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Keywords describing the post/comment content" }
+        },
+        required: ["query"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_report",
+      description: "File a report on a specific post or comment. Only call this after the user has explicitly confirmed the correct content was found. This ALWAYS files a report when called — never skip filing based on your own read of whether it's a violation.",
+      parameters: {
+        type: "object",
+        properties: {
+          post_id: { type: "string", description: "UUID of the post being reported, if applicable" },
+          comment_id: { type: "string", description: "UUID of the comment being reported, if applicable" },
+          reason: { type: "string", description: "Category, e.g. 'Harassment', 'Spam', 'Fake account'" },
+          subreason: { type: "string", description: "Specific detail about why" }
+        },
+        required: ["reason", "subreason"]
+      }
+    }
+  }
+];
+
+async function searchContent(query) {
+  const { data, error } = await supabase
+    .from('community_posts')
+    .select('id, content, created_at, user_id')
+    .ilike('content', `%${query}%`)
+    .limit(5);
+  if (error) throw error;
+  return data;
+}
+
+async function createReport({ post_id, comment_id, reason, subreason }, reporterId) {
+  const { error } = await supabase
+    .from('community_reports')
+    .insert({
+      post_id: post_id || null,
+      comment_id: comment_id || null,
+      reporter_id: reporterId,
+      reason,
+      subreason,
+      status: 'pending',
+    });
+  if (error) throw error;
+  return { success: true };
+}
 
 const systemPrompt = `
 You are GrindBot, the official AI assistant for PhillyGrind — a free, local job and gig platform built specifically for Philadelphia neighborhoods. You are helpful, direct, empathetic, and have a friendly Philly personality. You know everything about PhillyGrind and help users get the most out of the platform.
@@ -52,16 +117,8 @@ HOW TO POST: To post a job, go to Jobs → Post a Job. To post a gig, go to Gigs
 
 HOW TO APPLY: For jobs, click the listing and message the poster directly. For gigs, click Submit a Bid and write your pitch. For marketplace/housing, message the seller/landlord directly.
 
-RESPONSE GUIDELINES:
-- Be specific and detailed in your answers
-- Use examples when helpful
-- If someone describes a problem or complaint, respond with empathy first, then provide relevant guidance
-- If the issue cannot be fully resolved in chat, offer to help submit a support ticket
-- Keep answers clear but comprehensive — don't be vague
-- If you don't know something specific, be honest and direct users to support@phillygrind.work
-- Maintain a friendly, helpful, slightly casual Philly tone
-- Avoid generic responses like "I hear you" or "Try asking another way" — give real answers
-- NEVER respond with a generic feature menu when someone describes a problem
+COMMUNICATION STYLE:
+Talk like a real person having a normal conversation, not like customer-service copy. Use contractions, casual phrasing, and a genuine Philly tone — the way a helpful local friend would explain something, not a corporate FAQ. Avoid stiff phrases like "I understand your concern" or "Thank you for reaching out." Keep responses direct and warm, not padded with filler.
 
 COMPLAINT/PROBLEM HANDLING (CRITICAL):
 When a user describes a problem, complaint, or issue (keywords to watch for: scam, fraud, issue, problem, complaint, dispute, harassment, threatening, illegal, no-show, didn't show up, ghosted, payment issue, money, stolen, cheated, lied, unsafe, dangerous, report, file a complaint):
@@ -72,9 +129,60 @@ When a user describes a problem, complaint, or issue (keywords to watch for: sca
 5. Be clear about timelines (48-hour dispute window, 72-hour escrow release, etc.)
 6. DO NOT respond with generic feature information or menu options
 
+REPORT HANDLING:
+When a user wants to report a post or comment:
+1. Use search_content to find it based on what they describe.
+2. Show them what you found and ask them to confirm it's the right one before doing anything else.
+3. Once confirmed, ALWAYS call create_report — this is not optional and does not depend on your own opinion of whether it's a violation. Every confirmed report gets filed, no exceptions.
+4. When discussing what the content might involve, you can reference our Terms of Service / Community Guidelines informationally (e.g. "this looks like it could relate to our harassment policy"), but never state a final verdict like "this does/doesn't violate our rules." You are not the one who decides — a human moderator reviews every report and makes that call. Frame it as "I've filed this for our support team to look into" every time, not conditionally.
+
 If a user mentions scamming, fraud, threats, or illegal activity, treat this as HIGH PRIORITY and immediately offer to help submit a support ticket with the appropriate category (dispute_report or fair_housing_complaint if applicable).
 
 Never use generic fallback responses. If the AI call fails, that's a technical error — but for normal user input, always provide a real, helpful answer based on your knowledge of PhillyGrind.
+
+TERMS OF SERVICE (Last Updated: August 13, 2026):
+ELIGIBILITY: Must be at least 18 years old. Account credentials must be kept confidential. No false information, multiple accounts to evade bans, or impersonation.
+
+PLATFORM ROLE: PhillyGrind is a platform that connects users — not a party to transactions. We don't employ workers, act as landlords, own marketplace items, or guarantee listing accuracy.
+
+COMMUNITY FEED PROHIBITIONS: No discriminatory/harassing/threatening content, no doxxing (private info disclosure), no misinformation, no IP infringement, no spam/unauthorized advertising, no illegal content. Automated moderation + human review used.
+
+JOBS/GIGS PROHIBITIONS: No discriminatory hiring (race, color, religion, sex, age, disability, national origin, sexual orientation, gender identity), no payment requests from workers, no MLM/pyramid schemes, no unpaid labor misrepresented as paid.
+
+MARKETPLACE: Secure Checkout holds payment in escrow until buyer confirms receipt or auto-release. 8% platform fee. Prohibited items: weapons, illegal drugs, stolen/counterfeit/recalled goods, anything illegal under PA/Philly law. Disputes handled by PhillyGrind with final determination on fund release. Cash transactions are user-arranged with no PhillyGrind responsibility.
+
+HOUSING: Must comply with Fair Housing Act and PA/Philadelphia law. No discrimination based on race, color, religion, sex, national origin, familial status, disability (federal), or sexual orientation, gender identity, source of income including Section 8 (local). AI screening detects discriminatory language but is not a legal guarantee — landlords remain fully responsible for compliance. Landlord verification badge indicates documentation submitted only, not conduct guarantee. Multiple reports trigger review and warning.
+
+CONTENT MODERATION: Uses third-party APIs (OpenAI) for unsafe categories, custom AI for platform-specific rules (Fair Housing, scams, harassment, doxxing), and human review. High-confidence violations auto-rejected; lower-confidence logged for review. Not a guarantee — users can appeal.
+
+PROHIBITED CONDUCT: Unlawful use, harassment/threats/abuse, circumventing Secure Checkout to defraud, scraping/reverse-engineering, bypassing moderation systems.
+
+ACCOUNT SUSPENSION: Can suspend/terminate for Terms violations. Users can request deletion.
+
+DISCLAIMERS: Platform provided "as is" without warranties. No guarantee of accuracy, legality, or safety. Use at your own risk.
+
+LIMITATION OF LIABILITY: Not liable for indirect/incidental/special/consequential damages.
+
+PRIVACY POLICY (Last Updated: August 13, 2026):
+INFORMATION COLLECTED: Account info (name, email, password, photo), listing content (posts, comments, reactions), verification documents, payment info (processed by Stripe, not stored by PhillyGrind), messages, communications with support. Automatic: device/browser info, IP address, usage data, cookies.
+
+INFORMATION USE: Operate platform, process payments, screen content for moderation, verify identity, resolve disputes, communicate, improve security, comply with law.
+
+AI-ASSISTED MODERATION: Content sent to AI providers (OpenAI/Groq) for analysis. Flagged content logged for admin review. Content not used to train third-party models (to extent controllable). Users can appeal decisions.
+
+INFORMATION SHARING: Display name, photo, and posted content visible to users. Shared with service providers (Stripe, Supabase, Vercel, OpenAI/Groq, Resend) under confidentiality. Shared if required by law or in business transfer. Email addresses never displayed publicly. No selling of personal information.
+
+DATA RETENTION: Account/listing info retained while account active. Moderation logs retained for dispute resolution, legal compliance, pattern detection even after listing/account removal.
+
+COOKIES: Used for login, preferences, usage understanding. Can control via browser settings.
+
+USER RIGHTS: Access, correction, deletion, objection/restriction of personal information. Contact via Contact page. Response in reasonable time per PA law.
+
+CHILDREN'S PRIVACY: Not for under 18. No knowingly collected info from under 18; deleted if learned.
+
+DATA SECURITY: Reasonable safeguards including encryption and role-based access. No absolute security guarantee.
+
+DATA LOCATION: Processed/stored by providers (Supabase, Vercel, Stripe) that may store data outside user's state/country.
 `;
 
 export default async function handler(req, res) {
@@ -109,30 +217,71 @@ export default async function handler(req, res) {
       return;
     }
 
-    const groqResponse = await fetch(GROQ_CHAT_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        temperature: 0.5,
-        max_tokens: 1000,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...safeMessages,
-        ],
-      }),
-    });
+    let currentMessages = [
+      { role: 'system', content: systemPrompt },
+      ...safeMessages,
+    ];
 
-    const payload = await groqResponse.json();
-    if (!groqResponse.ok) {
-      console.error('[GrindBot API] Groq API error:', payload);
-      sendJson(res, groqResponse.status, {
-        error: payload.error?.message || 'GrindBot could not answer right now.',
+    async function callGroq(messages, includeTools = true) {
+      const response = await fetch(GROQ_CHAT_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          temperature: 0.5,
+          max_tokens: 1000,
+          messages,
+          ...(includeTools ? { tools } : {}),
+        }),
       });
-      return;
+
+      const payload = await response.json();
+      if (!response.ok) {
+        console.error('[GrindBot API] Groq API error:', payload);
+        throw new Error(payload.error?.message || 'GrindBot could not answer right now.');
+      }
+
+      return payload;
+    }
+
+    let payload = await callGroq(currentMessages);
+    let toolCalls = payload.choices?.[0]?.message?.tool_calls;
+
+    while (toolCalls && toolCalls.length > 0) {
+      const toolMessages = [];
+
+      for (const toolCall of toolCalls) {
+        const { name, arguments: args } = toolCall.function;
+        let result;
+
+        try {
+          if (name === 'search_content') {
+            const parsedArgs = JSON.parse(args);
+            result = await searchContent(parsedArgs.query);
+          } else if (name === 'create_report') {
+            const parsedArgs = JSON.parse(args);
+            result = await createReport(parsedArgs, user.id);
+          } else {
+            result = { error: `Unknown tool: ${name}` };
+          }
+        } catch (error) {
+          result = { error: error.message };
+        }
+
+        toolMessages.push({
+          role: 'tool',
+          tool_call_id: toolCall.id,
+          content: JSON.stringify(result),
+        });
+      }
+
+      currentMessages.push(payload.choices[0].message);
+      currentMessages.push(...toolMessages);
+      payload = await callGroq(currentMessages, false);
+      toolCalls = payload.choices?.[0]?.message?.tool_calls;
     }
 
     const reply = payload.choices?.[0]?.message?.content;
