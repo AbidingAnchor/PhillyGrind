@@ -21,7 +21,7 @@ import {
   getCommentReactionBreakdown,
   shareCommunityPost,
 } from '../lib/communityApi.js';
-import { muteUser, blockUser } from '../lib/moderationApi.js';
+import { muteUser, blockUser, isUserBlocked } from '../lib/moderationApi.js';
 import { useAuth } from '../lib/auth.jsx';
 import { getReactionTotalCount, getUserAvatarColor } from '../lib/reactions.js';
 import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
@@ -67,9 +67,12 @@ function ReportModal({ isOpen, onClose, onSubmit, reportType = 'post' }) {
     setSubmitting(true);
     try {
       await onSubmit({ reason, subreason });
-      setStep(3); // Success step
+      setStep(3); // Success step - only reached on confirmed insert
     } catch (error) {
+      console.error('[ReportModal] Report submission failed:', error);
       alert(error.message);
+      // Don't set step to 3 on error - modal stays on current step
+    } finally {
       setSubmitting(false);
     }
   }
@@ -415,10 +418,10 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0, allCo
     try {
       await submitCommunityReport({ commentId: comment.id, reason, subreason });
       console.log('[CommentItem] Report submitted successfully');
-      setShowReportModal(false);
+      // Don't close modal here - let ReportModal show success step
     } catch (error) {
       console.error('[CommentItem] Report submission failed:', error);
-      alert(error.message);
+      throw error; // Re-throw to let ReportModal handle error
     }
   }
 
@@ -931,10 +934,10 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
     try {
       await submitCommunityReport({ postId: post.id, reason, subreason });
       console.log('[PostCard] Report submitted successfully');
-      setShowReportModal(false);
+      // Don't close modal here - let ReportModal show success step
     } catch (error) {
       console.error('[PostCard] Report submission failed:', error);
-      alert(error.message);
+      throw error; // Re-throw to let ReportModal handle error
     }
   }
 
