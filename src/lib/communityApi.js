@@ -1018,6 +1018,44 @@ export async function getPostReactorsList(postId) {
   }));
 }
 
+export async function searchCommunityPosts(query) {
+  if (!hasSupabaseConfig || !query?.trim()) return [];
+
+  const { data, error } = await supabase
+    .from('community_posts')
+    .select('*')
+    .ilike('content', `%${query}%`)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) throw error;
+  return attachAuthorInfo(data);
+}
+
+export async function getTrendingPosts(limit = 5) {
+  if (!hasSupabaseConfig) return [];
+
+  const { data: posts, error } = await supabase
+    .from('community_posts')
+    .select('id, content, created_at, user_id')
+    .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) throw error;
+
+  const withCounts = await Promise.all(posts.map(async (post) => {
+    const { count } = await supabase
+      .from('community_post_likes')
+      .select('id', { count: 'exact', head: true })
+      .eq('post_id', post.id);
+    return { ...post, reactionCount: count || 0 };
+  }));
+
+  const sorted = withCounts.sort((a, b) => b.reactionCount - a.reactionCount).slice(0, limit);
+  return attachAuthorInfo(sorted);
+}
+
 export const REACTION_EMOJI = Object.fromEntries(
   REACTIONS.map(r => [r.type, r.emoji])
 );

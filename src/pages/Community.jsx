@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft } from 'lucide-react';
+import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft, Search } from 'lucide-react';
 import {
   getCommunityPosts,
   getCommunityComments,
@@ -22,6 +22,7 @@ import {
   shareCommunityPost,
   getPostReactorsList,
   REACTION_EMOJI,
+  searchCommunityPosts,
 } from '../lib/communityApi.js';
 import { muteUser, blockUser, isUserBlocked } from '../lib/moderationApi.js';
 import { useAuth } from '../lib/auth.jsx';
@@ -29,6 +30,24 @@ import { getReactionTotalCount, getUserAvatarColor } from '../lib/reactions.js';
 import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
 import PostReactionControl from '../components/PostReactionControl.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import TrendingPostsWidget from '../components/TrendingPostsWidget.jsx';
+
+const SEARCH_EXAMPLES = ['Plumber', 'House Cleaner', 'Roof Repair', 'Contractor', 'House Painter', 'Electrician'];
+
+function AnimatedPlaceholder() {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex(i => (i + 1) % SEARCH_EXAMPLES.length);
+    }, 2200);
+    return () => clearInterval(interval);
+  }, []);
+  return (
+    <span className="search-placeholder-animated">
+      Search for <span key={index} className="search-placeholder-word">{SEARCH_EXAMPLES[index]}</span>
+    </span>
+  );
+}
 
 function withTimeout(promise, milliseconds, message) {
   let timeoutId;
@@ -1331,12 +1350,15 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
 
 function Community() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isLoggedIn, user, profile } = useAuth();
   const [posts, setPosts] = useState([]);
   const [neighborhood, setNeighborhood] = useState(profile?.neighborhood || 'Any');
   const [filterTab, setFilterTab] = useState('all'); // all, recent, nearby, popular
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const searchQuery = searchParams.get('search') || '';
+  const [searchInput, setSearchInput] = useState(searchQuery);
 
   // Post composer state
   const [showComposer, setShowComposer] = useState(false);
@@ -1347,6 +1369,10 @@ function Community() {
   const [submittingPost, setSubmittingPost] = useState(false);
 
   useEffect(() => {
+    setSearchInput(searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
     let cancelled = false;
     const timeoutId = setTimeout(() => {
       setLoading(true);
@@ -1354,11 +1380,20 @@ function Community() {
 
       async function loadPosts() {
         try {
-          const nextPosts = await withTimeout(
-            getCommunityPosts({ neighborhood }),
-            5000,
-            'Supabase took too long to load posts. Please try again.',
-          );
+          let nextPosts;
+          if (searchQuery) {
+            nextPosts = await withTimeout(
+              searchCommunityPosts(searchQuery),
+              5000,
+              'Supabase took too long to load posts. Please try again.',
+            );
+          } else {
+            nextPosts = await withTimeout(
+              getCommunityPosts({ neighborhood }),
+              5000,
+              'Supabase took too long to load posts. Please try again.',
+            );
+          }
 
           if (!cancelled) setPosts(nextPosts);
         } catch (err) {
@@ -1375,7 +1410,7 @@ function Community() {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [neighborhood]);
+  }, [neighborhood, searchQuery]);
 
   function handleComposerClick() {
     if (!isLoggedIn) {
@@ -1396,6 +1431,16 @@ function Community() {
   function handleRemovePhoto() {
     setComposerPhoto(null);
     setComposerPhotoPreview(null);
+  }
+
+  function handleSearchKeyDown(e) {
+    if (e.key === 'Enter' && searchInput.trim()) {
+      navigate(`/community?search=${encodeURIComponent(searchInput.trim())}`);
+    }
+    if (e.key === 'Escape') {
+      setSearchInput('');
+      navigate('/community');
+    }
   }
 
   async function handleSubmitPost(e) {
@@ -1490,6 +1535,20 @@ function Community() {
               >
                 Popular
               </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="feed-search-bar">
+              <Search size={18} className="feed-search-icon" />
+              <div className="feed-search-input-wrap">
+                <input
+                  className="feed-search-input"
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                />
+                {!searchInput && <AnimatedPlaceholder />}
+              </div>
             </div>
 
             {/* Facebook-style Composer */}
@@ -1639,6 +1698,12 @@ function Community() {
 
             {!loading && !error && (
               <>
+                {searchQuery && (
+                  <div className="search-banner">
+                    Showing results for <strong>"{searchQuery}"</strong>
+                    <Link to="/community" className="search-clear">Clear search</Link>
+                  </div>
+                )}
                 <div className="feed-posts">
                   {posts.map((post) => (
                     <PostCard
@@ -1669,17 +1734,7 @@ function Community() {
 
           {/* Sidebar */}
           <div className="feed-sidebar">
-            <div className="feed-sidebar-card">
-              <h3 className="feed-sidebar-title">Popular Neighborhoods</h3>
-              <ul className="feed-sidebar-list">
-                {COMMUNITY_NEIGHBORHOODS.slice(0, 6).map((hood) => (
-                  <li key={hood} className="feed-sidebar-item">
-                    <div className="feed-sidebar-item-name">{hood}</div>
-                    <div className="feed-sidebar-item-count">Active community</div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <TrendingPostsWidget />
           </div>
         </div>
       </section>
