@@ -8,6 +8,7 @@ import {
   deleteContact,
   getContactReplies 
 } from '../../lib/contactApi.js';
+import { useAdminCounts } from '../../components/AdminLayout.jsx';
 
 export default function AdminContact() {
   const [submissions, setSubmissions] = useState([]);
@@ -24,6 +25,7 @@ export default function AdminContact() {
   const [repliesMap, setRepliesMap] = useState({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [expandedSubmissions, setExpandedSubmissions] = useState(new Set());
+  const { loadCounts } = useAdminCounts();
 
   async function loadSubmissions() {
     try {
@@ -81,6 +83,7 @@ export default function AdminContact() {
       setReplyMessage('');
       setShowReplyModal(false);
       await loadSubmissions();
+      await loadCounts(); // Refetch badge counts
       
       // Reload replies for this submission
       const replies = await getContactReplies(selectedSubmission.id);
@@ -98,6 +101,7 @@ export default function AdminContact() {
     try {
       await resolveContact(id);
       await loadSubmissions();
+      await loadCounts(); // Refetch badge counts
     } catch (err) {
       setError(err.message);
     } finally {
@@ -111,6 +115,7 @@ export default function AdminContact() {
     try {
       await deleteContact(id);
       await loadSubmissions();
+      await loadCounts(); // Refetch badge counts
       setShowDeleteConfirm(false);
     } catch (err) {
       setError(err.message);

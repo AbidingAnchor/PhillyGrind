@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ClipboardList, Loader2, User, Clock } from 'lucide-react';
 import { adminReportAction, getAdminReports } from '../../lib/adminApi.js';
+import { useAdminCounts } from '../../components/AdminLayout.jsx';
 
 export default function AdminReports() {
   const [reports, setReports] = useState([]);
@@ -8,6 +9,7 @@ export default function AdminReports() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actingId, setActingId] = useState('');
+  const { loadCounts } = useAdminCounts();
 
   async function loadReports() {
     try {
@@ -31,6 +33,7 @@ export default function AdminReports() {
     try {
       await adminReportAction(reportId, action);
       await loadReports();
+      await loadCounts(); // Refetch badge counts
     } catch (err) {
       setError(err.message);
     } finally {

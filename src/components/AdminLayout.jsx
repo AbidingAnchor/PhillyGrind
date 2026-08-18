@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, createContext, useContext } from 'react';
 import {
   AlertTriangle,
   ClipboardList,
@@ -15,6 +15,16 @@ import {
 } from 'lucide-react';
 import { getUnreviewedModerationCount, getAdminReports, getAdminDisputes } from '../lib/adminApi.js';
 import { getNewContactCount } from '../lib/contactApi.js';
+
+const AdminContext = createContext(null);
+
+export function useAdminCounts() {
+  const context = useContext(AdminContext);
+  if (!context) {
+    throw new Error('useAdminCounts must be used within AdminLayout');
+  }
+  return context;
+}
 
 const navItems = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -35,31 +45,32 @@ export default function AdminLayout() {
   const [openDisputesCount, setOpenDisputesCount] = useState(0);
   const [pendingReportsCount, setPendingReportsCount] = useState(0);
 
-  useEffect(() => {
-    async function loadCounts() {
+  async function loadCounts() {
+    try {
+      const [modCount, contactCount] = await Promise.all([
+        getUnreviewedModerationCount(),
+        getNewContactCount(),
+      ]);
+      setUnreviewedCount(modCount);
+      setNewContactCount(contactCount);
+      
+      // Load disputes and reports counts
       try {
-        const [modCount, contactCount] = await Promise.all([
-          getUnreviewedModerationCount(),
-          getNewContactCount(),
+        const [disputesData, reportsData] = await Promise.all([
+          getAdminDisputes(),
+          getAdminReports('pending'),
         ]);
-        setUnreviewedCount(modCount);
-        setNewContactCount(contactCount);
-        
-        // Load disputes and reports counts
-        try {
-          const [disputesData, reportsData] = await Promise.all([
-            getAdminDisputes(),
-            getAdminReports('pending'),
-          ]);
-          setOpenDisputesCount(disputesData.disputes?.filter(d => d.status === 'open').length || 0);
-          setPendingReportsCount(reportsData.reports?.length || 0);
-        } catch (error) {
-          console.error('Failed to load disputes/reports counts:', error);
-        }
+        setOpenDisputesCount(disputesData.disputes?.filter(d => d.status === 'open').length || 0);
+        setPendingReportsCount(reportsData.reports?.length || 0);
       } catch (error) {
-        console.error('Failed to load admin counts:', error);
+        console.error('Failed to load disputes/reports counts:', error);
       }
+    } catch (error) {
+      console.error('Failed to load admin counts:', error);
     }
+  }
+
+  useEffect(() => {
     loadCounts();
   }, []);
 
@@ -71,38 +82,45 @@ export default function AdminLayout() {
     return 0;
   };
 
+  const contextValue = {
+    loadCounts,
+    getBadgeCount,
+  };
+
   return (
-    <section className="page-section admin-dashboard">
-      <div className="admin-dashboard-shell">
-        <aside className="admin-sidebar profile-section-card">
-          <header className="admin-sidebar-header">
-            <Shield size={22} />
-            <div>
-              <span className="eyebrow">PhillyGrind</span>
-              <h2>Admin</h2>
-            </div>
-          </header>
-          <nav className="admin-sidebar-nav">
-            {navItems.map(({ to, label, icon: Icon, end, showBadge }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                className={({ isActive }) => `admin-sidebar-link${isActive ? ' active' : ''}`}
-              >
-                <Icon size={18} />
-                {label}
-                {showBadge && getBadgeCount(showBadge) > 0 && (
-                  <span className="admin-nav-badge">{getBadgeCount(showBadge)}</span>
-                )}
-              </NavLink>
-            ))}
-          </nav>
-        </aside>
-        <div className="admin-main">
-          <Outlet />
+    <AdminContext.Provider value={contextValue}>
+      <section className="page-section admin-dashboard">
+        <div className="admin-dashboard-shell">
+          <aside className="admin-sidebar profile-section-card">
+            <header className="admin-sidebar-header">
+              <Shield size={22} />
+              <div>
+                <span className="eyebrow">PhillyGrind</span>
+                <h2>Admin</h2>
+              </div>
+            </header>
+            <nav className="admin-sidebar-nav">
+              {navItems.map(({ to, label, icon: Icon, end, showBadge }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={end}
+                  className={({ isActive }) => `admin-sidebar-link${isActive ? ' active' : ''}`}
+                >
+                  <Icon size={18} />
+                  {label}
+                  {showBadge && getBadgeCount(showBadge) > 0 && (
+                    <span className="admin-nav-badge">{getBadgeCount(showBadge)}</span>
+                  )}
+                </NavLink>
+              ))}
+            </nav>
+          </aside>
+          <div className="admin-main">
+            <Outlet />
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </AdminContext.Provider>
   );
 }
