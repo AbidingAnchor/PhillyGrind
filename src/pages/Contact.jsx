@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Send, Bot } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../lib/auth.jsx';
 import { sendContactSubmission } from '../lib/contactApi.js';
 
@@ -98,9 +99,26 @@ function Contact() {
   }
 
   async function handleSubmit(event) {
+    console.log('[DEBUG] Contact handleSubmit CALLED');
     event.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || sending) return;
+
+    // Guard against session not being ready yet
+    if (!session?.access_token) {
+      console.log('[DEBUG] Session not ready, returning early');
+      setStatus('Not logged in. Please refresh and try again.');
+      return;
+    }
+
+    console.log('[DEBUG] messages state at submit:', messages);
+    console.log('[DEBUG] input value:', trimmed);
+
+    const newUserMessage = { role: 'user', content: trimmed };
+    const nextMessages = [...messages, newUserMessage];
+    const payloadMessages = nextMessages.filter((message) => message.role !== 'system');
+    
+    console.log('[DEBUG] payloadMessages:', payloadMessages);
 
     addUserMessage(trimmed);
     setInput('');
@@ -116,7 +134,7 @@ function Contact() {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          messages: messages.filter((message) => message.role !== 'system'),
+          messages: payloadMessages,
         }),
       });
 
@@ -194,7 +212,11 @@ function Contact() {
             return (
               <article key={`${message.role}-${index}`} className={isUser ? 'message-bubble mine' : 'message-bubble'}>
                 <span>{isUser ? 'You' : 'GrindBot'}</span>
-                <p>{message.content}</p>
+                {isUser ? (
+                  <p>{message.content}</p>
+                ) : (
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                )}
                 {message.kind === 'choices' && (
                   <div className="contact-choice-grid">
                     {message.choices.map((choice) => (
