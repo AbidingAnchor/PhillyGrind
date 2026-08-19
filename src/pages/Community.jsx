@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft, Search, CornerUpRight } from 'lucide-react';
+import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft, Search } from 'lucide-react';
+import FacebookShareIcon from '../components/FacebookShareIcon.jsx';
 import {
   getCommunityPosts,
   getCommunityComments,
@@ -1238,7 +1239,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
             onClick={handleShare}
             title="Share post"
           >
-            <CornerUpRight size={16} />
+            <FacebookShareIcon size={16} />
           </button>
         </div>
       ) : (
@@ -1269,7 +1270,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
               onClick={handleShare}
               title="Share post"
             >
-              <CornerUpRight size={18} />
+              <FacebookShareIcon size={18} />
             </button>
           </div>
         </>
