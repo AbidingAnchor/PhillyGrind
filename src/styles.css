@@ -2312,11 +2312,10 @@ a.bid-card {
   }
 
   .site-nav {
-    position: absolute;
+    position: fixed;
     left: 18px;
     right: 18px;
     top: 76px;
-    bottom: auto;
     display: none !important;
     flex-direction: column;
     align-items: stretch;
