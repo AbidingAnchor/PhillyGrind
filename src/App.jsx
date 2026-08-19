@@ -47,110 +47,14 @@ function App() {
       const appShell = document.querySelector('.app-shell');
       const appShellStyles = appShell ? window.getComputedStyle(appShell) : null;
       
-      // Check offsetParent
-      const offsetParent = menuEl.offsetParent;
-      const offsetParentInfo = offsetParent ? {
-        tagName: offsetParent.tagName,
-        className: offsetParent.className,
-        position: window.getComputedStyle(offsetParent).position
-      } : { tagName: 'null', className: 'null', position: 'null' };
-      
-      // Check actual rendered dimensions
-      const rect = menuEl.getBoundingClientRect();
-      
-      // Check parent chain for stacking context creators
-      let parent = menuEl.parentElement;
-      const stackingContextParents = [];
-      while (parent && parent !== document.body) {
-        const parentStyles = window.getComputedStyle(parent);
-        const hasTransform = parentStyles.transform !== 'none';
-        const hasFilter = parentStyles.filter !== 'none';
-        const hasWillChange = parentStyles.willChange !== 'auto';
-        
-        if (hasTransform || hasFilter || hasWillChange) {
-          stackingContextParents.push({
-            tagName: parent.tagName,
-            className: parent.className,
-            transform: hasTransform ? parentStyles.transform : 'none',
-            filter: hasFilter ? parentStyles.filter : 'none',
-            willChange: hasWillChange ? parentStyles.willChange : 'auto',
-            zIndex: parentStyles.zIndex
-          });
-        }
-        parent = parent.parentElement;
-      }
-      
-      // Check for Stripe iframe
-      const stripeIframe = document.querySelector('iframe[src*="stripe"]');
-      const stripeInfo = stripeIframe ? {
-        exists: true,
-        position: window.getComputedStyle(stripeIframe).position,
-        zIndex: window.getComputedStyle(stripeIframe).zIndex,
-        top: window.getComputedStyle(stripeIframe).top,
-        left: window.getComputedStyle(stripeIframe).left,
-        right: window.getComputedStyle(stripeIframe).right,
-        bottom: window.getComputedStyle(stripeIframe).bottom
-      } : { exists: false };
+      // Check data-theme attribute
+      const dataTheme = document.documentElement.getAttribute('data-theme');
       
       console.log('[MENU DEBUG] isMenuOpen:', open, {
-        display: styles.display,
-        visibility: styles.visibility,
-        opacity: styles.opacity,
-        transform: styles.transform,
-        height: styles.height,
-        maxHeight: styles.maxHeight,
-        width: styles.width,
-        maxWidth: styles.maxWidth,
-        zIndex: styles.zIndex,
-        position: styles.position,
-        top: styles.top,
-        left: styles.left,
-        right: styles.right,
-        bottom: styles.bottom,
+        dataTheme,
         backgroundColor: styles.backgroundColor,
-        className: menuEl.className,
-        offsetParent: offsetParentInfo,
-        boundingClientRect: {
-          width: rect.width,
-          height: rect.height,
-          top: rect.top,
-          left: rect.left,
-          right: rect.right,
-          bottom: rect.bottom
-        },
-        childElements: Array.from(menuEl.children).map(child => ({
-          tagName: child.tagName,
-          className: child.className,
-          display: window.getComputedStyle(child).display,
-          visibility: window.getComputedStyle(child).visibility,
-          opacity: window.getComputedStyle(child).opacity,
-          height: window.getComputedStyle(child).height,
-          width: window.getComputedStyle(child).width,
-          childCount: child.children.length
-        })),
-        parentAppShell: appShellStyles ? {
-          overflowX: appShellStyles.overflowX,
-          overflowY: appShellStyles.overflowY,
-          overflow: appShellStyles.overflow,
-          position: appShellStyles.position,
-          transform: appShellStyles.transform,
-          filter: appShellStyles.filter,
-          willChange: appShellStyles.willChange
-        } : 'not found',
-        stackingContextParents,
-        stripeIframe: stripeInfo
+        className: menuEl.className
       });
-      
-      console.log('[MENU DEBUG] childElements expanded:', JSON.stringify(Array.from(menuEl.children).map(child => ({
-        tagName: child.tagName,
-        className: child.className,
-        display: window.getComputedStyle(child).display,
-        visibility: window.getComputedStyle(child).visibility,
-        opacity: window.getComputedStyle(child).opacity,
-        height: window.getComputedStyle(child).height,
-        width: window.getComputedStyle(child).width,
-        childCount: child.children.length
-      })), null, 2));
     }
   }, [open]);
 
