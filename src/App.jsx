@@ -46,6 +46,14 @@ function App() {
       const appShell = document.querySelector('.app-shell');
       const appShellStyles = appShell ? window.getComputedStyle(appShell) : null;
       
+      // Check offsetParent
+      const offsetParent = menuEl.offsetParent;
+      const offsetParentInfo = offsetParent ? {
+        tagName: offsetParent.tagName,
+        className: offsetParent.className,
+        position: window.getComputedStyle(offsetParent).position
+      } : { tagName: 'null', className: 'null', position: 'null' };
+      
       // Check parent chain for stacking context creators
       let parent = menuEl.parentElement;
       const stackingContextParents = [];
@@ -94,6 +102,7 @@ function App() {
         right: styles.right,
         bottom: styles.bottom,
         className: menuEl.className,
+        offsetParent: offsetParentInfo,
         parentAppShell: appShellStyles ? {
           overflowX: appShellStyles.overflowX,
           overflowY: appShellStyles.overflowY,
