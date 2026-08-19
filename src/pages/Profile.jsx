@@ -277,6 +277,7 @@ function Profile() {
       setProfileData((current) => current ? {
         ...current,
         profile: nextProfile,
+        profileName: nextProfile.name,
       } : current);
       setEditing(false);
       setProfileStatus('Profile updated.');
@@ -285,6 +286,7 @@ function Profile() {
         setProfileData((current) => current ? {
           ...current,
           profile: refreshedProfile,
+          profileName: refreshedProfile.name,
         } : current);
       }
     } catch (err) {
