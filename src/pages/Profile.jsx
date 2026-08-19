@@ -126,28 +126,6 @@ function Profile() {
   ));
 
   useEffect(() => {
-    // Debug script to identify overflow elements
-    setTimeout(() => {
-      const vw = window.innerWidth;
-      const all = document.querySelectorAll('*');
-      const overflowing = [];
-      all.forEach(el => {
-        const rect = el.getBoundingClientRect();
-        if (rect.right > vw + 1 || rect.width > vw) {
-          overflowing.push({
-            tag: el.tagName,
-            class: el.className,
-            width: rect.width,
-            right: rect.right,
-            viewportWidth: vw
-          });
-        }
-      });
-      console.log('[OVERFLOW DEBUG] Elements wider than viewport:', overflowing);
-    }, 1000);
-  }, []);
-
-  useEffect(() => {
     if (!viewedUserId || viewedUserId === 'undefined' || viewedUserId === 'null') return;
 
     setLoading(true);
