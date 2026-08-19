@@ -5,6 +5,7 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const HOUSING_NEIGHBORHOODS = [
+  // Philadelphia City
   'Fishtown',
   'Kensington',
   'South Philly',
@@ -14,6 +15,29 @@ export const HOUSING_NEIGHBORHOODS = [
   'Center City',
   'Germantown',
   'Manayunk',
+  // Delaware County
+  'Delaware County - Chester',
+  'Delaware County - Media',
+  'Delaware County - Upper Darby',
+  'Delaware County - Springfield',
+  'Delaware County - Ridley',
+  'Delaware County - Havertown',
+  // Montgomery County
+  'Montgomery County - Norristown',
+  'Montgomery County - King of Prussia',
+  'Montgomery County - Lansdale',
+  'Montgomery County - Abington',
+  'Montgomery County - Pottstown',
+  // Bucks County
+  'Bucks County - Doylestown',
+  'Bucks County - Bensalem',
+  'Bucks County - Levittown',
+  'Bucks County - Newtown',
+  // Chester County
+  'Chester County - West Chester',
+  'Chester County - Coatesville',
+  'Chester County - Downingtown',
+  // Other
   'Other',
 ];
 
