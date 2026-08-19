@@ -18,6 +18,7 @@ function OnboardingModal() {
   );
 
   async function handleUseLocation() {
+    alert('Use my location clicked');
     setLocating(true);
     setStatus('');
 
