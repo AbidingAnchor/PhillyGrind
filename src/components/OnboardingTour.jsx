@@ -177,7 +177,7 @@ export default function OnboardingTour({ onComplete, onSkip }) {
             <h3 className="onboarding-spotlight-title">{currentStep.title}</h3>
             <p className="onboarding-spotlight-description">{currentStep.description}</p>
             <div className="onboarding-spotlight-progress">
-              {step + 1} / {tourSteps.length - 2}
+              {step} / {tourSteps.length - 2}
             </div>
             <div className="onboarding-spotlight-actions">
               {step > 1 && (

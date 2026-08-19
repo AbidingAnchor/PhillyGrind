@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, X } from 'lucide-react';
+import { MapPin, X, ArrowRight } from 'lucide-react';
 import { useAuth } from '../lib/auth.jsx';
 import { HOUSING_NEIGHBORHOODS } from '../lib/housingApi.js';
 import { supabase } from '../lib/supabase.js';
@@ -53,54 +53,68 @@ function OnboardingModal() {
   }
 
   return (
-    <div className="chat-backdrop onboarding-backdrop" role="presentation">
-      <section className="onboarding-modal neighborhood-modal" role="dialog" aria-modal="true" aria-label="Select your neighborhood">
-        <button className="onboarding-skip" type="button" onClick={handleSkip} disabled={saving} aria-label="Skip neighborhood selection">
-          <X size={18} />
-          Skip for now
-        </button>
-        <div className="onboarding-icon">
-          <MapPin size={32} />
-        </div>
-        <span className="eyebrow">Welcome to PhillyGrind</span>
-        <h2>What neighborhood are you in?</h2>
-        <p>Select your Philadelphia neighborhood to see nearby posts and opportunities.</p>
+    <div className="onboarding-tour-overlay">
+      <div className="onboarding-welcome">
+        <div className="onboarding-welcome-content">
+          <div className="onboarding-spotlight-icon" style={{ margin: '0 auto 24px' }}>
+            <MapPin size={32} />
+          </div>
+          <h1 className="onboarding-welcome-title">What neighborhood are you in?</h1>
+          <p className="onboarding-welcome-subtitle" style={{ marginBottom: '24px' }}>
+            Select your Philadelphia neighborhood to see nearby posts and opportunities.
+          </p>
 
-        <div className="neighborhood-search">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search neighborhoods..."
-            className="neighborhood-search-input"
-          />
-        </div>
+          <div className="onboarding-neighborhood-search">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search neighborhoods..."
+              className="onboarding-neighborhood-input"
+            />
+          </div>
 
-        <div className="neighborhood-list">
-          {filteredNeighborhoods.length === 0 ? (
-            <p className="no-results">No neighborhoods found</p>
-          ) : (
-            filteredNeighborhoods.map((n) => (
-              <button
-                key={n}
-                type="button"
-                className={`neighborhood-option ${neighborhood === n ? 'selected' : ''}`}
-                onClick={() => setNeighborhood(n)}
-              >
-                {n}
-              </button>
-            ))
-          )}
-        </div>
+          <div className="onboarding-neighborhood-list">
+            {filteredNeighborhoods.length === 0 ? (
+              <p className="onboarding-no-results">No neighborhoods found</p>
+            ) : (
+              filteredNeighborhoods.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  className={`onboarding-neighborhood-option ${neighborhood === n ? 'selected' : ''}`}
+                  onClick={() => setNeighborhood(n)}
+                >
+                  {n}
+                </button>
+              ))
+            )}
+          </div>
 
-        {status && <p className="form-status error-text">{status}</p>}
+          {status && <p className="onboarding-status error-text">{status}</p>}
 
-        <div className="onboarding-actions">
-          <button className="primary-button" type="button" onClick={handleSave} disabled={saving || !neighborhood}>
-            {saving ? 'Saving...' : 'Continue'}
+          <button
+            className="onboarding-primary-button"
+            onClick={handleSave}
+            disabled={saving || !neighborhood}
+            style={{ marginTop: '24px' }}
+          >
+            {saving ? 'Saving...' : 'Continue'} <ArrowRight size={18} />
+          </button>
+
+          <button
+            className="onboarding-skip-link"
+            onClick={handleSkip}
+            disabled={saving}
+          >
+            Skip for now
           </button>
         </div>
-      </section>
+      </div>
+
+      <button className="onboarding-close-button" onClick={handleSkip} disabled={saving}>
+        <X size={20} />
+      </button>
     </div>
   );
 }

@@ -7580,6 +7580,129 @@ body {
   background: rgba(0, 0, 0, 0.08);
 }
 
+.onboarding-neighborhood-search {
+  margin-bottom: 20px;
+}
+
+.onboarding-neighborhood-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .onboarding-neighborhood-input {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1e293b;
+}
+
+.onboarding-neighborhood-input::placeholder {
+  color: #64748b;
+}
+
+[data-theme="light"] .onboarding-neighborhood-input::placeholder {
+  color: #94a3b8;
+}
+
+.onboarding-neighborhood-input:focus {
+  outline: none;
+  border-color: rgba(34, 197, 94, 0.3);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.onboarding-neighborhood-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  padding-right: 8px;
+}
+
+.onboarding-neighborhood-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.onboarding-neighborhood-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+[data-theme="light"] .onboarding-neighborhood-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.onboarding-neighborhood-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+[data-theme="light"] .onboarding-neighborhood-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.onboarding-neighborhood-option {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+[data-theme="light"] .onboarding-neighborhood-option {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #1e293b;
+}
+
+.onboarding-neighborhood-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+[data-theme="light"] .onboarding-neighborhood-option:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.onboarding-neighborhood-option.selected {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #22c55e;
+}
+
+[data-theme="light"] .onboarding-neighborhood-option.selected {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.onboarding-no-results {
+  color: #64748b;
+  font-size: 14px;
+  text-align: center;
+  padding: 20px;
+}
+
+[data-theme="light"] .onboarding-no-results {
+  color: #94a3b8;
+}
+
+.onboarding-status {
+  margin-bottom: 16px;
+  font-size: 14px;
+  text-align: center;
+}
+
 .admin-status-badge.warning {
   background: #fef3c7;
   color: #92400e;
