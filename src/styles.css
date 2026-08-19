@@ -2420,6 +2420,11 @@ a.bid-card {
 /* Premium refresh */
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
 }
 
 body {
@@ -2454,9 +2459,8 @@ main {
   padding: 14px clamp(18px, 4vw, 54px);
   background: rgba(255, 255, 255, 0.72);
   border-bottom: 1px solid rgba(216, 230, 223, 0.78);
-  box-shadow: 0 8px 30px rgba(6, 21, 36, 0.04);
-  backdrop-filter: blur(18px) saturate(140%);
   transition: background 180ms ease, box-shadow 180ms ease;
+  overflow-x: hidden;
 }
 
 .site-header.scrolled {
@@ -6752,6 +6756,12 @@ body {
   font-size: 0.9rem;
 }
 
+@media (max-width: 820px) {
+  .admin-table {
+    min-width: 100%;
+  }
+}
+
 .admin-table th,
 .admin-table td {
   padding: 16px 20px;
@@ -9759,39 +9769,6 @@ input[type="datetime-local"]:focus {
   gap: 16px;
   overflow: hidden;
   width: 100%;
-  border: 1px solid red !important;
-}
-
-.profile-post-card {
-  border: 1px solid red !important;
-}
-
-.feed-post-header {
-  border: 1px solid red !important;
-}
-
-.feed-post-content {
-  border: 1px solid red !important;
-}
-
-.feed-post-actions {
-  border: 1px solid red !important;
-}
-
-.feed-post-action-bar {
-  border: 1px solid red !important;
-}
-
-.profile-section-card {
-  border: 1px solid red !important;
-}
-
-.profile-intro-card {
-  border: 1px solid red !important;
-}
-
-.profile-intro-item {
-  border: 1px solid red !important;
 }
 
 @media (max-width: 640px) {
