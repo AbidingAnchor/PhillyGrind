@@ -241,9 +241,14 @@ function GrindBot() {
     const trimmed = input.trim();
     if (!trimmed || sending) return;
 
+    console.log('[DEBUG] messages state at submit:', messages);
+    console.log('[DEBUG] input value:', trimmed);
+
     const newUserMessage = { role: 'user', content: trimmed };
     const nextMessages = [...messages, newUserMessage];
     const payloadMessages = nextMessages.filter((message) => message.role !== 'system');
+    
+    console.log('[DEBUG] payloadMessages:', payloadMessages);
     
     setMessages(nextMessages);
     setInput('');
