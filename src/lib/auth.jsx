@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { hasSupabaseConfig, supabase } from './supabase.js';
 
 const AuthContext = createContext(null);
-const profileFields = 'id,name,email,avatar_url,resume_url,resume_path,stripe_account_id,stripe_onboarding_complete,onboarding_complete,tos_agreed_at,two_factor_enabled,identity_verified,verification_status,stripe_identity_session_id,banner_url,profile_tags,accent_color,created_at';
+const profileFields = 'id,name,email,avatar_url,resume_url,resume_path,stripe_account_id,stripe_onboarding_complete,onboarding_complete,tos_agreed_at,two_factor_enabled,identity_verified,verification_status,stripe_identity_session_id,banner_url,profile_tags,accent_color,created_at,role';
 
 function withTimeout(promise, milliseconds, timeoutValue) {
   let timeoutId;
@@ -197,6 +197,8 @@ export function AuthProvider({ children }) {
     signOut,
     completeOnboarding,
     refreshProfile,
+    isAdmin: profile?.role === 'admin' || profile?.role === 'owner',
+    isOwner: profile?.role === 'owner',
   }), [loading, profile, session]);
 
   if (loading) {

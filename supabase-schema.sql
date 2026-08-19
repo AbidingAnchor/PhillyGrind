@@ -276,6 +276,63 @@ begin
   where account_reference is null;
 end $$;
 
+-- Add role column to profiles table for staff permissions
+alter table profiles
+  add column if not exists role text not null default 'user' check (role in ('owner', 'admin', 'user'));
+
+-- Create admin_action_log table for moderation logging
+create table if not exists admin_action_log (
+  id uuid primary key default gen_random_uuid(),
+  admin_id uuid not null references auth.users(id) on delete cascade,
+  target_user_id uuid not null references auth.users(id) on delete cascade,
+  action_type text not null check (action_type in ('suspend', 'ban', 'ip_ban', 'lift_suspension', 'lift_ban', 'assign_role')),
+  reason text,
+  metadata jsonb,
+  created_at timestamptz default now()
+);
+
+-- Enable RLS for admin_action_log
+alter table admin_action_log enable row level security;
+
+-- Only admins can read action logs
+create policy "Admins can read action logs"
+  on admin_action_log for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from profiles
+      where profiles.id = auth.uid()
+      and profiles.role in ('owner', 'admin')
+    )
+  );
+
+-- Only admins can insert action logs
+create policy "Admins can insert action logs"
+  on admin_action_log for insert
+  to authenticated
+  with check (
+    exists (
+      select 1
+      from profiles
+      where profiles.id = auth.uid()
+      and profiles.role in ('owner', 'admin')
+    )
+  );
+
+-- Index for faster lookups
+create index if not exists admin_action_log_admin_id_idx on admin_action_log(admin_id);
+create index if not exists admin_action_log_target_user_id_idx on admin_action_log(target_user_id);
+create index if not exists admin_action_log_created_at_idx on admin_action_log(created_at desc);
+
+-- Set Drew's account to owner role
+do $$
+begin
+  update profiles
+  set role = 'owner'
+  where email = 'drewnegron95@gmail.com';
+end $$;
+
 alter table notifications
   add column if not exists listing_type text;
 

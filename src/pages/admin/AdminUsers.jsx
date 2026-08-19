@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Loader2, ShieldOff, ShieldBan, ShieldCheck, Users, BadgeCheck } from 'lucide-react';
+import { Loader2, ShieldOff, ShieldBan, ShieldCheck, Users, BadgeCheck, Ban, UserX } from 'lucide-react';
 import { adminVerifyLandlord, getAdminUsers, liftSuspension, suspendUser } from '../../lib/adminApi.js';
 import { supabase } from '../../lib/supabase.js';
+import { useAuth } from '../../lib/auth.jsx';
 import KebabMenu from '../../components/KebabMenu.jsx';
 import AdminDetailModal from '../../components/AdminDetailModal.jsx';
 
 export default function AdminUsers() {
+  const { isAdmin, isOwner, user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,6 +17,9 @@ export default function AdminUsers() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [nameHistory, setNameHistory] = useState([]);
   const [loadingNameHistory, setLoadingNameHistory] = useState(false);
+  const [moderationReason, setModerationReason] = useState('');
+  const [moderationAction, setModerationAction] = useState(null);
+  const [processingModeration, setProcessingModeration] = useState(false);
 
   // Check if user is online (active within last 5 minutes)
   function isOnline(lastActiveAt) {
@@ -78,19 +83,52 @@ export default function AdminUsers() {
 
   async function handleSuspend(userId, actionType) {
     if (!reason.trim()) {
-      setError('Please enter a reason.');
+      setError('Please provide a reason for this action.');
       return;
     }
     setActionUserId(userId);
-    setError('');
     try {
-      await suspendUser(userId, reason.trim(), actionType);
-      setReason('');
+      await suspendUser({ userId, actionType, reason });
       await loadUsers();
+      setReason('');
+      setActionUserId('');
+      setSelectedUser(null);
     } catch (err) {
       setError(err.message);
-    } finally {
       setActionUserId('');
+    }
+  }
+
+  async function handleModerationAction(actionType) {
+    if (!selectedUser) return;
+    if (!moderationReason.trim()) {
+      setError('Please provide a reason for this action.');
+      return;
+    }
+
+    setProcessingModeration(true);
+    try {
+      const { error } = await supabase
+        .from('admin_action_log')
+        .insert({
+          admin_id: currentUser.id,
+          target_user_id: selectedUser.id,
+          action_type: actionType,
+          reason: moderationReason,
+          metadata: { target_name: selectedUser.name },
+        });
+
+      if (error) throw error;
+
+      // For now, just log the action. Actual suspension/banning logic would be implemented here
+      setModerationAction(null);
+      setModerationReason('');
+      setSelectedUser(null);
+      await loadUsers();
+    } catch (err) {
+      setError(err.message || 'Failed to log moderation action.');
+    } finally {
+      setProcessingModeration(false);
     }
   }
 
@@ -310,6 +348,73 @@ export default function AdminUsers() {
                     </ul>
                   )}
                 </span>
+              </div>
+            )}
+            {isAdmin && (
+              <div className="admin-moderation-section">
+                <h3>Moderation Actions</h3>
+                <div className="admin-moderation-buttons">
+                  <button
+                    type="button"
+                    className="admin-moderation-btn suspend"
+                    onClick={() => setModerationAction('suspend')}
+                    disabled={processingModeration}
+                  >
+                    <ShieldBan size={16} />
+                    Suspend
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-moderation-btn ban"
+                    onClick={() => setModerationAction('ban')}
+                    disabled={processingModeration}
+                  >
+                    <Ban size={16} />
+                    Ban
+                  </button>
+                  {isOwner && (
+                    <button
+                      type="button"
+                      className="admin-moderation-btn ip-ban"
+                      onClick={() => setModerationAction('ip_ban')}
+                      disabled={processingModeration}
+                    >
+                      <UserX size={16} />
+                      IP Ban
+                    </button>
+                  )}
+                </div>
+                {moderationAction && (
+                  <div className="admin-moderation-form">
+                    <textarea
+                      placeholder="Reason for this action..."
+                      value={moderationReason}
+                      onChange={(e) => setModerationReason(e.target.value)}
+                      className="admin-moderation-textarea"
+                    />
+                    <div className="admin-moderation-actions">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => {
+                          setModerationAction(null);
+                          setModerationReason('');
+                        }}
+                        disabled={processingModeration}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        className="primary-button danger"
+                        onClick={() => handleModerationAction(moderationAction)}
+                        disabled={processingModeration || !moderationReason.trim()}
+                      >
+                        {processingModeration ? 'Processing...' : `Confirm ${moderationAction.replace('_', ' ')}`}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </>
