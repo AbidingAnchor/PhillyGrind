@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Briefcase, MapPin, Calendar, Star, Heart, MessageCircle, Share2 } from 'lucide-react';
+import { Briefcase, MapPin, Calendar, Star, Heart, MessageCircle, Share } from 'lucide-react';
 import ListingCard from '../components/ListingCard.jsx';
 import StarRating from '../components/StarRating.jsx';
 import ChatModal from '../components/ChatModal.jsx';
@@ -690,7 +690,7 @@ function Profile() {
                                 </Link>
                                 <div className="feed-post-action-divider"></div>
                                 <Link to={`/community/post/${post.id}`} className="feed-post-action-btn">
-                                  <Share2 size={18} />
+                                  <Share size={18} />
                                   <span>Share</span>
                                 </Link>
                               </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft, Search } from 'lucide-react';
+import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft, Search, Share } from 'lucide-react';
 import {
   getCommunityPosts,
   getCommunityComments,
@@ -1238,7 +1238,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
             onClick={handleShare}
             title="Share post"
           >
-            <Forward size={16} />
+            <Share size={16} />
           </button>
         </div>
       ) : (
@@ -1269,7 +1269,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
               onClick={handleShare}
               title="Share post"
             >
-              <Forward size={18} />
+              <Share size={18} />
             </button>
           </div>
         </>
