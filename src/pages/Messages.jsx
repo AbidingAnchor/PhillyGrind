@@ -12,7 +12,7 @@ function Messages() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
     setLoading(true);
     setError('');
@@ -21,7 +21,7 @@ function Messages() {
       .then(setConversations)
       .catch((err) => setError(err.message || 'Could not load conversations.'))
       .finally(() => setLoading(false));
-  }, [user]);
+  }, [user?.id]);
 
   return (
     <section className="page-section">

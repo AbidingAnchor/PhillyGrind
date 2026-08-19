@@ -33,7 +33,6 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (profile) {
-      setProfile(profile);
       setLoading(false);
       // Show onboarding tour if not completed
       if (!profile.onboarding_complete) {
