@@ -10946,15 +10946,47 @@ body {
   color: #fff;
   border: 1px solid rgba(255,255,255,0.12);
   padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  margin-right: 12px;
+  border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s ease;
 }
 .profile-editor-file-input::file-selector-button:hover {
   background: rgba(255,255,255,0.14);
+}
+
+.profile-photo-upload-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-photo-upload-wrapper .profile-editor-file-input {
+  display: none;
+}
+
+.profile-photo-upload-button {
+  background: #22c55e;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  display: inline-block;
+  text-align: center;
+}
+
+.profile-photo-upload-button:hover {
+  background: #16a34a;
+}
+
+[data-theme="dark"] .profile-photo-upload-button {
+  background: #22c55e;
+  color: #fff;
+}
+
+[data-theme="dark"] .profile-photo-upload-button:hover {
+  background: #16a34a;
 }
 
 .profile-editor-textarea {

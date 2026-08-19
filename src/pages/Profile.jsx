@@ -98,7 +98,7 @@ function Profile() {
   const [marketplaceListings, setMarketplaceListings] = useState([]);
   const [marketplaceOrders, setMarketplaceOrders] = useState([]);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ bio: '', skills: [], availability: '', neighborhoods: [], profile_tags: [], accent_color: '#22c55e', neighborhood: '' });
+  const [form, setForm] = useState({ name: '', bio: '', skills: [], availability: '', neighborhoods: [], profile_tags: [], accent_color: '#22c55e', neighborhood: '' });
   const [profileStatus, setProfileStatus] = useState('');
   const [saving, setSaving] = useState(false);
   const [renewingBoostId, setRenewingBoostId] = useState('');
@@ -139,6 +139,7 @@ function Profile() {
         setProfileData(nextProfileData);
         setListings(nextListings);
         setForm({
+          name: nextProfileData.profile?.name || '',
           bio: nextProfileData.profile?.bio || '',
           skills: nextProfileData.profile?.skills || [],
           availability: nextProfileData.profile?.availability || '',
@@ -264,6 +265,7 @@ function Profile() {
 
     try {
       const nextProfile = await updateProfile({
+        name: form.name,
         bio: form.bio,
         skills: form.skills,
         availability: form.availability,
@@ -899,8 +901,18 @@ function Profile() {
                       </label>
                     )}
                     <label>
+                      Display Name
+                      <input name="name" value={form.name} onChange={updateField} className="profile-editor-input" placeholder="Your public name shown on posts and listings" />
+                      <span className="detail-note">This is the name shown publicly across the platform.</span>
+                    </label>
+                    <label>
                       Profile photo
-                      <input type="file" accept="image/jpeg,image/png" onChange={handleAvatarUpload} className="profile-editor-file-input" />
+                      <div className="profile-photo-upload-wrapper">
+                        <input type="file" accept="image/jpeg,image/png" onChange={handleAvatarUpload} className="profile-editor-file-input" id="avatar-upload" />
+                        <label htmlFor="avatar-upload" className="profile-photo-upload-button">
+                          Choose Photo
+                        </label>
+                      </div>
                       <span className="detail-note">JPG or PNG, 2MB max. Publicly visible on your profile.</span>
                     </label>
                     <label>

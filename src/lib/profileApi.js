@@ -13,7 +13,7 @@ const ALLOWED_RESUME_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
 
-export async function updateProfile({ bio, skills, availability, neighborhoods, profile_tags, accent_color }) {
+export async function updateProfile({ name, bio, skills, availability, neighborhoods, profile_tags, accent_color, neighborhood }) {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
   }
@@ -26,12 +26,14 @@ export async function updateProfile({ bio, skills, availability, neighborhoods, 
   const { data, error } = await supabase
     .from('profiles')
     .update({
+      name,
       bio,
       skills,
       availability,
       neighborhoods,
       profile_tags,
       accent_color,
+      neighborhood,
     })
     .eq('id', userData.user.id)
     .select(profileSelect)
