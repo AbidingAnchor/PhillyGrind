@@ -241,7 +241,10 @@ function GrindBot() {
     const trimmed = input.trim();
     if (!trimmed || sending) return;
 
-    const nextMessages = [...messages, { role: 'user', content: trimmed }];
+    const newUserMessage = { role: 'user', content: trimmed };
+    const nextMessages = [...messages, newUserMessage];
+    const payloadMessages = nextMessages.filter((message) => message.role !== 'system');
+    
     setMessages(nextMessages);
     setInput('');
     setStatus('');
@@ -256,7 +259,7 @@ function GrindBot() {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          messages: nextMessages.filter((message) => message.role !== 'system'),
+          messages: payloadMessages,
         }),
       });
 
