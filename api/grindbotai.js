@@ -261,22 +261,26 @@ export default async function handler(req, res) {
     ];
 
     async function callGroq(messages, includeTools = true) {
+      const requestBody = {
+        model: 'openai/gpt-oss-120b',
+        temperature: 0.5,
+        max_tokens: 1000,
+        messages,
+        ...(includeTools ? { tools } : {}),
+      };
+      console.log('[GrindBot API] Sending to Groq:', JSON.stringify(requestBody, null, 2));
+
       const response = await fetch(GROQ_CHAT_URL, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: 'openai/gpt-oss-120b',
-          temperature: 0.5,
-          max_tokens: 1000,
-          messages,
-          ...(includeTools ? { tools } : {}),
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const payload = await response.json();
+      console.log('[GrindBot API] Received from Groq:', JSON.stringify(payload, null, 2));
       if (!response.ok) {
         console.error('[GrindBot API] Groq API error:', payload);
         throw new Error(payload.error?.message || 'GrindBot could not answer right now.');
