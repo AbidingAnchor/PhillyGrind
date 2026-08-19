@@ -1,9 +1,10 @@
 import { X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 export default function AdminDetailModal({ isOpen, onClose, title, children }) {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="admin-modal-overlay" onClick={onClose}>
       <div className="admin-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="admin-modal-header">
@@ -16,6 +17,7 @@ export default function AdminDetailModal({ isOpen, onClose, title, children }) {
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
