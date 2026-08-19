@@ -201,7 +201,7 @@ async function callOpenAI(systemPrompt, userMessage, model = 'gpt-4o-mini', temp
   return data.choices[0].message.content;
 }
 
-async function callGroq(systemPrompt, userMessage, model = 'llama-3.3-70b-versatile', temperature = 0.3) {
+async function callGroq(systemPrompt, userMessage, model = 'openai/gpt-oss-120b', temperature = 0.3) {
   const apiKey = process.env.GROQ_API_KEY;
   
   if (!apiKey) {
@@ -278,7 +278,7 @@ export default async function handler(req, res) {
         result = await callGroq(
           rule.systemPrompt,
           content,
-          'llama-3.3-70b-versatile',
+          'openai/gpt-oss-120b',
           rule.temperature
         );
         usedProvider = 'groq';
