@@ -106,6 +106,7 @@ function App() {
         left: styles.left,
         right: styles.right,
         bottom: styles.bottom,
+        backgroundColor: styles.backgroundColor,
         className: menuEl.className,
         offsetParent: offsetParentInfo,
         boundingClientRect: {
@@ -116,6 +117,16 @@ function App() {
           right: rect.right,
           bottom: rect.bottom
         },
+        childElements: Array.from(menuEl.children).map(child => ({
+          tagName: child.tagName,
+          className: child.className,
+          display: window.getComputedStyle(child).display,
+          visibility: window.getComputedStyle(child).visibility,
+          opacity: window.getComputedStyle(child).opacity,
+          height: window.getComputedStyle(child).height,
+          width: window.getComputedStyle(child).width,
+          childCount: child.children.length
+        })),
         parentAppShell: appShellStyles ? {
           overflowX: appShellStyles.overflowX,
           overflowY: appShellStyles.overflowY,
