@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { hasSupabaseConfig, supabase } from './supabase.js';
+import OnboardingTour from '../components/OnboardingTour.jsx';
 
 const AuthContext = createContext(null);
 const profileFields = 'id,name,email,avatar_url,resume_url,resume_path,stripe_account_id,stripe_onboarding_complete,onboarding_complete,tos_agreed_at,two_factor_enabled,identity_verified,verification_status,stripe_identity_session_id,banner_url,profile_tags,accent_color,created_at,role';
@@ -17,8 +18,29 @@ function withTimeout(promise, milliseconds, timeoutValue) {
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
+  const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+  };
+
+  const handleOnboardingSkip = () => {
+    setShowOnboarding(false);
+  };
+
+  useEffect(() => {
+    if (profile) {
+      setProfile(profile);
+      setLoading(false);
+      // Show onboarding tour if not completed
+      if (!profile.onboarding_complete) {
+        setShowOnboarding(true);
+      }
+    }
+  }, [profile]);
 
   useEffect(() => {
     if (!hasSupabaseConfig) {
@@ -209,7 +231,17 @@ export function AuthProvider({ children }) {
     );
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {showOnboarding && (
+        <OnboardingTour
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+        />
+      )}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
