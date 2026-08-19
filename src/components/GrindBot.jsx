@@ -238,12 +238,14 @@ function GrindBot() {
   }
 
   async function handleSubmit(event) {
+    console.log('[DEBUG] handleSubmit CALLED - function entry');
     event.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || sending) return;
 
     // Guard against session not being ready yet (first-message bug)
     if (!session?.access_token) {
+      console.log('[DEBUG] Session not ready, returning early');
       setStatus('Not logged in. Please refresh and try again.');
       return;
     }
@@ -307,6 +309,7 @@ function GrindBot() {
           <div className="grindbot-thread" ref={threadRef}>
             {messages.map((message, index) => {
               const showFindWork = index === 0 && message.role === 'assistant' && matchStep === 'idle';
+              console.log('[DEBUG] Rendering message:', index, message.role, message.content.substring(0, 50));
 
               return (
                 <article key={`${message.role}-${index}`} className={message.role === 'user' ? 'grindbot-message user' : 'grindbot-message'}>
