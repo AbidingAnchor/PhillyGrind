@@ -54,6 +54,9 @@ function App() {
         position: window.getComputedStyle(offsetParent).position
       } : { tagName: 'null', className: 'null', position: 'null' };
       
+      // Check actual rendered dimensions
+      const rect = menuEl.getBoundingClientRect();
+      
       // Check parent chain for stacking context creators
       let parent = menuEl.parentElement;
       const stackingContextParents = [];
@@ -95,6 +98,8 @@ function App() {
         transform: styles.transform,
         height: styles.height,
         maxHeight: styles.maxHeight,
+        width: styles.width,
+        maxWidth: styles.maxWidth,
         zIndex: styles.zIndex,
         position: styles.position,
         top: styles.top,
@@ -103,6 +108,14 @@ function App() {
         bottom: styles.bottom,
         className: menuEl.className,
         offsetParent: offsetParentInfo,
+        boundingClientRect: {
+          width: rect.width,
+          height: rect.height,
+          top: rect.top,
+          left: rect.left,
+          right: rect.right,
+          bottom: rect.bottom
+        },
         parentAppShell: appShellStyles ? {
           overflowX: appShellStyles.overflowX,
           overflowY: appShellStyles.overflowY,
