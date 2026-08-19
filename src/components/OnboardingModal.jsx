@@ -44,6 +44,8 @@ function OnboardingModal() {
       );
       const data = await response.json();
 
+      console.log('[DEBUG] Nominatim reverse geocoding response:', data);
+
       if (!data || data.error) {
         setStatus('Could not determine your location. Please search manually.');
         setLocating(false);
@@ -62,6 +64,9 @@ function OnboardingModal() {
         address.county,
       ].filter(Boolean);
 
+      console.log('[DEBUG] Possible names from address:', possibleNames);
+      console.log('[DEBUG] HOUSING_NEIGHBORHOODS list:', HOUSING_NEIGHBORHOODS);
+
       // Try to match against our neighborhood list
       let matchedNeighborhood = null;
       for (const name of possibleNames) {
@@ -70,9 +75,12 @@ function OnboardingModal() {
         );
         if (match) {
           matchedNeighborhood = match;
+          console.log('[DEBUG] Matched neighborhood:', match, 'from name:', name);
           break;
         }
       }
+
+      console.log('[DEBUG] Final matched neighborhood:', matchedNeighborhood);
 
       if (matchedNeighborhood) {
         setSuggestedNeighborhood(matchedNeighborhood);
