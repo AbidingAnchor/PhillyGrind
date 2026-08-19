@@ -113,6 +113,48 @@ export async function getResumeUrl(resumePath) {
   return data.signedUrl;
 }
 
+export async function removeResume() {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw new Error('Please log in before removing your resume.');
+  }
+
+  const { data: currentProfile, error: fetchError } = await supabase
+    .from('profiles')
+    .select('resume_path')
+    .eq('id', userData.user.id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  if (!currentProfile?.resume_path) {
+    throw new Error('No resume to remove.');
+  }
+
+  // Remove file from storage
+  const { error: storageError } = await supabase.storage
+    .from('resumes')
+    .remove([currentProfile.resume_path]);
+
+  if (storageError) throw storageError;
+
+  // Clear resume path from profile
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ resume_path: null, resume_url: null })
+    .eq('id', userData.user.id)
+    .select(profileSelect)
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
+
 export async function uploadAvatar(file) {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');

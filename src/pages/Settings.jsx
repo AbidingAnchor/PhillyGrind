@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { CreditCard, Shield, BadgeCheck, Palette, User, Bell, FileText } from 'lucide-react';
 import { sendTwoFactorCode, toggleTwoFactorAuth, verifyTwoFactorCode } from '../lib/twoFactorApi.js';
 import { createConnectAccount } from '../lib/ordersApi.js';
-import { checkConnectStatus, getResumeUrl, uploadResume } from '../lib/profileApi.js';
+import { checkConnectStatus, getResumeUrl, uploadResume, removeResume } from '../lib/profileApi.js';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
@@ -156,14 +156,30 @@ function Settings() {
         .from('profiles')
         .update({ show_available_now: !showAvailableNow })
         .eq('id', user.id);
-      
+
       if (error) throw error;
-      
+
       setShowAvailableNow(!showAvailableNow);
       setProfileStatus(`Available Now badge ${!showAvailableNow ? 'enabled' : 'disabled'}.`);
       await refreshProfile();
     } catch (err) {
       setProfileStatus(err.message || 'Could not update availability settings.');
+    }
+  }
+
+  async function handleRemoveResume() {
+    if (!confirm('Are you sure you want to remove your resume? This action cannot be undone.')) {
+      return;
+    }
+
+    setProfileStatus('');
+    try {
+      await removeResume();
+      setResumeUrl('');
+      setProfileStatus('Resume removed successfully.');
+      await refreshProfile();
+    } catch (err) {
+      setProfileStatus(err.message || 'Could not remove resume.');
     }
   }
 
@@ -400,6 +416,9 @@ function Settings() {
                 Replace
                 <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleResumeUpload} hidden />
               </label>
+              <button className="danger-button" type="button" onClick={handleRemoveResume}>
+                Remove
+              </button>
             </div>
           ) : (
             <label className="primary-button resume-upload-button">
