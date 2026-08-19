@@ -7251,6 +7251,30 @@ body {
   text-align: center;
   max-width: 500px;
   padding: 40px;
+  max-height: 100vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 640px) {
+  .onboarding-welcome-content {
+    padding: 24px 20px;
+    max-height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .onboarding-neighborhood-list {
+    max-height: 200px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .onboarding-primary-button {
+    margin-top: 16px;
+    flex-shrink: 0;
+  }
 }
 
 .onboarding-wordmark {
