@@ -2346,6 +2346,7 @@ a.bid-card {
 
   .site-nav.open {
     display: flex !important;
+    z-index: 999999 !important;
   }
 
   .auth-links,
