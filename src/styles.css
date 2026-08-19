@@ -733,19 +733,21 @@ main {
   position: absolute;
   inset: 0;
   color: transparent;
-  -webkit-mask-image: linear-gradient(100deg, transparent 0%, transparent 42%, black 50%, transparent 58%, transparent 100%);
-  mask-image: linear-gradient(100deg, transparent 0%, transparent 42%, black 50%, transparent 58%, transparent 100%);
+  -webkit-mask-image: linear-gradient(100deg, transparent 0%, transparent 35%, black 50%, transparent 65%, transparent 100%);
+  mask-image: linear-gradient(100deg, transparent 0%, transparent 35%, black 50%, transparent 65%, transparent 100%);
   -webkit-mask-size: 300% 100%;
   mask-size: 300% 100%;
   -webkit-mask-position: 0% 0%;
   mask-position: 0% 0%;
-  animation: shimmer-glow 2.6s linear infinite;
-  text-shadow: 0 0 16px rgba(186,255,217,1), 0 0 30px rgba(74,222,128,0.85);
+  animation: shimmer-glow 8s ease-in-out infinite;
+  text-shadow: 0 0 12px rgba(186,255,217,0.6), 0 0 20px rgba(74,222,128,0.4);
 }
 .auth-wordmark-shine span { color: transparent; }
 
 @keyframes shimmer-glow {
-  to { -webkit-mask-position: 300% 0%; mask-position: 300% 0%; }
+  0%, 100% { -webkit-mask-position: 0% 0%; mask-position: 0% 0%; }
+  40% { -webkit-mask-position: 300% 0%; mask-position: 300% 0%; }
+  100% { -webkit-mask-position: 300% 0%; mask-position: 300% 0%; }
 }
 
 .auth-tagline {
