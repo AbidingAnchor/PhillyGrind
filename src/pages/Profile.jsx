@@ -679,17 +679,17 @@ function Profile() {
                                 <span className="feed-post-like-count">{post.like_count || 0}</span>
                               </div>
                               <div className="feed-post-action-bar">
-                                <Link to={`/community/post/${post.id}`} className="feed-post-action-button">
+                                <Link to={`/community/post/${post.id}`} className="feed-post-action-btn">
                                   <Heart size={18} />
                                   <span>React</span>
                                 </Link>
                                 <div className="feed-post-action-divider"></div>
-                                <Link to={`/community/post/${post.id}`} className="feed-post-action-button">
+                                <Link to={`/community/post/${post.id}`} className="feed-post-action-btn">
                                   <MessageCircle size={18} />
                                   <span>Comment</span>
                                 </Link>
                                 <div className="feed-post-action-divider"></div>
-                                <Link to={`/community/post/${post.id}`} className="feed-post-action-button">
+                                <Link to={`/community/post/${post.id}`} className="feed-post-action-btn">
                                   <Share2 size={18} />
                                   <span>Share</span>
                                 </Link>

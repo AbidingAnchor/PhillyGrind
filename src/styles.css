@@ -9500,6 +9500,71 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overflow: hidden;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .profile-community-posts {
+    overflow-x: hidden;
+  }
+
+  .profile-post-card {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .feed-post-header {
+    flex-wrap: wrap;
+  }
+
+  .feed-post-author-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .feed-post-content {
+    overflow: hidden;
+    word-wrap: break-word;
+  }
+
+  .feed-post-actions {
+    flex-wrap: wrap;
+  }
+
+  .feed-post-action-bar {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .profile-intro-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .profile-intro-content {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .profile-intro-value {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  .skills-list {
+    flex-wrap: wrap;
+  }
+
+  .profile-pill-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .profile-section-card {
+    overflow: hidden;
+    width: 100%;
+  }
 }
 
 .profile-tabs {
@@ -11591,7 +11656,7 @@ body {
 
 .feed-post-action-btn.liked[data-reaction='like'],
 .feed-post-photo-action-btn.liked[data-reaction='like'] {
-  color: #1877f2;
+  color: #22c55e;
 }
 
 .feed-post-action-btn.liked[data-reaction='love'],
