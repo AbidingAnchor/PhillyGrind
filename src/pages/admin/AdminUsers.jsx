@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, ShieldOff, ShieldBan, ShieldCheck, Users, BadgeCheck } from 'lucide-react';
 import { adminVerifyLandlord, getAdminUsers, liftSuspension, suspendUser } from '../../lib/adminApi.js';
+import { supabase } from '../../lib/supabase.js';
 import KebabMenu from '../../components/KebabMenu.jsx';
 import AdminDetailModal from '../../components/AdminDetailModal.jsx';
 
@@ -12,6 +13,8 @@ export default function AdminUsers() {
   const [reason, setReason] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [nameHistory, setNameHistory] = useState([]);
+  const [loadingNameHistory, setLoadingNameHistory] = useState(false);
 
   // Check if user is online (active within last 5 minutes)
   function isOnline(lastActiveAt) {
@@ -35,6 +38,35 @@ export default function AdminUsers() {
   useEffect(() => {
     loadUsers();
   }, []);
+
+  // Load name history when a user is selected
+  useEffect(() => {
+    async function loadNameHistory() {
+      if (!selectedUser) {
+        setNameHistory([]);
+        return;
+      }
+
+      setLoadingNameHistory(true);
+      try {
+        const { data, error } = await supabase
+          .from('name_history')
+          .select('*')
+          .eq('user_id', selectedUser.id)
+          .order('changed_at', { ascending: false });
+
+        if (error) throw error;
+        setNameHistory(data || []);
+      } catch (err) {
+        console.error('Failed to load name history:', err);
+        setNameHistory([]);
+      } finally {
+        setLoadingNameHistory(false);
+      }
+    }
+
+    loadNameHistory();
+  }, [selectedUser]);
 
   const filteredUsers = users.filter(user => {
     const query = searchQuery.toLowerCase();
@@ -127,6 +159,7 @@ export default function AdminUsers() {
             <thead>
               <tr>
                 <th>Name</th>
+                <th>Account Ref</th>
                 <th>Email</th>
                 <th>Joined</th>
                 <th>Listings</th>
@@ -148,6 +181,7 @@ export default function AdminUsers() {
                     style={{ cursor: 'pointer' }}
                   >
                     <td>{user.name}</td>
+                    <td><code className="account-ref-badge">{user.account_reference || 'N/A'}</code></td>
                     <td>{user.email}</td>
                     <td>{new Date(user.created_at).toLocaleDateString()}</td>
                     <td>{user.listingCount}</td>
@@ -215,6 +249,10 @@ export default function AdminUsers() {
         {selectedUser && (
           <>
             <div className="admin-detail-row">
+              <span className="admin-detail-label">Account Reference</span>
+              <span className="admin-detail-value"><code className="account-ref-badge">{selectedUser.account_reference || 'N/A'}</code></span>
+            </div>
+            <div className="admin-detail-row">
               <span className="admin-detail-label">Name</span>
               <span className="admin-detail-value">{selectedUser.name}</span>
             </div>
@@ -255,6 +293,24 @@ export default function AdminUsers() {
                   <span className="admin-detail-value">{new Date(selectedUser.suspension.created_at).toLocaleString()}</span>
                 </div>
               </>
+            )}
+            {nameHistory.length > 0 && (
+              <div className="admin-detail-row">
+                <span className="admin-detail-label">Previously known as</span>
+                <span className="admin-detail-value">
+                  {loadingNameHistory ? (
+                    'Loading...'
+                  ) : (
+                    <ul className="name-history-list">
+                      {nameHistory.map((entry) => (
+                        <li key={entry.id}>
+                          {entry.old_name} → {entry.new_name} ({new Date(entry.changed_at).toLocaleDateString()})
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </span>
+              </div>
             )}
           </>
         )}

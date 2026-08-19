@@ -6,7 +6,7 @@ const bannerExtensionFor = (file) => {
   if (file.type === 'image/webp') return 'webp';
   return 'jpg';
 };
-const profileSelect = 'id,name,bio,skills,availability,neighborhoods,resume_path,resume_url,avatar_url,banner_url,profile_tags,accent_color,created_at';
+const profileSelect = 'id,name,bio,skills,availability,neighborhoods,resume_path,resume_url,avatar_url,banner_url,profile_tags,accent_color,created_at,account_reference';
 const ALLOWED_RESUME_TYPES = [
   'application/pdf',
   'application/msword',
@@ -21,6 +21,26 @@ export async function updateProfile({ name, bio, skills, availability, neighborh
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) {
     throw new Error('Please log in before editing your profile.');
+  }
+
+  // Get current profile to check if name is changing
+  const { data: currentProfile, error: fetchError } = await supabase
+    .from('profiles')
+    .select('name')
+    .eq('id', userData.user.id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  // Log name change if different
+  if (currentProfile && currentProfile.name !== name) {
+    await supabase
+      .from('name_history')
+      .insert({
+        user_id: userData.user.id,
+        old_name: currentProfile.name,
+        new_name: name,
+      });
   }
 
   const { data, error } = await supabase

@@ -7015,6 +7015,37 @@ body {
   color: #fca5a5;
 }
 
+.account-ref-badge {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .account-ref-badge {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+}
+
+.name-history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.name-history-list li {
+  padding: 4px 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+[data-theme="dark"] .name-history-list li {
+  color: #94a3b8;
+}
+
 .admin-status-badge.danger {
   background: #fef2f2;
   color: #dc2626;

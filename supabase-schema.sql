@@ -227,6 +227,55 @@ alter table profiles
 alter table profiles
   add column if not exists last_active_at timestamptz;
 
+alter table profiles
+  add column if not exists account_reference text;
+
+-- Create index for faster lookups by account reference
+create index if not exists profiles_account_reference_idx on profiles(account_reference);
+
+-- Name History Table for tracking display name changes
+create table if not exists name_history (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  old_name text not null,
+  new_name text not null,
+  changed_at timestamptz default now()
+);
+
+-- Enable RLS for name_history
+alter table name_history enable row level security;
+
+-- Only admins can read name history
+create policy "Admins can read name history"
+  on name_history for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from profiles
+      where profiles.id = auth.uid()
+      and profiles.email = 'drewnegron95@gmail.com'
+    )
+  );
+
+-- System can insert name history (via triggers or backend)
+create policy "System can insert name history"
+  on name_history for insert
+  to authenticated
+  with check (true);
+
+-- Index for faster lookups by user_id
+create index if not exists name_history_user_id_idx on name_history(user_id);
+create index if not exists name_history_changed_at_idx on name_history(changed_at desc);
+
+-- Generate account references for existing users (PG-XXXXXXX format using first 7 chars of UUID)
+do $$
+begin
+  update profiles
+  set account_reference = 'PG-' || substring(id::text, 1, 7)
+  where account_reference is null;
+end $$;
+
 alter table notifications
   add column if not exists listing_type text;
 

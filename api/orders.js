@@ -191,7 +191,7 @@ async function handleAdminUsers(req, res) {
 
   const { data: profiles, error } = await supabaseAdmin
     .from('profiles')
-    .select('id,name,email,created_at,landlord_verified,landlord_warning,last_active_at')
+    .select('id,name,email,created_at,landlord_verified,landlord_warning,last_active_at,account_reference')
     .order('created_at', { ascending: false });
 
   if (error) throw error;
