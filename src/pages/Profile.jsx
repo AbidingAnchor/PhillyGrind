@@ -280,7 +280,13 @@ function Profile() {
       } : current);
       setEditing(false);
       setProfileStatus('Profile updated.');
-      await refreshProfile();
+      const refreshedProfile = await refreshProfile();
+      if (refreshedProfile) {
+        setProfileData((current) => current ? {
+          ...current,
+          profile: refreshedProfile,
+        } : current);
+      }
     } catch (err) {
       setProfileStatus(err.message || 'Could not update profile.');
     } finally {
