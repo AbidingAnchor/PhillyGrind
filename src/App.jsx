@@ -139,6 +139,17 @@ function App() {
         stackingContextParents,
         stripeIframe: stripeInfo
       });
+      
+      console.log('[MENU DEBUG] childElements expanded:', JSON.stringify(Array.from(menuEl.children).map(child => ({
+        tagName: child.tagName,
+        className: child.className,
+        display: window.getComputedStyle(child).display,
+        visibility: window.getComputedStyle(child).visibility,
+        opacity: window.getComputedStyle(child).opacity,
+        height: window.getComputedStyle(child).height,
+        width: window.getComputedStyle(child).width,
+        childCount: child.children.length
+      })), null, 2));
     }
   }, [open]);
 
