@@ -38,6 +38,25 @@ function App() {
     setOpen(false);
   }, [location.pathname]);
 
+  // Diagnostic to log computed styles of menu element on state change
+  useEffect(() => {
+    const menuEl = document.querySelector('.site-nav');
+    if (menuEl) {
+      const styles = window.getComputedStyle(menuEl);
+      console.log('[MENU DEBUG] isMenuOpen:', open, {
+        display: styles.display,
+        visibility: styles.visibility,
+        opacity: styles.opacity,
+        transform: styles.transform,
+        height: styles.height,
+        maxHeight: styles.maxHeight,
+        zIndex: styles.zIndex,
+        position: styles.position,
+        className: menuEl.className
+      });
+    }
+  }, [open]);
+
   // Update last_active_at timestamp when logged-in user navigates
   useEffect(() => {
     if (isLoggedIn && user) {
