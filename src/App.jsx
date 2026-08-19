@@ -46,6 +46,40 @@ function App() {
       const appShell = document.querySelector('.app-shell');
       const appShellStyles = appShell ? window.getComputedStyle(appShell) : null;
       
+      // Check parent chain for stacking context creators
+      let parent = menuEl.parentElement;
+      const stackingContextParents = [];
+      while (parent && parent !== document.body) {
+        const parentStyles = window.getComputedStyle(parent);
+        const hasTransform = parentStyles.transform !== 'none';
+        const hasFilter = parentStyles.filter !== 'none';
+        const hasWillChange = parentStyles.willChange !== 'auto';
+        
+        if (hasTransform || hasFilter || hasWillChange) {
+          stackingContextParents.push({
+            tagName: parent.tagName,
+            className: parent.className,
+            transform: hasTransform ? parentStyles.transform : 'none',
+            filter: hasFilter ? parentStyles.filter : 'none',
+            willChange: hasWillChange ? parentStyles.willChange : 'auto',
+            zIndex: parentStyles.zIndex
+          });
+        }
+        parent = parent.parentElement;
+      }
+      
+      // Check for Stripe iframe
+      const stripeIframe = document.querySelector('iframe[src*="stripe"]');
+      const stripeInfo = stripeIframe ? {
+        exists: true,
+        position: window.getComputedStyle(stripeIframe).position,
+        zIndex: window.getComputedStyle(stripeIframe).zIndex,
+        top: window.getComputedStyle(stripeIframe).top,
+        left: window.getComputedStyle(stripeIframe).left,
+        right: window.getComputedStyle(stripeIframe).right,
+        bottom: window.getComputedStyle(stripeIframe).bottom
+      } : { exists: false };
+      
       console.log('[MENU DEBUG] isMenuOpen:', open, {
         display: styles.display,
         visibility: styles.visibility,
@@ -64,8 +98,13 @@ function App() {
           overflowX: appShellStyles.overflowX,
           overflowY: appShellStyles.overflowY,
           overflow: appShellStyles.overflow,
-          position: appShellStyles.position
-        } : 'not found'
+          position: appShellStyles.position,
+          transform: appShellStyles.transform,
+          filter: appShellStyles.filter,
+          willChange: appShellStyles.willChange
+        } : 'not found',
+        stackingContextParents,
+        stripeIframe: stripeInfo
       });
     }
   }, [open]);
