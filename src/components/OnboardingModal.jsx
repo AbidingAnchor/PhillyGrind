@@ -18,7 +18,6 @@ function OnboardingModal() {
   );
 
   async function handleUseLocation() {
-    alert('Use my location clicked');
     setLocating(true);
     setStatus('');
 
@@ -39,13 +38,11 @@ function OnboardingModal() {
 
       const { latitude, longitude } = position.coords;
 
-      // Use Nominatim (OpenStreetMap) for reverse geocoding
+      // Use Nominatim (OpenStreetMap) for reverse geocoding with higher zoom for neighborhood-level precision
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=12`
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=16`
       );
       const data = await response.json();
-
-      console.log('[DEBUG] Nominatim reverse geocoding response:', data);
 
       if (!data || data.error) {
         setStatus('Could not determine your location. Please search manually.');
@@ -65,9 +62,6 @@ function OnboardingModal() {
         address.county,
       ].filter(Boolean);
 
-      console.log('[DEBUG] Possible names from address:', possibleNames);
-      console.log('[DEBUG] HOUSING_NEIGHBORHOODS list:', HOUSING_NEIGHBORHOODS);
-
       // Try to match against our neighborhood list
       let matchedNeighborhood = null;
       for (const name of possibleNames) {
@@ -76,18 +70,25 @@ function OnboardingModal() {
         );
         if (match) {
           matchedNeighborhood = match;
-          console.log('[DEBUG] Matched neighborhood:', match, 'from name:', name);
           break;
         }
       }
-
-      console.log('[DEBUG] Final matched neighborhood:', matchedNeighborhood);
 
       if (matchedNeighborhood) {
         setSuggestedNeighborhood(matchedNeighborhood);
         setStatus('');
       } else {
-        setStatus('Could not match your location to our neighborhood list. Please search manually.');
+        // Check if we got a generic "Philadelphia" result
+        const isGenericPhiladelphia = possibleNames.some(name =>
+          name.toLowerCase().includes('philadelphia')
+        );
+
+        if (isGenericPhiladelphia) {
+          setStatus("We can tell you're in Philadelphia — which neighborhood?");
+          setSearchQuery(''); // Clear search to show full list
+        } else {
+          setStatus('Could not match your location to our neighborhood list. Please search manually.');
+        }
       }
     } catch (error) {
       if (error.code === 1) {
