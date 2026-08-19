@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Bot, Send, X } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../lib/auth.jsx';
 import { hasSupabaseConfig, supabase } from '../lib/supabase.js';
 
@@ -241,6 +242,12 @@ function GrindBot() {
     const trimmed = input.trim();
     if (!trimmed || sending) return;
 
+    // Guard against session not being ready yet (first-message bug)
+    if (!session?.access_token) {
+      setStatus('Not logged in. Please refresh and try again.');
+      return;
+    }
+
     console.log('[DEBUG] messages state at submit:', messages);
     console.log('[DEBUG] input value:', trimmed);
 
@@ -304,7 +311,11 @@ function GrindBot() {
               return (
                 <article key={`${message.role}-${index}`} className={message.role === 'user' ? 'grindbot-message user' : 'grindbot-message'}>
                   <span>{message.role === 'user' ? 'You' : 'GrindBot'}</span>
-                  <p>{message.content}</p>
+                  {message.role === 'assistant' ? (
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                  ) : (
+                    <p>{message.content}</p>
+                  )}
                   {showFindWork && (
                     <button className="grindbot-match-button" type="button" onClick={startMatchFlow} disabled={matching}>
                       Find me work
