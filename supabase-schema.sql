@@ -253,7 +253,7 @@ create policy "Admins can read name history"
     exists (
       select 1
       from profiles
-      where profiles.id = auth.uid()
+      where profiles.id = (select auth.uid())
       and profiles.email = 'drewnegron95@gmail.com'
     )
   );
@@ -302,7 +302,7 @@ create policy "Admins can read action logs"
     exists (
       select 1
       from profiles
-      where profiles.id = auth.uid()
+      where profiles.id = (select auth.uid())
       and profiles.role in ('owner', 'admin')
     )
   );
@@ -315,7 +315,7 @@ create policy "Admins can insert action logs"
     exists (
       select 1
       from profiles
-      where profiles.id = auth.uid()
+      where profiles.id = (select auth.uid())
       and profiles.role in ('owner', 'admin')
     )
   );
@@ -530,20 +530,20 @@ drop policy if exists "Anyone can post jobs" on jobs;
 create policy "Anyone can post jobs"
   on jobs for insert
   to authenticated
-  with check (auth.uid() = user_id);
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "Owners can update jobs" on jobs;
 create policy "Owners can update jobs"
   on jobs for update
   to authenticated
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "Owners can delete jobs" on jobs;
 create policy "Owners can delete jobs"
   on jobs for delete
   to authenticated
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 drop policy if exists "Anyone can read gigs" on gigs;
 create policy "Anyone can read gigs"
@@ -554,20 +554,20 @@ drop policy if exists "Anyone can post gigs" on gigs;
 create policy "Anyone can post gigs"
   on gigs for insert
   to authenticated
-  with check (auth.uid() = user_id);
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "Owners can update gigs" on gigs;
 create policy "Owners can update gigs"
   on gigs for update
   to authenticated
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "Owners can delete gigs" on gigs;
 create policy "Owners can delete gigs"
   on gigs for delete
   to authenticated
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 drop policy if exists "Users can read profiles" on profiles;
 create policy "Users can read profiles"
@@ -578,36 +578,45 @@ drop policy if exists "Users can update own profile" on profiles;
 create policy "Users can update own profile"
   on profiles for update
   to authenticated
-  using (auth.uid() = id)
-  with check (auth.uid() = id);
+  using ((select auth.uid()) = id)
+  with check ((select auth.uid()) = id);
 
 drop policy if exists "Users can insert own profile" on profiles;
 create policy "Users can insert own profile"
   on profiles for insert
   to authenticated
-  with check (auth.uid() = id);
+  with check ((select auth.uid()) = id);
 
 drop policy if exists "Thread members can read messages" on messages;
 create policy "Thread members can read messages"
   on messages for select
   to authenticated
-  using (auth.uid() = sender_id or auth.uid() = receiver_id);
+  using ((select auth.uid()) = sender_id or (select auth.uid()) = receiver_id);
 
 drop policy if exists "Users can send messages" on messages;
 create policy "Users can send messages"
   on messages for insert
   to authenticated
   with check (
-    auth.uid() = sender_id
+    (select auth.uid()) = sender_id
     and sender_id <> receiver_id
     and length(trim(content)) > 0
     and not exists (
-      select 1 from user_blocks
+      select 1
+      from messages
+      where listing_id = messages.listing_id
+        and sender_id = messages.sender_id
+        and created_at > now() - interval '5 minutes'
+    )
+    and not exists (
+      select 1
+      from user_blocks
       where blocker_id = receiver_id
       and blocked_user_id = sender_id
     )
     and not exists (
-      select 1 from user_blocks
+      select 1
+      from user_blocks
       where blocker_id = sender_id
       and blocked_user_id = receiver_id
     )
@@ -618,12 +627,12 @@ create policy "Anyone can read reviews"
   on reviews for select
   using (true);
 
-drop policy if exists "Authenticated users can insert reviews" on reviews;
-create policy "Authenticated users can insert reviews"
+drop policy if exists "Users can create reviews" on reviews;
+create policy "Users can create reviews"
   on reviews for insert
   to authenticated
   with check (
-    auth.uid() = reviewer_id
+    (select auth.uid()) = reviewer_id
     and reviewer_id <> reviewee_id
     and rating between 1 and 5
     and length(trim(comment)) > 0
@@ -633,41 +642,41 @@ drop policy if exists "Users can read own notifications" on notifications;
 create policy "Users can read own notifications"
   on notifications for select
   to authenticated
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 drop policy if exists "Users can update own notifications" on notifications;
 create policy "Users can update own notifications"
   on notifications for update
   to authenticated
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "Users can delete own notifications" on notifications;
 create policy "Users can delete own notifications"
   on notifications for delete
   to authenticated
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 drop policy if exists "Order members can read orders" on orders;
 create policy "Order members can read orders"
   on orders for select
   to authenticated
-  using (auth.uid() = hirer_id or auth.uid() = worker_id);
+  using ((select auth.uid()) = hirer_id or (select auth.uid()) = worker_id);
 
 drop policy if exists "Workers can mark orders complete" on orders;
 create policy "Workers can mark orders complete"
   on orders for update
   to authenticated
-  using (auth.uid() = worker_id)
-  with check (auth.uid() = worker_id);
+  using ((select auth.uid()) = worker_id)
+  with check ((select auth.uid()) = worker_id);
 
 drop policy if exists "Order members can update photo evidence" on orders;
 drop policy if exists "Workers can update photo evidence" on orders;
 create policy "Workers can update photo evidence"
   on orders for update
   to authenticated
-  using (auth.uid() = worker_id)
-  with check (auth.uid() = worker_id);
+  using ((select auth.uid()) = worker_id)
+  with check ((select auth.uid()) = worker_id);
 
 drop policy if exists "Bid participants can read bids" on bids;
 drop policy if exists "Hirers can read bids on own listings" on bids;
@@ -679,7 +688,7 @@ create policy "Hirers can read bids on own listings"
       select 1
       from gigs
       where gigs.id = bids.listing_id
-        and gigs.user_id = auth.uid()
+        and gigs.user_id = (select auth.uid())
     )
   );
 
@@ -687,14 +696,14 @@ drop policy if exists "Workers can read own bids" on bids;
 create policy "Workers can read own bids"
   on bids for select
   to authenticated
-  using (auth.uid() = worker_id);
+  using ((select auth.uid()) = worker_id);
 
 drop policy if exists "Workers can submit own bids" on bids;
 create policy "Workers can submit own bids"
   on bids for insert
   to authenticated
   with check (
-    auth.uid() = worker_id
+    (select auth.uid()) = worker_id
   );
 
 drop policy if exists "Listing owners can update bid status" on bids;
@@ -706,7 +715,7 @@ create policy "Listing owners can update bid status"
       select 1
       from gigs
       where gigs.id = bids.listing_id
-        and gigs.user_id = auth.uid()
+        and gigs.user_id = (select auth.uid())
     )
   )
   with check (
@@ -714,7 +723,7 @@ create policy "Listing owners can update bid status"
       select 1
       from gigs
       where gigs.id = bids.listing_id
-        and gigs.user_id = auth.uid()
+        and gigs.user_id = (select auth.uid())
     )
   );
 
@@ -722,7 +731,7 @@ drop policy if exists "Applicants can read own applications" on applications;
 create policy "Applicants can read own applications"
   on applications for select
   to authenticated
-  using (auth.uid() = applicant_id);
+  using ((select auth.uid()) = applicant_id);
 
 drop policy if exists "Job posters can read applications for own jobs" on applications;
 create policy "Job posters can read applications for own jobs"
@@ -733,21 +742,21 @@ create policy "Job posters can read applications for own jobs"
       select 1
       from jobs
       where jobs.id = applications.job_id
-        and jobs.user_id = auth.uid()
+        and jobs.user_id = (select auth.uid())
     )
   );
 
-drop policy if exists "Applicants can submit applications" on applications;
-create policy "Applicants can submit applications"
+drop policy if exists "Applicants can submit own applications" on applications;
+create policy "Applicants can submit own applications"
   on applications for insert
   to authenticated
   with check (
-    auth.uid() = applicant_id
+    (select auth.uid()) = applicant_id
     and exists (
       select 1
       from jobs
       where jobs.id = applications.job_id
-        and jobs.user_id <> auth.uid()
+        and jobs.user_id <> (select auth.uid())
     )
   );
 
@@ -757,7 +766,7 @@ create policy "Users can read own resumes"
   to authenticated
   using (
     bucket_id = 'resumes'
-    and (storage.foldername(name))[1] = auth.uid()::text
+    and (storage.foldername(name))[1] = (select auth.uid())::text
   );
 
 drop policy if exists "Users can upload own resumes" on storage.objects;
@@ -766,7 +775,7 @@ create policy "Users can upload own resumes"
   to authenticated
   with check (
     bucket_id = 'resumes'
-    and (storage.foldername(name))[1] = auth.uid()::text
+    and (storage.foldername(name))[1] = (select auth.uid())::text
   );
 
 drop policy if exists "Users can update own resumes" on storage.objects;
@@ -775,11 +784,11 @@ create policy "Users can update own resumes"
   to authenticated
   using (
     bucket_id = 'resumes'
-    and (storage.foldername(name))[1] = auth.uid()::text
+    and (storage.foldername(name))[1] = (select auth.uid())::text
   )
   with check (
     bucket_id = 'resumes'
-    and (storage.foldername(name))[1] = auth.uid()::text
+    and (storage.foldername(name))[1] = (select auth.uid())::text
   );
 
 drop policy if exists "Users can delete own resumes" on storage.objects;
@@ -788,7 +797,7 @@ create policy "Users can delete own resumes"
   to authenticated
   using (
     bucket_id = 'resumes'
-    and (storage.foldername(name))[1] = auth.uid()::text
+    and (storage.foldername(name))[1] = (select auth.uid())::text
   );
 
 drop policy if exists "Job posters can read applicant resumes" on storage.objects;
@@ -801,7 +810,7 @@ create policy "Job posters can read applicant resumes"
       select 1
       from applications a
       join jobs j on j.id = a.job_id
-      where j.user_id = auth.uid()
+      where j.user_id = (select auth.uid())
         and a.resume_url = storage.objects.name
     )
   );
@@ -817,7 +826,7 @@ create policy "Users can upload own avatars"
   to authenticated
   with check (
     bucket_id = 'avatars'
-    and (storage.foldername(name))[1] = auth.uid()::text
+    and (storage.foldername(name))[1] = (select auth.uid())::text
   );
 
 drop policy if exists "Users can update own avatars" on storage.objects;
@@ -826,11 +835,11 @@ create policy "Users can update own avatars"
   to authenticated
   using (
     bucket_id = 'avatars'
-    and (storage.foldername(name))[1] = auth.uid()::text
+    and (storage.foldername(name))[1] = (select auth.uid())::text
   )
   with check (
     bucket_id = 'avatars'
-    and (storage.foldername(name))[1] = auth.uid()::text
+    and (storage.foldername(name))[1] = (select auth.uid())::text
   );
 
 drop policy if exists "Users can delete own avatars" on storage.objects;
@@ -839,7 +848,7 @@ create policy "Users can delete own avatars"
   to authenticated
   using (
     bucket_id = 'avatars'
-    and (storage.foldername(name))[1] = auth.uid()::text
+    and (storage.foldername(name))[1] = (select auth.uid())::text
   );
 
 drop policy if exists "Order members can read job photos" on storage.objects;
@@ -852,8 +861,8 @@ create policy "Order members can read job photos"
     and exists (
       select 1
       from orders
-      where orders.id::text = (storage.foldername(name))[2]
-        and (orders.hirer_id = auth.uid() or orders.worker_id = auth.uid())
+      where orders.id = (storage.foldername(name))[2]::uuid
+        and (orders.hirer_id = (select auth.uid()) or orders.worker_id = (select auth.uid()))
     )
   );
 
@@ -864,11 +873,10 @@ create policy "Workers can upload job photos"
   with check (
     bucket_id = 'job-photos'
     and (storage.foldername(name))[1] = 'orders'
-    and exists (
-      select 1
+    and (storage.foldername(name))[2]::uuid in (
+      select id
       from orders
-      where orders.id::text = (storage.foldername(name))[2]
-        and orders.worker_id = auth.uid()
+      where worker_id = (select auth.uid())
     )
   );
 
@@ -879,21 +887,19 @@ create policy "Workers can update job photos"
   using (
     bucket_id = 'job-photos'
     and (storage.foldername(name))[1] = 'orders'
-    and exists (
-      select 1
+    and (storage.foldername(name))[2]::uuid in (
+      select id
       from orders
-      where orders.id::text = (storage.foldername(name))[2]
-        and orders.worker_id = auth.uid()
+      where worker_id = (select auth.uid())
     )
   )
   with check (
     bucket_id = 'job-photos'
     and (storage.foldername(name))[1] = 'orders'
-    and exists (
-      select 1
+    and (storage.foldername(name))[2]::uuid in (
+      select id
       from orders
-      where orders.id::text = (storage.foldername(name))[2]
-        and orders.worker_id = auth.uid()
+      where worker_id = (select auth.uid())
     )
   );
 
