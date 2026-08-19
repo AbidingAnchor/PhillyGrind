@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Menu, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from './lib/auth.jsx';
 import { isAdminUser } from './lib/adminApi.js';
 import { supabase } from './lib/supabase.js';
@@ -190,7 +191,9 @@ function App() {
         >
           <Menu size={22} />
         </button>
+      </header>
 
+      {createPortal(
         <nav className={open ? 'site-nav open' : 'site-nav'}>
           {navItems.map((item) => (
             <NavLink key={item.to} to={item.to} id={item.id} data-tour={item.tour} onClick={() => setOpen(false)}>
@@ -226,8 +229,9 @@ function App() {
               <Link className="nav-cta auth-cta" to="/signup" onClick={() => setOpen(false)}>Sign Up</Link>
             </div>
           )}
-        </nav>
-      </header>
+        </nav>,
+        document.body
+      )}
 
       <main>
         <Outlet />
