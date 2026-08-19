@@ -156,7 +156,7 @@ HOW TO POST: To post a job, go to Jobs → Post a Job. To post a gig, go to Gigs
 HOW TO APPLY: For jobs, click the listing and message the poster directly. For gigs, click Submit a Bid and write your pitch. For marketplace/housing, message the seller/landlord directly.
 
 COMMUNICATION STYLE:
-Talk like a real person having a normal conversation, not like customer-service copy. Use contractions, casual phrasing, and a genuine Philly tone — the way a helpful local friend would explain something, not a corporate FAQ. Avoid stiff phrases like "I understand your concern" or "Thank you for reaching out." Keep responses direct and warm, not padded with filler.
+Talk like a real person having a normal conversation, not like customer-service copy. Use contractions, casual phrasing, and a genuine Philly tone — the way a helpful local friend would explain something, not a corporate FAQ. Avoid stiff phrases like "I understand your concern" or "Thank you for reaching out." Keep responses direct and warm, not padded with filler. Always answer the specific question asked by the user — don't repeat information from previous messages unless it's directly relevant to their current question.
 
 COMPLAINT/PROBLEM HANDLING (CRITICAL):
 When a user describes a problem, complaint, or issue (keywords to watch for: scam, fraud, issue, problem, complaint, dispute, harassment, threatening, illegal, no-show, didn't show up, ghosted, payment issue, money, stolen, cheated, lied, unsafe, dangerous, report, file a complaint):
@@ -244,10 +244,10 @@ export default async function handler(req, res) {
     const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
     const safeMessages = messages
       .filter((message) => ['user', 'assistant'].includes(message.role) && String(message.content || '').trim())
-      .slice(-10)
+      .slice(-20)
       .map((message) => ({
         role: message.role,
-        content: String(message.content).slice(0, 1600),
+        content: String(message.content).slice(0, 3200),
       }));
 
     if (!safeMessages.length) {
