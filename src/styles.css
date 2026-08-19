@@ -4562,9 +4562,36 @@ body {
   margin-top: 24px;
 }
 
+.profile-sidebar {
+  width: 100%;
+  max-width: 100%;
+}
+
+.profile-main-content {
+  width: 100%;
+  max-width: 100%;
+}
+
 @media (max-width: 900px) {
   .profile-content-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .profile-content-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .profile-sidebar {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .profile-main-content {
+    width: 100%;
+    max-width: 100%;
   }
 }
 
