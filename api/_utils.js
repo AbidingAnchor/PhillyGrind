@@ -2,12 +2,16 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
 function isValidSupabaseUrl(value) {
-  if (!value) return false;
+  if (!value) {
+    console.error('[isValidSupabaseUrl] No value provided');
+    return false;
+  }
 
   try {
     const url = new URL(value);
     return url.protocol === 'https:' && url.hostname.endsWith('.supabase.co');
-  } catch {
+  } catch (error) {
+    console.error('[isValidSupabaseUrl] Invalid URL:', value, error.message);
     return false;
   }
 }

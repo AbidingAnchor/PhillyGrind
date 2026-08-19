@@ -1,4 +1,3 @@
-import { getUserFromRequest, requireMethod, sendJson } from './_utils.js';
 import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
 import { createClient } from '@supabase/supabase-js';
 
@@ -7,9 +6,38 @@ const limiter = createRateLimiter(20, '60 s');
 const GROQ_CHAT_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 );
+
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('[GrindBot] Missing Supabase configuration:', {
+    hasUrl: !!process.env.SUPABASE_URL,
+    hasKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  });
+}
+
+function sendJson(res, status, body) {
+  res.status(status).json(body);
+}
+
+function requireMethod(req, res, method = 'POST') {
+  if (req.method !== method) {
+    sendJson(res, 405, { error: `Method ${req.method} not allowed.` });
+    return false;
+  }
+  return true;
+}
+
+async function getUserFromRequest(req) {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
+  if (!token) return null;
+
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error) return null;
+
+  return data.user;
+}
 
 const tools = [
   {
@@ -46,28 +74,38 @@ const tools = [
 ];
 
 async function searchContent(query) {
-  const { data, error } = await supabase
-    .from('community_posts')
-    .select('id, content, created_at, user_id')
-    .ilike('content', `%${query}%`)
-    .limit(5);
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase
+      .from('community_posts')
+      .select('id, content, created_at, user_id')
+      .ilike('content', `%${query}%`)
+      .limit(5);
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('[searchContent] Error:', error.message);
+    throw error;
+  }
 }
 
 async function createReport({ post_id, comment_id, reason, subreason }, reporterId) {
-  const { error } = await supabase
-    .from('community_reports')
-    .insert({
-      post_id: post_id || null,
-      comment_id: comment_id || null,
-      reporter_id: reporterId,
-      reason,
-      subreason,
-      status: 'pending',
-    });
-  if (error) throw error;
-  return { success: true };
+  try {
+    const { error } = await supabase
+      .from('community_reports')
+      .insert({
+        post_id: post_id || null,
+        comment_id: comment_id || null,
+        reporter_id: reporterId,
+        reason,
+        subreason,
+        status: 'pending',
+      });
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('[createReport] Error:', error.message);
+    throw error;
+  }
 }
 
 const systemPrompt = `
