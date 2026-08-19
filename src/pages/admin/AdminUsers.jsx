@@ -7,7 +7,7 @@ import KebabMenu from '../../components/KebabMenu.jsx';
 import AdminDetailModal from '../../components/AdminDetailModal.jsx';
 
 export default function AdminUsers() {
-  const { isAdmin, isOwner, user: currentUser } = useAuth();
+  const { isAdmin, isOwner, user: currentUser, profile, refreshProfile } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -20,6 +20,13 @@ export default function AdminUsers() {
   const [moderationReason, setModerationReason] = useState('');
   const [moderationAction, setModerationAction] = useState(null);
   const [processingModeration, setProcessingModeration] = useState(false);
+
+  // Refresh profile to get role if not loaded
+  useEffect(() => {
+    if (currentUser && !profile?.role) {
+      refreshProfile();
+    }
+  }, [currentUser, profile, refreshProfile]);
 
   // Check if user is online (active within last 5 minutes)
   function isOnline(lastActiveAt) {
@@ -415,6 +422,12 @@ export default function AdminUsers() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+            {!isAdmin && profile && (
+              <div className="admin-detail-row">
+                <span className="admin-detail-label">Your Role</span>
+                <span className="admin-detail-value">{profile.role || 'user'} (no moderation access)</span>
               </div>
             )}
           </>
