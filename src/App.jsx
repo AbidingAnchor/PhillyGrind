@@ -3,6 +3,7 @@ import { Menu, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from './lib/auth.jsx';
 import { isAdminUser } from './lib/adminApi.js';
+import { supabase } from './lib/supabase.js';
 import OnboardingModal from './components/OnboardingModal.jsx';
 import NotificationBell from './components/NotificationBell.jsx';
 
@@ -36,6 +37,19 @@ function App() {
   useEffect(() => {
     setOpen(false);
   }, [location.pathname]);
+
+  // Update last_active_at timestamp when logged-in user navigates
+  useEffect(() => {
+    if (isLoggedIn && user) {
+      supabase
+        .from('profiles')
+        .update({ last_active_at: new Date().toISOString() })
+        .eq('id', user.id)
+        .then(({ error }) => {
+          if (error) console.error('Failed to update last_active_at:', error);
+        });
+    }
+  }, [location.pathname, isLoggedIn, user]);
 
   async function handleLogout() {
     await signOut();

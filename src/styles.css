@@ -6995,6 +6995,26 @@ body {
   color: #dc2626;
 }
 
+.admin-status-badge.online {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.admin-status-badge.offline {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+[data-theme="dark"] .admin-status-badge.online {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+}
+
+[data-theme="dark"] .admin-status-badge.offline {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
 .admin-status-badge.danger {
   background: #fef2f2;
   color: #dc2626;

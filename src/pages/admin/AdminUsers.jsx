@@ -13,6 +13,13 @@ export default function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
 
+  // Check if user is online (active within last 5 minutes)
+  function isOnline(lastActiveAt) {
+    if (!lastActiveAt) return false;
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    return new Date(lastActiveAt) > fiveMinutesAgo;
+  }
+
   async function loadUsers() {
     try {
       setLoading(true);
@@ -125,6 +132,7 @@ export default function AdminUsers() {
                 <th>Listings</th>
                 <th>Reports</th>
                 <th>Status</th>
+                <th>Online</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -132,6 +140,7 @@ export default function AdminUsers() {
               {filteredUsers.map((user) => {
                 const busy = actionUserId === user.id;
                 const suspension = user.suspension;
+                const online = isOnline(user.last_active_at);
                 return (
                   <tr 
                     key={user.id} 
@@ -151,6 +160,11 @@ export default function AdminUsers() {
                       ) : (
                         <span className="admin-status-badge active">active</span>
                       )}
+                    </td>
+                    <td>
+                      <span className={`admin-status-badge ${online ? 'online' : 'offline'}`}>
+                        {online ? 'ONLINE' : 'OFFLINE'}
+                      </span>
                     </td>
                     <td className="admin-table-actions" onClick={(e) => e.stopPropagation()}>
                       <KebabMenu

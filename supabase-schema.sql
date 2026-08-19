@@ -224,6 +224,9 @@ alter table profiles
 alter table profiles
   add column if not exists show_available_now boolean not null default false;
 
+alter table profiles
+  add column if not exists last_active_at timestamptz;
+
 alter table notifications
   add column if not exists listing_type text;
 
