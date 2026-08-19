@@ -9759,6 +9759,39 @@ input[type="datetime-local"]:focus {
   gap: 16px;
   overflow: hidden;
   width: 100%;
+  border: 1px solid red !important;
+}
+
+.profile-post-card {
+  border: 1px solid red !important;
+}
+
+.feed-post-header {
+  border: 1px solid red !important;
+}
+
+.feed-post-content {
+  border: 1px solid red !important;
+}
+
+.feed-post-actions {
+  border: 1px solid red !important;
+}
+
+.feed-post-action-bar {
+  border: 1px solid red !important;
+}
+
+.profile-section-card {
+  border: 1px solid red !important;
+}
+
+.profile-intro-card {
+  border: 1px solid red !important;
+}
+
+.profile-intro-item {
+  border: 1px solid red !important;
 }
 
 @media (max-width: 640px) {
