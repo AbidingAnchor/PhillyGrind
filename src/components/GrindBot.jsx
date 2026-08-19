@@ -70,6 +70,7 @@ function routeForListing(listing) {
 }
 
 function GrindBot() {
+  console.log('[DEBUG] GrindBot component mounted/rendered');
   const { session } = useAuth();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([welcomeMessage]);
