@@ -43,6 +43,9 @@ function App() {
     const menuEl = document.querySelector('.site-nav');
     if (menuEl) {
       const styles = window.getComputedStyle(menuEl);
+      const appShell = document.querySelector('.app-shell');
+      const appShellStyles = appShell ? window.getComputedStyle(appShell) : null;
+      
       console.log('[MENU DEBUG] isMenuOpen:', open, {
         display: styles.display,
         visibility: styles.visibility,
@@ -52,7 +55,17 @@ function App() {
         maxHeight: styles.maxHeight,
         zIndex: styles.zIndex,
         position: styles.position,
-        className: menuEl.className
+        top: styles.top,
+        left: styles.left,
+        right: styles.right,
+        bottom: styles.bottom,
+        className: menuEl.className,
+        parentAppShell: appShellStyles ? {
+          overflowX: appShellStyles.overflowX,
+          overflowY: appShellStyles.overflowY,
+          overflow: appShellStyles.overflow,
+          position: appShellStyles.position
+        } : 'not found'
       });
     }
   }, [open]);
