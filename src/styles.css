@@ -10116,13 +10116,16 @@ input[type="datetime-local"]:focus {
 }
 
 .feed-post-divider {
-  display: none;
+  display: block;
+  height: 1px;
+  background: var(--line);
+  margin: 0;
 }
 
 .feed-post-actions {
   display: flex;
-  padding: 12px 20px;
-  gap: 4px;
+  padding: 0;
+  gap: 0;
 }
 
 .feed-post-action-btn {
@@ -10136,12 +10139,17 @@ input[type="datetime-local"]:focus {
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  border-radius: 10px;
+  border-radius: 0;
   font-size: 0.9rem;
   font-weight: 500;
   transition: all 0.3s ease;
   min-width: 44px;
   min-height: 44px;
+  border-right: 1px solid var(--line);
+}
+
+.feed-post-action-btn:last-child {
+  border-right: none;
 }
 
 @media (max-width: 768px) {
@@ -11756,7 +11764,17 @@ input[type="datetime-local"]:focus {
 
 /* Reaction Picker */
 .feed-post-reaction-summary {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.feed-post-stats {
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .reaction-summary {

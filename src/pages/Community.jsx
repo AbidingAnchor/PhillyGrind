@@ -1214,36 +1214,55 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       )}
       
       {post.photo_url ? (
-        <div className="feed-post-photo-actions">
-          <PostReactionControl
-            key={`reaction-control-${userReaction || 'none'}-${post.id}`}
-            userReaction={userReaction}
-            onLike={handleLike}
-            onReactionSelect={handleReactionSelect}
-            buttonClassName="feed-post-photo-action-btn"
-            iconSize={20}
-            totalReactions={reactionTotal}
-            showLabel={false}
-          />
-          <button
-            type="button"
-            className="feed-post-photo-action-btn"
-            onClick={handleToggleComments}
-          >
-            <MessageCircle size={16} />
-            <span>{showComments ? comments.length : (post.comment_count || 0)}</span>
-          </button>
-          <button
-            type="button"
-            className="feed-post-photo-action-btn"
-            onClick={handleShare}
-            title="Share post"
-          >
-            <FacebookShareIcon size={16} />
-          </button>
-        </div>
+        <>
+          <div className="feed-post-reaction-summary">
+            <ReactionBreakdown breakdown={reactionBreakdown} userReaction={userReaction} />
+            <span className="feed-post-stats">
+              {post.comment_count > 0 && `${post.comment_count} comments`}
+              {post.comment_count > 0 && post.share_count > 0 && ' · '}
+              {post.share_count > 0 && `${post.share_count} shares`}
+            </span>
+          </div>
+          <div className="feed-post-divider" />
+          <div className="feed-post-photo-actions">
+            <PostReactionControl
+              key={`reaction-control-${userReaction || 'none'}-${post.id}`}
+              userReaction={userReaction}
+              onLike={handleLike}
+              onReactionSelect={handleReactionSelect}
+              buttonClassName="feed-post-photo-action-btn"
+              iconSize={20}
+              showLabel={false}
+            />
+            <button
+              type="button"
+              className="feed-post-photo-action-btn"
+              onClick={handleToggleComments}
+            >
+              <MessageCircle size={20} />
+              <span>Comment</span>
+            </button>
+            <button
+              type="button"
+              className="feed-post-photo-action-btn"
+              onClick={handleShare}
+              title="Share post"
+            >
+              <FacebookShareIcon size={20} />
+              <span>Share</span>
+            </button>
+          </div>
+        </>
       ) : (
         <>
+          <div className="feed-post-reaction-summary">
+            <ReactionBreakdown breakdown={reactionBreakdown} userReaction={userReaction} />
+            <span className="feed-post-stats">
+              {post.comment_count > 0 && `${post.comment_count} comments`}
+              {post.comment_count > 0 && post.share_count > 0 && ' · '}
+              {post.share_count > 0 && `${post.share_count} shares`}
+            </span>
+          </div>
           <div className="feed-post-divider" />
           <div className="feed-post-actions">
             <PostReactionControl
@@ -1254,7 +1273,6 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
               buttonClassName="feed-post-action-btn"
               iconSize={18}
               showLabel
-              totalReactions={reactionTotal}
             />
             <button
               type="button"
@@ -1262,7 +1280,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
               onClick={handleToggleComments}
             >
               <MessageCircle size={18} />
-              <span>{showComments ? comments.length : (post.comment_count || 0)}</span>
+              <span>Comment</span>
             </button>
             <button
               type="button"
@@ -1271,6 +1289,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
               title="Share post"
             >
               <FacebookShareIcon size={18} />
+              <span>Share</span>
             </button>
           </div>
         </>

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Briefcase, MapPin, Calendar, Star, Heart, MessageCircle } from 'lucide-react';
 import FacebookShareIcon from '../components/FacebookShareIcon.jsx';
 import PostReactionControl from '../components/PostReactionControl.jsx';
+import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
 import ListingCard from '../components/ListingCard.jsx';
 import StarRating from '../components/StarRating.jsx';
 import ChatModal from '../components/ChatModal.jsx';
@@ -744,31 +745,41 @@ function Profile() {
                                 />
                               )}
                             </div>
+                            <div className="feed-post-reaction-summary">
+                              <ReactionBreakdown breakdown={postReactions[post.id]?.breakdown || []} userReaction={postReactions[post.id]?.userReaction} />
+                              <span className="feed-post-stats">
+                                {post.comment_count > 0 && `${post.comment_count} comments`}
+                                {post.comment_count > 0 && post.share_count > 0 && ' · '}
+                                {post.share_count > 0 && `${post.share_count} shares`}
+                              </span>
+                            </div>
+                            <div className="feed-post-divider" />
                             <div className="feed-post-actions">
-                              <div className="feed-post-reactions">
-                                <Heart size={16} className="feed-post-reaction-icon" />
-                                <span className="feed-post-like-count">{post.like_count || 0}</span>
-                              </div>
-                              <div className="feed-post-action-bar">
-                                <PostReactionControl
-                                  key={`reaction-control-${postReactions[post.id]?.userReaction || 'none'}-${post.id}`}
-                                  userReaction={postReactions[post.id]?.userReaction}
-                                  onLike={() => handlePostLike(post.id)}
-                                  onReactionSelect={(reactionType) => handlePostReactionSelect(post.id, reactionType)}
-                                  buttonClassName="feed-post-action-btn"
-                                  iconSize={18}
-                                />
-                                <div className="feed-post-action-divider"></div>
-                                <Link to={`/community/post/${post.id}`} className="feed-post-action-btn">
-                                  <MessageCircle size={18} />
-                                  <span>Comment</span>
-                                </Link>
-                                <div className="feed-post-action-divider"></div>
-                                <Link to={`/community/post/${post.id}`} className="feed-post-action-btn">
-                                  <FacebookShareIcon size={18} />
-                                  <span>Share</span>
-                                </Link>
-                              </div>
+                              <PostReactionControl
+                                key={`reaction-control-${postReactions[post.id]?.userReaction || 'none'}-${post.id}`}
+                                userReaction={postReactions[post.id]?.userReaction}
+                                onLike={() => handlePostLike(post.id)}
+                                onReactionSelect={(reactionType) => handlePostReactionSelect(post.id, reactionType)}
+                                buttonClassName="feed-post-action-btn"
+                                iconSize={18}
+                                showLabel
+                              />
+                              <button
+                                type="button"
+                                className="feed-post-action-btn"
+                                onClick={() => window.location.href = `/community/post/${post.id}`}
+                              >
+                                <MessageCircle size={18} />
+                                <span>Comment</span>
+                              </button>
+                              <button
+                                type="button"
+                                className="feed-post-action-btn"
+                                onClick={() => window.location.href = `/community/post/${post.id}`}
+                              >
+                                <FacebookShareIcon size={18} />
+                                <span>Share</span>
+                              </button>
                             </div>
                           </article>
                         ))}
