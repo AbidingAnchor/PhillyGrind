@@ -1096,19 +1096,42 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  birthdate_text text;
+  birth_date date;
+  age int;
+  is_adult boolean;
 begin
-  insert into public.profiles (id, name, email, tos_agreed_at, onboarding_complete)
+  -- Extract birthdate from metadata if available
+  birthdate_text := new.raw_user_meta_data->>'birthdate';
+  
+  -- Calculate age and determine if adult
+  is_adult := false;
+  if birthdate_text is not null then
+    begin
+      birth_date := birthdate_text::date;
+      age := date_part('year', age(birth_date, current_date));
+      is_adult := (age >= 18);
+    exception when others then
+      -- If birthdate is invalid, default to not adult
+      is_adult := false;
+    end;
+  end if;
+  
+  insert into public.profiles (id, name, email, tos_agreed_at, onboarding_complete, is_adult_confirmed)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
     new.email,
     (new.raw_user_meta_data->>'tos_agreed_at')::timestamptz,
-    false
+    false,
+    is_adult
   )
   on conflict (id) do update
     set name = excluded.name,
         email = excluded.email,
-        tos_agreed_at = coalesce(public.profiles.tos_agreed_at, excluded.tos_agreed_at);
+        tos_agreed_at = coalesce(public.profiles.tos_agreed_at, excluded.tos_agreed_at),
+        is_adult_confirmed = excluded.is_adult_confirmed;
 
   return new;
 end;

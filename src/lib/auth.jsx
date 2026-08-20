@@ -135,8 +135,8 @@ export function AuthProvider({ children }) {
       throw new Error('Supabase credentials are missing.');
     }
 
-    // Server-side age verification
-    function calculateAgeServerSide(birthdateStr) {
+    // Client-side age verification
+    function calculateAgeClientSide(birthdateStr) {
       const today = new Date();
       const birthDate = new Date(birthdateStr);
       let age = today.getFullYear() - birthDate.getFullYear();
@@ -148,7 +148,7 @@ export function AuthProvider({ children }) {
     }
 
     if (birthdate) {
-      const age = calculateAgeServerSide(birthdate);
+      const age = calculateAgeClientSide(birthdate);
       if (age < 18) {
         throw new Error('PhillyGrind requires users to be 18 or older.');
       }
@@ -158,48 +158,18 @@ export function AuthProvider({ children }) {
       email,
       password,
       options: {
-        data: { name, tos_agreed_at: tosAgreedAt },
+        data: { 
+          name, 
+          tos_agreed_at: tosAgreedAt,
+          birthdate // Pass birthdate to metadata for server-side trigger
+        },
       },
     });
 
     if (error) throw error;
 
-    if (data.user) {
-      try {
-        console.log('[SIGNUP] Attempting profile upsert with data:', {
-          id: data.user.id,
-          name,
-          email,
-          tos_agreed_at: tosAgreedAt,
-          onboarding_complete: false,
-          is_adult_confirmed: true,
-        });
-        
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: data.user.id,
-            name,
-            email,
-            tos_agreed_at: tosAgreedAt,
-            onboarding_complete: false,
-            is_adult_confirmed: true,
-          })
-          .select()
-          .single();
-        
-        if (profileError) {
-          console.error('[SIGNUP] Profile upsert failed:', profileError);
-          throw profileError;
-        }
-        
-        console.log('[SIGNUP] Profile upsert succeeded:', profileData);
-      } catch (profileError) {
-        console.error('[SIGNUP] Profile upsert failed during signup:', profileError);
-        // Don't swallow the error - surface it to the user
-        throw new Error(`Failed to create profile: ${profileError.message}`);
-      }
-    }
+    // Profile creation is now handled by Postgres trigger on auth.users insert
+    // No client-side upsert needed - trigger runs with service role privileges
 
     return data;
   }
