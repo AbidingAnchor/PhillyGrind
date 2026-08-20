@@ -36,6 +36,7 @@ export default function ReactionBreakdown({ breakdown, maxTypes = 3, className =
           </span>
         ))}
       </div>
+      <span className="reaction-summary-total">{formatReactionCount(total)}</span>
       
       {showTooltip && userReactionData && (
         <div className="reaction-tooltip">
