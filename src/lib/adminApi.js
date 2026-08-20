@@ -112,7 +112,13 @@ export async function suspendUser(userId, reason, expiresAt = null) {
   if (logError) throw new Error(logError.message);
 
   // Invalidate user's session using correct Admin API method
-  await supabase.auth.admin.signOut(userId, 'global');
+  try {
+    await supabase.auth.admin.signOut(userId, 'global');
+    console.log(`[Admin] Successfully signed out user ${userId}`);
+  } catch (signOutError) {
+    console.error(`[Admin] Failed to sign out user ${userId}:`, signOutError);
+    // Don't throw - suspension/ban should still succeed even if session kill fails
+  }
 
   return { success: true };
 }
@@ -150,7 +156,13 @@ export async function banUser(userId, reason) {
   if (logError) throw new Error(logError.message);
 
   // Invalidate user's session using correct Admin API method
-  await supabase.auth.admin.signOut(userId, 'global');
+  try {
+    await supabase.auth.admin.signOut(userId, 'global');
+    console.log(`[Admin] Successfully signed out user ${userId}`);
+  } catch (signOutError) {
+    console.error(`[Admin] Failed to sign out user ${userId}:`, signOutError);
+    // Don't throw - suspension/ban should still succeed even if session kill fails
+  }
 
   return { success: true };
 }
@@ -211,7 +223,13 @@ export async function ipBanUser(userId, reason) {
   if (logError) throw new Error(logError.message);
 
   // Invalidate user's session using correct Admin API method
-  await supabase.auth.admin.signOut(userId, 'global');
+  try {
+    await supabase.auth.admin.signOut(userId, 'global');
+    console.log(`[Admin] Successfully signed out user ${userId}`);
+  } catch (signOutError) {
+    console.error(`[Admin] Failed to sign out user ${userId}:`, signOutError);
+    // Don't throw - suspension/ban should still succeed even if session kill fails
+  }
 
   return { success: true };
 }

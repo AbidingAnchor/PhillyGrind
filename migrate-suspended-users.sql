@@ -153,3 +153,257 @@ CREATE POLICY "Admins can update suspended users"
       AND profiles.role IN ('owner', 'admin')
     )
   );
+
+-- Step 13: Update RLS policies on user-write tables to include suspension checks
+-- These policies need to be recreated to include the suspended_users check
+
+-- community_posts
+DROP POLICY IF EXISTS "Users can insert own community posts" ON community_posts;
+DROP POLICY IF EXISTS "Users can insert own community posts if not suspended" ON community_posts;
+CREATE POLICY "Users can insert own community posts if not suspended"
+  ON community_posts FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    auth.uid() = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = auth.uid()
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can update own community posts" ON community_posts;
+DROP POLICY IF EXISTS "Users can update own community posts if not suspended" ON community_posts;
+CREATE POLICY "Users can update own community posts if not suspended"
+  ON community_posts FOR UPDATE
+  TO authenticated
+  USING (
+    auth.uid() = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = auth.uid()
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  )
+  WITH CHECK (
+    auth.uid() = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = auth.uid()
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can delete own community posts" ON community_posts;
+DROP POLICY IF EXISTS "Users can delete own community posts if not suspended" ON community_posts;
+CREATE POLICY "Users can delete own community posts if not suspended"
+  ON community_posts FOR DELETE
+  TO authenticated
+  USING (
+    auth.uid() = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = auth.uid()
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+-- community_comments
+DROP POLICY IF EXISTS "Users can insert own community comments" ON community_comments;
+DROP POLICY IF EXISTS "Users can insert own community comments if not suspended" ON community_comments;
+CREATE POLICY "Users can insert own community comments if not suspended"
+  ON community_comments FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    auth.uid() = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = auth.uid()
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can update own community comments" ON community_comments;
+DROP POLICY IF EXISTS "Users can update own community comments if not suspended" ON community_comments;
+CREATE POLICY "Users can update own community comments if not suspended"
+  ON community_comments FOR UPDATE
+  TO authenticated
+  USING (
+    auth.uid() = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = auth.uid()
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  )
+  WITH CHECK (
+    auth.uid() = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = auth.uid()
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+DROP POLICY IF EXISTS "Users can delete own community comments" ON community_comments;
+DROP POLICY IF EXISTS "Users can delete own community comments if not suspended" ON community_comments;
+CREATE POLICY "Users can delete own community comments if not suspended"
+  ON community_comments FOR DELETE
+  TO authenticated
+  USING (
+    auth.uid() = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = auth.uid()
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+-- messages
+DROP POLICY IF EXISTS "Users can send messages" ON messages;
+CREATE POLICY "Users can send messages if not suspended"
+  ON messages FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    (SELECT auth.uid()) = sender_id
+    AND sender_id <> receiver_id
+    AND LENGTH(TRIM(content)) > 0
+    AND NOT EXISTS (
+      SELECT 1
+      FROM messages
+      WHERE listing_id = messages.listing_id
+        AND sender_id = messages.sender_id
+        AND created_at > NOW() - INTERVAL '5 minutes'
+    )
+    AND NOT EXISTS (
+      SELECT 1
+      FROM user_blocks
+      WHERE blocker_id = receiver_id
+      AND blocked_user_id = sender_id
+    )
+    AND NOT EXISTS (
+      SELECT 1
+      FROM user_blocks
+      WHERE blocker_id = sender_id
+      AND blocked_user_id = receiver_id
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = (SELECT auth.uid())
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+-- reviews
+DROP POLICY IF EXISTS "Users can create reviews" ON reviews;
+CREATE POLICY "Users can create reviews if not suspended"
+  ON reviews FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    (SELECT auth.uid()) = reviewer_id
+    AND reviewer_id <> reviewee_id
+    AND rating BETWEEN 1 AND 5
+    AND LENGTH(TRIM(comment)) > 0
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = (SELECT auth.uid())
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+-- gigs
+DROP POLICY IF EXISTS "Anyone can post gigs" ON gigs;
+CREATE POLICY "Anyone can post gigs if not suspended"
+  ON gigs FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    (SELECT auth.uid()) = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = (SELECT auth.uid())
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+DROP POLICY IF EXISTS "Owners can update gigs" ON gigs;
+CREATE POLICY "Owners can update gigs if not suspended"
+  ON gigs FOR UPDATE
+  TO authenticated
+  USING (
+    (SELECT auth.uid()) = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = (SELECT auth.uid())
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  )
+  WITH CHECK (
+    (SELECT auth.uid()) = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = (SELECT auth.uid())
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+DROP POLICY IF EXISTS "Owners can delete gigs" ON gigs;
+CREATE POLICY "Owners can delete gigs if not suspended"
+  ON gigs FOR DELETE
+  TO authenticated
+  USING (
+    (SELECT auth.uid()) = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = (SELECT auth.uid())
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+-- jobs
+DROP POLICY IF EXISTS "Anyone can post jobs" ON jobs;
+CREATE POLICY "Anyone can post jobs if not suspended"
+  ON jobs FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    (SELECT auth.uid()) = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = (SELECT auth.uid())
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+DROP POLICY IF EXISTS "Owners can update jobs" ON jobs;
+CREATE POLICY "Owners can update jobs if not suspended"
+  ON jobs FOR UPDATE
+  TO authenticated
+  USING (
+    (SELECT auth.uid()) = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = (SELECT auth.uid())
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  )
+  WITH CHECK (
+    (SELECT auth.uid()) = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = (SELECT auth.uid())
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+DROP POLICY IF EXISTS "Owners can delete jobs" ON jobs;
+CREATE POLICY "Owners can delete jobs if not suspended"
+  ON jobs FOR DELETE
+  TO authenticated
+  USING (
+    (SELECT auth.uid()) = user_id
+    AND NOT EXISTS (
+      SELECT 1 FROM suspended_users
+      WHERE suspended_users.user_id = (SELECT auth.uid())
+      AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
