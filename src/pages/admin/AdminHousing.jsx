@@ -86,7 +86,7 @@ export default function AdminHousing() {
                     {listing.status === 'active' && (
                       <button
                         type="button"
-                        className="admin-table-btn danger"
+                        className="admin-moderation-btn delete"
                         disabled={removingId === listing.id}
                         onClick={() => handleRemove(listing)}
                       >

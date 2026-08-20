@@ -263,14 +263,14 @@ export default function AdminContact() {
                 <div className="report-actions">
                   <button
                     type="button"
-                    className="btn-report-dismiss"
+                    className="admin-moderation-btn cancel"
                     onClick={() => toggleExpand(submission.id)}
                   >
                     {isExpanded ? 'Collapse' : replies.length > 0 ? `View Replies (${replies.length})` : 'No Replies'}
                   </button>
                   <button
                     type="button"
-                    className="btn-report-warn"
+                    className="admin-moderation-btn warn"
                     onClick={() => handleReply(submission)}
                   >
                     <Reply size={14} style={{ marginRight: '4px' }} />
@@ -278,7 +278,7 @@ export default function AdminContact() {
                   </button>
                   <button
                     type="button"
-                    className="btn-report-dismiss"
+                    className="admin-moderation-btn dismiss"
                     onClick={() => handleResolve(submission.id)}
                     disabled={busy}
                   >
@@ -286,7 +286,7 @@ export default function AdminContact() {
                   </button>
                   <button
                     type="button"
-                    className="btn-report-remove"
+                    className="admin-moderation-btn delete"
                     onClick={() => {
                       setSelectedSubmission(submission);
                       setShowDeleteConfirm(true);
@@ -378,7 +378,7 @@ export default function AdminContact() {
                   </button>
                   <button
                     type="button"
-                    className="btn-report-remove"
+                    className="admin-moderation-btn delete"
                     onClick={() => handleDelete(selectedSubmission.id)}
                     disabled={actingId === selectedSubmission.id}
                   >

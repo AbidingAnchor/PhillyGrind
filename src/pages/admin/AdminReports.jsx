@@ -103,7 +103,7 @@ export default function AdminReports() {
                 <div className="report-actions">
                   <button
                     type="button"
-                    className="btn-report-dismiss"
+                    className="admin-moderation-btn dismiss"
                     disabled={busy}
                     onClick={() => handleAction(report.id, 'dismiss')}
                   >
@@ -111,7 +111,7 @@ export default function AdminReports() {
                   </button>
                   <button
                     type="button"
-                    className="btn-report-warn"
+                    className="admin-moderation-btn warn"
                     disabled={busy}
                     onClick={() => handleAction(report.id, 'warn')}
                   >
@@ -119,7 +119,7 @@ export default function AdminReports() {
                   </button>
                   <button
                     type="button"
-                    className="btn-report-remove"
+                    className="admin-moderation-btn delete"
                     disabled={busy}
                     onClick={() => handleAction(report.id, 'remove')}
                   >

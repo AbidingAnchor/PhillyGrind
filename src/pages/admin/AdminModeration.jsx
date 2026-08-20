@@ -202,10 +202,10 @@ export default function AdminModeration() {
                     <td>{new Date(log.created_at).toLocaleString()}</td>
                     <td className="admin-table-actions">
                       {isAgeConcern && canMarkReviewed && (
-                        <div className="admin-age-actions">
+                        <div className="admin-table-actions">
                           <button
                             type="button"
-                            className="admin-table-btn admin-clear-btn"
+                            className="admin-moderation-btn clear"
                             disabled={busy}
                             onClick={() => requestConfirmAction('clear', log)}
                             title="Clear - restore content and mark as reviewed"
@@ -214,7 +214,7 @@ export default function AdminModeration() {
                           </button>
                           <button
                             type="button"
-                            className="admin-table-btn admin-confirm-minor-btn"
+                            className="admin-moderation-btn delete"
                             disabled={busy}
                             onClick={() => requestConfirmAction('confirm_minor', log)}
                             title="Confirm Minor - suspend account and delete data"
@@ -226,7 +226,7 @@ export default function AdminModeration() {
                       {!isAgeConcern && canMarkReviewed && (
                         <button
                           type="button"
-                          className="admin-table-btn"
+                          className="admin-moderation-btn dismiss"
                           disabled={busy}
                           onClick={() => handleMarkReviewed(log.id)}
                           title="Mark as reviewed"
@@ -261,7 +261,7 @@ export default function AdminModeration() {
             <div className="admin-confirm-actions">
               <button
                 type="button"
-                className="admin-confirm-cancel"
+                className="admin-moderation-btn cancel"
                 onClick={cancelConfirmAction}
                 disabled={actingId === confirmAction.log.id}
               >
@@ -269,7 +269,7 @@ export default function AdminModeration() {
               </button>
               <button
                 type="button"
-                className={`admin-confirm-confirm ${confirmAction.action === 'confirm_minor' ? 'danger' : ''}`}
+                className={`admin-moderation-btn ${confirmAction.action === 'confirm_minor' ? 'delete' : 'clear'}`}
                 onClick={() => {
                   if (confirmAction.action === 'clear') {
                     handleClearAgeConcern(confirmAction.log);

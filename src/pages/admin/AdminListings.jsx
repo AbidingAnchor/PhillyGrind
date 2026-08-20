@@ -136,7 +136,7 @@ export default function AdminListings() {
                   <td onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
-                      className="admin-table-btn danger"
+                      className="admin-moderation-btn delete"
                       disabled={deletingId === listing.id}
                       onClick={() => handleDelete(listing)}
                     >

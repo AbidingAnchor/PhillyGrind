@@ -137,7 +137,7 @@ export default function AdminCommunity() {
                   <td>
                     <button
                       type="button"
-                      className="admin-table-btn danger"
+                      className="admin-moderation-btn delete"
                       disabled={deletingId === post.id}
                       onClick={() => handleDeletePost(post)}
                     >
@@ -197,7 +197,7 @@ export default function AdminCommunity() {
                     <div className="admin-table-actions">
                       <button
                         type="button"
-                        className="admin-table-btn"
+                        className="admin-moderation-btn dismiss"
                         disabled={dismissingId === report.id}
                         onClick={() => handleDismissReport(report)}
                       >
@@ -207,7 +207,7 @@ export default function AdminCommunity() {
                       {report.post_id && (
                         <button
                           type="button"
-                          className="admin-table-btn danger"
+                          className="admin-moderation-btn delete"
                           disabled={deletingId === report.post_id}
                           onClick={() => handleDeleteReportedPost(report)}
                         >
