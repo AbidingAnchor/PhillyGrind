@@ -166,7 +166,7 @@ export function AuthProvider({ children }) {
 
     if (data.user) {
       try {
-        await supabase.from('profiles').upsert({
+        console.log('[SIGNUP] Attempting profile upsert with data:', {
           id: data.user.id,
           name,
           email,
@@ -174,8 +174,30 @@ export function AuthProvider({ children }) {
           onboarding_complete: false,
           is_adult_confirmed: true,
         });
+        
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            name,
+            email,
+            tos_agreed_at: tosAgreedAt,
+            onboarding_complete: false,
+            is_adult_confirmed: true,
+          })
+          .select()
+          .single();
+        
+        if (profileError) {
+          console.error('[SIGNUP] Profile upsert failed:', profileError);
+          throw profileError;
+        }
+        
+        console.log('[SIGNUP] Profile upsert succeeded:', profileData);
       } catch (profileError) {
-        console.warn('Profile upsert failed during signup:', profileError);
+        console.error('[SIGNUP] Profile upsert failed during signup:', profileError);
+        // Don't swallow the error - surface it to the user
+        throw new Error(`Failed to create profile: ${profileError.message}`);
       }
     }
 
