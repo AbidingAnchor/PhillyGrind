@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 function SignUp() {
-  const [form, setForm] = useState({ name: '', email: '', password: '', birthdate: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', birthdate: null });
   const [agreed, setAgreed] = useState(false);
   const [status, setStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -32,6 +34,12 @@ function SignUp() {
     setStatus('');
 
     // Client-side age verification
+    if (!form.birthdate) {
+      setStatus('Please enter your date of birth.');
+      setSubmitting(false);
+      return;
+    }
+
     const age = calculateAge(form.birthdate);
     if (age < 18) {
       setStatus('PhillyGrind requires users to be 18 or older.');
@@ -40,7 +48,11 @@ function SignUp() {
     }
 
     try {
-      const data = await signUp({ ...form, tosAgreedAt: new Date().toISOString() });
+      const data = await signUp({ 
+        ...form, 
+        birthdate: form.birthdate.toISOString().split('T')[0],
+        tosAgreedAt: new Date().toISOString() 
+      });
       if (data.session) {
         navigate('/', { replace: true });
         return;
@@ -90,15 +102,18 @@ function SignUp() {
           minLength="6" 
           required 
         />
-        <input 
-          className="auth-input" 
-          name="birthdate" 
-          type="date" 
-          value={form.birthdate} 
-          onChange={updateField} 
-          placeholder="Date of Birth"
-          required 
-          max={new Date().toISOString().split('T')[0]}
+        <DatePicker
+          selected={form.birthdate}
+          onChange={(date) => setForm({ ...form, birthdate: date })}
+          placeholderText="Date of Birth"
+          required
+          maxDate={new Date()}
+          showYearDropdown
+          scrollableYearDropdown
+          yearDropdownItemNumber={100}
+          className="auth-input"
+          wrapperClassName="auth-datepicker-wrapper"
+          dateFormat="MMMM d, yyyy"
         />
         <label className="clickwrap-label">
           <input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} required />
