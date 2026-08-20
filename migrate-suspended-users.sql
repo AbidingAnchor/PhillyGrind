@@ -208,6 +208,18 @@ CREATE POLICY "Users can delete own community posts if not suspended"
     )
   );
 
+-- Admins can delete any community post (for moderation)
+CREATE POLICY "Admins can delete any community post"
+  ON community_posts FOR DELETE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('owner', 'admin')
+    )
+  );
+
 -- community_comments
 DROP POLICY IF EXISTS "Users can insert own community comments" ON community_comments;
 DROP POLICY IF EXISTS "Users can insert own community comments if not suspended" ON community_comments;
@@ -256,6 +268,18 @@ CREATE POLICY "Users can delete own community comments if not suspended"
       SELECT 1 FROM suspended_users
       WHERE suspended_users.user_id = auth.uid()
       AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+-- Admins can delete any community comment (for moderation)
+CREATE POLICY "Admins can delete any community comment"
+  ON community_comments FOR DELETE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('owner', 'admin')
     )
   );
 
@@ -359,6 +383,18 @@ CREATE POLICY "Owners can delete gigs if not suspended"
     )
   );
 
+-- Admins can delete any gig (for moderation)
+CREATE POLICY "Admins can delete any gig"
+  ON gigs FOR DELETE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('owner', 'admin')
+    )
+  );
+
 -- jobs
 DROP POLICY IF EXISTS "Anyone can post jobs" ON jobs;
 CREATE POLICY "Anyone can post jobs if not suspended"
@@ -404,6 +440,18 @@ CREATE POLICY "Owners can delete jobs if not suspended"
       SELECT 1 FROM suspended_users
       WHERE suspended_users.user_id = (SELECT auth.uid())
       AND (suspended_users.expires_at IS NULL OR suspended_users.expires_at > NOW())
+    )
+  );
+
+-- Admins can delete any job (for moderation)
+CREATE POLICY "Admins can delete any job"
+  ON jobs FOR DELETE
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.role IN ('owner', 'admin')
     )
   );
 
