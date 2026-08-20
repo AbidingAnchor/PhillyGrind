@@ -39,6 +39,8 @@ export default async function handler(req, res) {
   const { action, userId, email } = req.body;
   const clientIP = getClientIP(req);
 
+  console.log('[Auth] API request received:', { action, userId: !!userId, email: !!email, ip: clientIP });
+
   try {
     if (action === 'capture-ip') {
       if (!userId) {

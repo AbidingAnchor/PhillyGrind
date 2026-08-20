@@ -191,6 +191,8 @@ export function AuthProvider({ children }) {
       throw new Error(ipCheckData.error || 'Signup failed');
     }
 
+    console.log('[Auth] Starting signup for email:', email);
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -202,6 +204,8 @@ export function AuthProvider({ children }) {
         },
       },
     });
+
+    console.log('[Auth] Supabase signUp response:', { data: !!data, hasError: !!error, errorMessage: error?.message, errorCode: error?.code });
 
     if (error) {
       // If email already exists, send notification email but keep same UI message
