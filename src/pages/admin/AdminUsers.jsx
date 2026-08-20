@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, ShieldOff, ShieldBan, ShieldCheck, Users, BadgeCheck, Ban, UserX } from 'lucide-react';
+import { Loader2, ShieldOff, ShieldBan, ShieldCheck, Users, BadgeCheck, Ban, UserX, Unlock } from 'lucide-react';
 import { adminVerifyLandlord, getAdminUsers, liftSuspension, suspendUser, banUser, ipBanUser, getUserSuspensionStatus } from '../../lib/adminApi.js';
 import { supabase } from '../../lib/supabase.js';
 import { useAuth } from '../../lib/auth.jsx';
@@ -304,6 +304,7 @@ export default function AdminUsers() {
         isOpen={!!selectedUser}
         onClose={() => setSelectedUser(null)}
         title="User Details"
+        className={suspensionStatus?.suspension_type === 'ban' ? 'modal-border-red' : suspensionStatus ? 'modal-border-amber' : ''}
       >
         {selectedUser && (
           <>
@@ -343,32 +344,34 @@ export default function AdminUsers() {
                 <span className="admin-detail-value">Loading...</span>
               </div>
             ) : suspensionStatus ? (
-              <>
-                <div className="admin-detail-row">
-                  <span className="admin-detail-label">Status</span>
-                  <span className={`admin-detail-value admin-status-badge ${suspensionStatus.suspension_type}`}>
+              <div className={`admin-suspension-section ${suspensionStatus.suspension_type === 'ban' ? 'suspension-ban' : 'suspension-suspend'}`}>
+                <div className="admin-suspension-header">
+                  <span className="admin-suspension-label">Account Status</span>
+                  <span className={`admin-suspension-badge ${suspensionStatus.suspension_type === 'ban' ? 'badge-red' : 'badge-amber'}`}>
                     {suspensionStatus.suspension_type === 'ban' ? 'BANNED' : 'SUSPENDED'}
                   </span>
                 </div>
-                <div className="admin-detail-row">
-                  <span className="admin-detail-label">Reason</span>
-                  <span className="admin-detail-value">{suspensionStatus.reason}</span>
-                </div>
-                <div className="admin-detail-row">
-                  <span className="admin-detail-label">
-                    {suspensionStatus.suspension_type === 'ban' ? 'Banned Since' : 'Suspended Since'}
-                  </span>
-                  <span className="admin-detail-value">
-                    {new Date(suspensionStatus.created_at || suspensionStatus.suspended_at).toLocaleString()}
-                  </span>
-                </div>
-                {suspensionStatus.expires_at && (
+                <div className="admin-suspension-details">
                   <div className="admin-detail-row">
-                    <span className="admin-detail-label">Expires</span>
-                    <span className="admin-detail-value">{new Date(suspensionStatus.expires_at).toLocaleString()}</span>
+                    <span className="admin-detail-label">Reason</span>
+                    <span className="admin-detail-value">{suspensionStatus.reason}</span>
                   </div>
-                )}
-              </>
+                  <div className="admin-detail-row">
+                    <span className="admin-detail-label">
+                      {suspensionStatus.suspension_type === 'ban' ? 'Banned Since' : 'Suspended Since'}
+                    </span>
+                    <span className="admin-detail-value">
+                      {new Date(suspensionStatus.created_at || suspensionStatus.suspended_at).toLocaleString()}
+                    </span>
+                  </div>
+                  {suspensionStatus.expires_at && (
+                    <div className="admin-detail-row">
+                      <span className="admin-detail-label">Expires</span>
+                      <span className="admin-detail-value">{new Date(suspensionStatus.expires_at).toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             ) : (
               <div className="admin-detail-row">
                 <span className="admin-detail-label">Status</span>
@@ -404,7 +407,7 @@ export default function AdminUsers() {
                       onClick={() => handleLift(selectedUser.id)}
                       disabled={processingModeration}
                     >
-                      <ShieldCheck size={16} />
+                      <Unlock size={16} />
                       Lift Suspension
                     </button>
                   ) : (

@@ -7947,6 +7947,108 @@ body {
   color: #fcd34d;
 }
 
+/* Modal border accents for suspension status */
+.modal-border-red {
+  border-left: 4px solid #dc2626;
+}
+
+.modal-border-amber {
+  border-left: 4px solid #f59e0b;
+}
+
+[data-theme="dark"] .modal-border-red {
+  border-left-color: #ef4444;
+}
+
+[data-theme="dark"] .modal-border-amber {
+  border-left-color: #f59e0b;
+}
+
+/* Suspension section styling */
+.admin-suspension-section {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.admin-suspension-section.suspension-ban {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.admin-suspension-section.suspension-suspend {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+[data-theme="dark"] .admin-suspension-section.suspension-ban {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="dark"] .admin-suspension-section.suspension-suspend {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.admin-suspension-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .admin-suspension-header {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.admin-suspension-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #374151;
+}
+
+[data-theme="dark"] .admin-suspension-label {
+  color: #e5e7eb;
+}
+
+.admin-suspension-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-suspension-badge.badge-red {
+  background: #dc2626;
+  color: white;
+}
+
+.admin-suspension-badge.badge-amber {
+  background: #f59e0b;
+  color: white;
+}
+
+[data-theme="dark"] .admin-suspension-badge.badge-red {
+  background: #ef4444;
+}
+
+[data-theme="dark"] .admin-suspension-badge.badge-amber {
+  background: #f59e0b;
+}
+
+.admin-suspension-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .admin-nav-badge {
   margin-left: auto;
   background: #dc2626;
