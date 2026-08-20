@@ -203,7 +203,23 @@ export function AuthProvider({ children }) {
       },
     });
 
-    if (error) throw error;
+    if (error) {
+      // If email already exists, send notification email but keep same UI message
+      if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+        try {
+          await fetch('/api/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'send-existing-account-email', email }),
+          });
+        } catch (emailError) {
+          console.warn('Failed to send existing account email:', emailError);
+        }
+        // Still throw the error to maintain consistent UI message
+        throw error;
+      }
+      throw error;
+    }
 
     // Capture IP after successful signup
     if (data.user) {

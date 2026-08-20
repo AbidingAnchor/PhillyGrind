@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { sendEmail } from './_utils/email.js';
+import { createExistingAccountEmail } from './_utils/emailTemplate.js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
@@ -34,7 +36,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { action, userId } = req.body;
+  const { action, userId, email } = req.body;
   const clientIP = getClientIP(req);
 
   try {
@@ -82,6 +84,18 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({ allowed: true });
+    }
+
+    if (action === 'send-existing-account-email') {
+      if (!email) {
+        return res.status(400).json({ error: 'email is required' });
+      }
+
+      // Send email to existing account holder
+      const emailHtml = createExistingAccountEmail();
+      await sendEmail({ to: email, subject: 'Account Already Exists', html: emailHtml });
+
+      return res.status(200).json({ success: true });
     }
 
     return res.status(400).json({ error: 'Invalid action' });

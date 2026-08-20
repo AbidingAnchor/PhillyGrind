@@ -146,3 +146,42 @@ export function createContactEmail({ name, email, category, message, created_at 
     `
   });
 }
+
+export function createExistingAccountEmail() {
+  return createEmailTemplate({
+    subject: 'Account Already Exists',
+    content: `
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; color: #111827;">Account Already Exists</h2>
+      <p style="margin: 0 0 16px 0; color: #374151; font-size: 15px; line-height: 1.6;">
+        Someone attempted to create a new PhillyGrind account using this email address.
+      </p>
+      <p style="margin: 0 0 16px 0; color: #374151; font-size: 15px; line-height: 1.6;">
+        <strong>If this was you:</strong> You already have an account. Please log in or reset your password if needed.
+      </p>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 24px 0;">
+        <tr>
+          <td align="center" style="padding: 16px;">
+            <a href="https://phillygrind.work/login" style="display: inline-block; background: #22c55e; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+              Log In to Your Account
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding: 8px 0;">
+            <span style="color: #9ca3af; font-size: 14px;">or</span>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding: 16px;">
+            <a href="https://phillygrind.work/reset-password" style="display: inline-block; background: #f3f4f6; color: #111827; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+              Reset Your Password
+            </a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin: 24px 0 0 0; color: #374151; font-size: 15px; line-height: 1.6;">
+        <strong>If this wasn't you:</strong> No action is required. Your account remains secure.
+      </p>
+    `
+  });
+}
