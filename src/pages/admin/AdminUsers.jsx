@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Loader2, ShieldOff, ShieldBan, ShieldCheck, Users, BadgeCheck, Ban, UserX } from 'lucide-react';
-import { adminVerifyLandlord, getAdminUsers, liftSuspension, suspendUser, banUser, ipBanUser } from '../../lib/adminApi.js';
+import { adminVerifyLandlord, getAdminUsers, liftSuspension, suspendUser, banUser, ipBanUser, getUserSuspensionStatus } from '../../lib/adminApi.js';
 import { supabase } from '../../lib/supabase.js';
 import { useAuth } from '../../lib/auth.jsx';
 import KebabMenu from '../../components/KebabMenu.jsx';
@@ -17,6 +17,8 @@ export default function AdminUsers() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [nameHistory, setNameHistory] = useState([]);
   const [loadingNameHistory, setLoadingNameHistory] = useState(false);
+  const [suspensionStatus, setSuspensionStatus] = useState(null);
+  const [loadingSuspension, setLoadingSuspension] = useState(false);
   const [moderationReason, setModerationReason] = useState('');
   const [moderationAction, setModerationAction] = useState(null);
   const [processingModeration, setProcessingModeration] = useState(false);
@@ -56,24 +58,32 @@ export default function AdminUsers() {
     async function loadNameHistory() {
       if (!selectedUser) {
         setNameHistory([]);
+        setSuspensionStatus(null);
         return;
       }
 
       setLoadingNameHistory(true);
+      setLoadingSuspension(true);
       try {
-        const { data, error } = await supabase
-          .from('name_history')
-          .select('*')
-          .eq('user_id', selectedUser.id)
-          .order('changed_at', { ascending: false });
+        const [nameHistoryData, suspensionData] = await Promise.all([
+          supabase
+            .from('name_history')
+            .select('*')
+            .eq('user_id', selectedUser.id)
+            .order('changed_at', { ascending: false }),
+          getUserSuspensionStatus(selectedUser.id)
+        ]);
 
-        if (error) throw error;
-        setNameHistory(data || []);
+        if (nameHistoryData.error) throw nameHistoryData.error;
+        setNameHistory(nameHistoryData.data || []);
+        setSuspensionStatus(suspensionData);
       } catch (err) {
-        console.error('Failed to load name history:', err);
+        console.error('Failed to load user details:', err);
         setNameHistory([]);
+        setSuspensionStatus(null);
       } finally {
         setLoadingNameHistory(false);
+        setLoadingSuspension(false);
       }
     }
 
@@ -129,8 +139,10 @@ export default function AdminUsers() {
       
       setModerationAction(null);
       setModerationReason('');
-      setSelectedUser(null);
       await loadUsers();
+      // Refresh suspension status for the selected user
+      const newSuspensionStatus = await getUserSuspensionStatus(selectedUser.id);
+      setSuspensionStatus(newSuspensionStatus);
     } catch (err) {
       setError(err.message || 'Failed to perform moderation action.');
     } finally {
@@ -144,6 +156,9 @@ export default function AdminUsers() {
     try {
       await liftSuspension(userId);
       await loadUsers();
+      if (selectedUser?.id === userId) {
+        setSuspensionStatus(null);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -231,9 +246,9 @@ export default function AdminUsers() {
                     <td>{user.listingCount}</td>
                     <td>{user.report_count ?? 0}</td>
                     <td>
-                      {suspension ? (
-                        <span className={`admin-status-badge ${suspension.action_type}`}>
-                          {suspension.action_type}
+                      {user.suspension ? (
+                        <span className={`admin-status-badge ${user.suspension.suspension_type}`}>
+                          {user.suspension.suspension_type === 'ban' ? 'BANNED' : 'SUSPENDED'}
                         </span>
                       ) : (
                         <span className="admin-status-badge active">active</span>
@@ -322,21 +337,43 @@ export default function AdminUsers() {
               <span className="admin-detail-label">Landlord Verified</span>
               <span className="admin-detail-value">{selectedUser.landlord_verified ? 'Yes' : 'No'}</span>
             </div>
-            {selectedUser.suspension && (
+            {loadingSuspension ? (
+              <div className="admin-detail-row">
+                <span className="admin-detail-label">Status</span>
+                <span className="admin-detail-value">Loading...</span>
+              </div>
+            ) : suspensionStatus ? (
               <>
                 <div className="admin-detail-row">
                   <span className="admin-detail-label">Status</span>
-                  <span className="admin-detail-value">{selectedUser.suspension.action_type}</span>
+                  <span className={`admin-detail-value admin-status-badge ${suspensionStatus.suspension_type}`}>
+                    {suspensionStatus.suspension_type === 'ban' ? 'BANNED' : 'SUSPENDED'}
+                  </span>
                 </div>
                 <div className="admin-detail-row">
                   <span className="admin-detail-label">Reason</span>
-                  <span className="admin-detail-value">{selectedUser.suspension.reason}</span>
+                  <span className="admin-detail-value">{suspensionStatus.reason}</span>
                 </div>
                 <div className="admin-detail-row">
-                  <span className="admin-detail-label">Suspended Since</span>
-                  <span className="admin-detail-value">{new Date(selectedUser.suspension.created_at).toLocaleString()}</span>
+                  <span className="admin-detail-label">
+                    {suspensionStatus.suspension_type === 'ban' ? 'Banned Since' : 'Suspended Since'}
+                  </span>
+                  <span className="admin-detail-value">
+                    {new Date(suspensionStatus.created_at || suspensionStatus.suspended_at).toLocaleString()}
+                  </span>
                 </div>
+                {suspensionStatus.expires_at && (
+                  <div className="admin-detail-row">
+                    <span className="admin-detail-label">Expires</span>
+                    <span className="admin-detail-value">{new Date(suspensionStatus.expires_at).toLocaleString()}</span>
+                  </div>
+                )}
               </>
+            ) : (
+              <div className="admin-detail-row">
+                <span className="admin-detail-label">Status</span>
+                <span className="admin-detail-value admin-status-badge active">Active</span>
+              </div>
             )}
             {nameHistory.length > 0 && (
               <div className="admin-detail-row">
@@ -360,34 +397,48 @@ export default function AdminUsers() {
               <div className="admin-moderation-section">
                 <h3>Moderation Actions</h3>
                 <div className="admin-moderation-buttons">
-                  <button
-                    type="button"
-                    className="admin-moderation-btn suspend"
-                    onClick={() => setModerationAction('suspend')}
-                    disabled={processingModeration}
-                  >
-                    <ShieldBan size={16} />
-                    Suspend
-                  </button>
-                  <button
-                    type="button"
-                    className="admin-moderation-btn ban"
-                    onClick={() => setModerationAction('ban')}
-                    disabled={processingModeration}
-                  >
-                    <Ban size={16} />
-                    Ban
-                  </button>
-                  {isOwner && (
+                  {suspensionStatus ? (
                     <button
                       type="button"
-                      className="admin-moderation-btn ip-ban"
-                      onClick={() => setModerationAction('ip_ban')}
+                      className="admin-moderation-btn lift"
+                      onClick={() => handleLift(selectedUser.id)}
                       disabled={processingModeration}
                     >
-                      <UserX size={16} />
-                      IP Ban
+                      <ShieldCheck size={16} />
+                      Lift Suspension
                     </button>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="admin-moderation-btn suspend"
+                        onClick={() => setModerationAction('suspend')}
+                        disabled={processingModeration}
+                      >
+                        <ShieldBan size={16} />
+                        Suspend
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-moderation-btn ban"
+                        onClick={() => setModerationAction('ban')}
+                        disabled={processingModeration}
+                      >
+                        <Ban size={16} />
+                        Ban
+                      </button>
+                      {isOwner && (
+                        <button
+                          type="button"
+                          className="admin-moderation-btn ip-ban"
+                          onClick={() => setModerationAction('ip_ban')}
+                          disabled={processingModeration}
+                        >
+                          <UserX size={16} />
+                          IP Ban
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
                 {moderationAction && (

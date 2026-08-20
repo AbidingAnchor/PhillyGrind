@@ -111,8 +111,8 @@ export async function suspendUser(userId, reason, expiresAt = null) {
 
   if (logError) throw new Error(logError.message);
 
-  // Invalidate user's session
-  await supabase.auth.admin.signOutUser(userId);
+  // Invalidate user's session using correct Admin API method
+  await supabase.auth.admin.signOut(userId, 'global');
 
   return { success: true };
 }
@@ -149,8 +149,8 @@ export async function banUser(userId, reason) {
 
   if (logError) throw new Error(logError.message);
 
-  // Invalidate user's session
-  await supabase.auth.admin.signOutUser(userId);
+  // Invalidate user's session using correct Admin API method
+  await supabase.auth.admin.signOut(userId, 'global');
 
   return { success: true };
 }
@@ -210,8 +210,8 @@ export async function ipBanUser(userId, reason) {
 
   if (logError) throw new Error(logError.message);
 
-  // Invalidate user's session
-  await supabase.auth.admin.signOutUser(userId);
+  // Invalidate user's session using correct Admin API method
+  await supabase.auth.admin.signOut(userId, 'global');
 
   return { success: true };
 }
@@ -235,12 +235,35 @@ export async function liftSuspension(userId) {
       admin_id: currentUser.user.id,
       target_user_id: userId,
       action_type: 'lift_suspension',
-      reason: 'Suspension lifted',
     });
 
   if (logError) throw new Error(logError.message);
 
   return { success: true };
+}
+
+export async function getUserSuspensionStatus(userId) {
+  const { data, error } = await supabase
+    .from('suspended_users')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error && error.code !== 'PGRST116') throw error;
+
+  // Check if suspension is active (not lifted and not expired)
+  if (data) {
+    const isLifted = data.lifted_at !== null;
+    const isExpired = data.expires_at !== null && new Date(data.expires_at) < new Date();
+    
+    if (isLifted || isExpired) {
+      return null; // Suspension is not active
+    }
+    
+    return data;
+  }
+
+  return null;
 }
 
 export async function checkUserSuspension(userId) {

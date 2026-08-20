@@ -202,7 +202,7 @@ async function handleAdminUsers(req, res) {
     supabaseAdmin.from('gigs').select('user_id').in('user_id', userIds),
     supabaseAdmin.from('marketplace_listings').select('user_id').in('user_id', userIds),
     supabaseAdmin.from('housing_listings').select('user_id').in('user_id', userIds),
-    supabaseAdmin.from('suspended_users').select('*').in('user_id', userIds).is('lifted_at', null),
+    supabaseAdmin.from('suspended_users').select('*').in('user_id', userIds).is('lifted_at', null).or('expires_at.is.null,expires_at.gt.now()'),
     supabaseAdmin.from('housing_listings').select('id,user_id').in('user_id', userIds),
     supabaseAdmin.from('landlord_reports').select('listing_id'),
   ]);
