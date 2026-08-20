@@ -130,7 +130,7 @@ export async function submitBid({ listingId, pitch }) {
 
 export async function updateBidStatus({ bidId, status }) {
   const token = await getAccessToken();
-  const response = await fetch('/api/update-bid-status', {
+  const response = await fetch('/api/listing-actions?action=update-bid-status', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -139,10 +139,7 @@ export async function updateBidStatus({ bidId, status }) {
     body: JSON.stringify({ bid_id: bidId, status }),
   });
 
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.error || 'Could not update bid.');
-  }
-
-  return payload;
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Failed to update bid status');
+  return data;
 }

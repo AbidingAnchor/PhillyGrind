@@ -198,7 +198,7 @@ async function removeListingsWithActiveOrders(listings) {
   if (!hasSupabaseConfig || !listingIds.length) return list;
 
   try {
-    const response = await fetch('/api/delete-listing?action=unavailable-listings', {
+    const response = await fetch('/api/listing-actions?action=unavailable-listings', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -206,15 +206,13 @@ async function removeListingsWithActiveOrders(listings) {
       body: JSON.stringify({ listing_ids: listingIds }),
     });
 
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.error || 'Could not check listing availability.');
-    }
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to check unavailable listings');
 
-    const unavailableIds = new Set(payload.unavailableListingIds || []);
-    return list.filter((listing) => !unavailableIds.has(listing.id));
+    const unavailableIds = new Set(data.unavailableListingIds ?? []);
+    return list.filter((item) => !unavailableIds.has(item.id));
   } catch (error) {
-    console.warn(error);
+    console.error('Failed to check unavailable listings:', error);
     return list;
   }
 }
@@ -504,7 +502,7 @@ export async function deleteListing(type, id) {
   }
 
   const token = await getAccessToken();
-  const response = await fetch('/api/delete-listing', {
+  const response = await fetch('/api/listing-actions?action=delete-listing', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

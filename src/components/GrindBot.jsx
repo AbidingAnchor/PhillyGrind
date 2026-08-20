@@ -88,7 +88,7 @@ function GrindBot() {
     if (!listingIds.length) return listings;
 
     try {
-      const response = await fetch('/api/delete-listing?action=unavailable-listings', {
+      const response = await fetch('/api/listing-actions?action=unavailable-listings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

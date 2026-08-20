@@ -44,7 +44,7 @@ async function adminRequest(action, { method = 'GET', body, query = {} } = {}) {
 
 async function listingRequest(action, body) {
   const token = await getAccessToken();
-  const response = await fetch(`/api/delete-listing?action=${action}`, {
+  const response = await fetch(`/api/listing-actions?action=${action}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -53,11 +53,9 @@ async function listingRequest(action, body) {
     body: JSON.stringify(body),
   });
 
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(payload.error || 'Listing request failed.');
-  }
-  return payload;
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Request failed');
+  return data;
 }
 
 export async function getAdminOverview() {
