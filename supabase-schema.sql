@@ -225,7 +225,7 @@ alter table profiles
   add column if not exists is_adult_confirmed boolean not null default false;
 
 alter table profiles
-  add column if not exists age_flag_status text check (age_flag_status in ('none', 'flagged', 'reviewed', 'cleared')) not null default 'none';
+  add column if not exists age_flag_status text check (age_flag_status in ('none', 'flagged', 'reviewed_cleared', 'reviewed_confirmed_minor')) not null default 'none';
 
 alter table profiles
   add column if not exists age_flag_content_id uuid;

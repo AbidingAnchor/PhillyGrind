@@ -138,6 +138,81 @@ export async function markModerationLogReviewed(logId) {
   return data;
 }
 
+export async function clearAgeConcern(userId, contentId, contentType) {
+  // Restore the hidden content
+  if (contentType === 'community_post') {
+    const { error } = await supabase
+      .from('community_posts')
+      .update({ hidden: false, hidden_reason: null })
+      .eq('id', contentId);
+    if (error) throw new Error(error.message);
+  } else if (contentType === 'community_comment') {
+    const { error } = await supabase
+      .from('community_comments')
+      .update({ hidden: false, hidden_reason: null })
+      .eq('id', contentId);
+    if (error) throw new Error(error.message);
+  }
+
+  // Update profile age flag status
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ 
+      age_flag_status: 'reviewed_cleared',
+      age_flag_content_id: null 
+    })
+    .eq('id', userId)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function confirmMinorUser(userId, contentId, contentType) {
+  // Log the action to admin_action_log
+  const { data: currentUser } = await supabase.auth.getUser();
+  if (!currentUser?.user) throw new Error('Not authenticated');
+
+  const { error: logError } = await supabase
+    .from('admin_action_log')
+    .insert({
+      admin_id: currentUser.user.id,
+      target_user_id: userId,
+      action_type: 'ban',
+      reason: 'coppa_minor_confirmed',
+      metadata: { content_id: contentId, content_type: contentType },
+    });
+
+  if (logError) throw new Error(logError.message);
+
+  // Delete user's personal data (profile fields, photos, bio)
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({
+      bio: null,
+      avatar_url: null,
+      banner_url: null,
+      resume_url: null,
+      resume_path: null,
+      skills: '{}',
+      neighborhoods: '{}',
+      neighborhood: null,
+      availability: null,
+      profile_tags: '{}',
+      age_flag_status: 'reviewed_confirmed_minor',
+      age_flag_content_id: null,
+    })
+    .eq('id', userId);
+
+  if (profileError) throw new Error(profileError.message);
+
+  // Suspend/deactivate the account using existing suspend logic
+  await suspendUser(userId, 'COPPA minor confirmed - account deactivated', 'banned');
+
+  return { success: true };
+}
+
 export async function getUnreviewedModerationCount() {
   const { count, error } = await supabase
     .from('moderation_logs')

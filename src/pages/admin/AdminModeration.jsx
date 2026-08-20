@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ShieldAlert, Loader2, Check } from 'lucide-react';
-import { getModerationLogs, markModerationLogReviewed } from '../../lib/adminApi.js';
+import { ShieldAlert, Loader2, Check, X, UserX, RefreshCw } from 'lucide-react';
+import { getModerationLogs, markModerationLogReviewed, clearAgeConcern, confirmMinorUser } from '../../lib/adminApi.js';
 
 export default function AdminModeration() {
   const [logs, setLogs] = useState([]);
@@ -10,6 +10,7 @@ export default function AdminModeration() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actingId, setActingId] = useState('');
+  const [confirmAction, setConfirmAction] = useState(null);
 
   async function loadLogs() {
     try {
@@ -42,6 +43,44 @@ export default function AdminModeration() {
     } finally {
       setActingId('');
     }
+  }
+
+  async function handleClearAgeConcern(log) {
+    setActingId(log.id);
+    setError('');
+    try {
+      await clearAgeConcern(log.user_id, log.content_id, log.content_type);
+      await markModerationLogReviewed(log.id);
+      await loadLogs();
+      setConfirmAction(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActingId('');
+    }
+  }
+
+  async function handleConfirmMinor(log) {
+    setActingId(log.id);
+    setError('');
+    try {
+      await confirmMinorUser(log.user_id, log.content_id, log.content_type);
+      await markModerationLogReviewed(log.id);
+      await loadLogs();
+      setConfirmAction(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActingId('');
+    }
+  }
+
+  function requestConfirmAction(action, log) {
+    setConfirmAction({ action, log });
+  }
+
+  function cancelConfirmAction() {
+    setConfirmAction(null);
   }
 
   const categoryOptions = [
@@ -162,7 +201,29 @@ export default function AdminModeration() {
                     <td className="admin-preview-cell">{log.content_preview || '-'}</td>
                     <td>{new Date(log.created_at).toLocaleString()}</td>
                     <td className="admin-table-actions">
-                      {canMarkReviewed && (
+                      {isAgeConcern && canMarkReviewed && (
+                        <div className="admin-age-actions">
+                          <button
+                            type="button"
+                            className="admin-table-btn admin-clear-btn"
+                            disabled={busy}
+                            onClick={() => requestConfirmAction('clear', log)}
+                            title="Clear - restore content and mark as reviewed"
+                          >
+                            {busy ? <Loader2 size={14} className="spin" /> : <RefreshCw size={14} />}
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-table-btn admin-confirm-minor-btn"
+                            disabled={busy}
+                            onClick={() => requestConfirmAction('confirm_minor', log)}
+                            title="Confirm Minor - suspend account and delete data"
+                          >
+                            {busy ? <Loader2 size={14} className="spin" /> : <UserX size={14} />}
+                          </button>
+                        </div>
+                      )}
+                      {!isAgeConcern && canMarkReviewed && (
                         <button
                           type="button"
                           className="admin-table-btn"
@@ -182,6 +243,52 @@ export default function AdminModeration() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {confirmAction && (
+        <div className="admin-confirm-modal">
+          <div className="admin-confirm-content">
+            <h3>
+              {confirmAction.action === 'clear' ? 'Clear Age Concern' : 'Confirm Minor User'}
+            </h3>
+            <p>
+              {confirmAction.action === 'clear' 
+                ? 'This will restore the hidden content and mark the age concern as cleared. Are you sure?'
+                : 'This will suspend the account, delete all personal data (bio, photos, profile info), and log the action as a confirmed COPPA minor. This action cannot be undone. Are you sure?'
+              }
+            </p>
+            <div className="admin-confirm-actions">
+              <button
+                type="button"
+                className="admin-confirm-cancel"
+                onClick={cancelConfirmAction}
+                disabled={actingId === confirmAction.log.id}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={`admin-confirm-confirm ${confirmAction.action === 'confirm_minor' ? 'danger' : ''}`}
+                onClick={() => {
+                  if (confirmAction.action === 'clear') {
+                    handleClearAgeConcern(confirmAction.log);
+                  } else {
+                    handleConfirmMinor(confirmAction.log);
+                  }
+                }}
+                disabled={actingId === confirmAction.log.id}
+              >
+                {actingId === confirmAction.log.id ? (
+                  <Loader2 size={16} className="spin" />
+                ) : confirmAction.action === 'clear' ? (
+                  'Clear'
+                ) : (
+                  'Confirm Minor'
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
