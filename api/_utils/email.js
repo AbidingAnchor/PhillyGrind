@@ -1,4 +1,4 @@
-const FROM_ADDRESS = 'PhillyGrind <noreply@phillygrind.com>';
+const FROM_ADDRESS = 'PhillyGrind <noreply@phillygrind.work>';
 
 export async function sendEmail({ to, subject, html }) {
   const apiKey = process.env.RESEND_API_KEY;
