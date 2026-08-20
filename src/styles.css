@@ -11787,6 +11787,13 @@ input[type="datetime-local"]:focus {
   position: relative;
 }
 
+.reaction-summary-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .reaction-tooltip {
   position: absolute;
   bottom: 100%;

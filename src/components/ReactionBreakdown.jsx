@@ -20,23 +20,25 @@ export default function ReactionBreakdown({ breakdown, maxTypes = 3, className =
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      <div className="reaction-display-stack" aria-hidden="true">
-        {visibleTypes.map(({ type }, index) => (
-          <span
-            key={type}
-            className="reaction-display-badge"
-            data-reaction={type}
-            style={{ zIndex: index + 1 }}
-          >
-            <ReactionIcon 
-              type={type} 
-              variant="badge" 
-              className="reaction-display-icon" 
-            />
-          </span>
-        ))}
+      <div className="reaction-summary-icons">
+        <div className="reaction-display-stack" aria-hidden="true">
+          {visibleTypes.map(({ type }, index) => (
+            <span
+              key={type}
+              className="reaction-display-badge"
+              data-reaction={type}
+              style={{ zIndex: index + 1 }}
+            >
+              <ReactionIcon 
+                type={type} 
+                variant="badge" 
+                className="reaction-display-icon" 
+              />
+            </span>
+          ))}
+        </div>
+        <span className="reaction-summary-total">{formatReactionCount(total)}</span>
       </div>
-      <span className="reaction-summary-total">{formatReactionCount(total)}</span>
       
       {showTooltip && userReactionData && (
         <div className="reaction-tooltip">
