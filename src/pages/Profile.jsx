@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Briefcase, MapPin, Calendar, Star, Heart, MessageCircle } from 'lucide-react';
 import FacebookShareIcon from '../components/FacebookShareIcon.jsx';
+import PostReactionControl from '../components/PostReactionControl.jsx';
 import ListingCard from '../components/ListingCard.jsx';
 import StarRating from '../components/StarRating.jsx';
 import ChatModal from '../components/ChatModal.jsx';
@@ -16,6 +17,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { getUserAvatarColor } from '../lib/reactions.js';
 import { getUserCommunityPosts, canViewActivity } from '../lib/communityApi.js';
 import { getOrCreateProfileConversation, sendMessage } from '../lib/messagesApi.js';
+import { getUserReaction, toggleCommunityPostReaction, getReactionBreakdown } from '../lib/communityApi.js';
 
 const availabilityOptions = ['Available Now', 'Weekends Only', 'Evenings Only', 'Not Available'];
 const profileTagOptions = [
@@ -115,6 +117,7 @@ function Profile() {
   const [loadingCommunityPosts, setLoadingCommunityPosts] = useState(false);
   const [activeTab, setActiveTab] = useState('activity');
   const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [postReactions, setPostReactions] = useState({});
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [profileConversation, setProfileConversation] = useState(null);
   const isOwnProfile = isLoggedIn && user?.id === viewedUserId;
@@ -225,6 +228,19 @@ function Profile() {
         setCommunityPosts(posts);
         setHasMoreCommunityPosts(hasMore);
         setCommunityPostsPage(1);
+        
+        // Load reactions for each post
+        const reactionsData = {};
+        for (const post of posts) {
+          try {
+            const reaction = await getUserReaction(post.id);
+            const breakdown = await getReactionBreakdown(post.id);
+            reactionsData[post.id] = { userReaction: reaction, breakdown };
+          } catch (err) {
+            reactionsData[post.id] = { userReaction: null, breakdown: [] };
+          }
+        }
+        setPostReactions(reactionsData);
       } catch (err) {
         console.warn('Failed to load community posts:', err);
         setCommunityPosts([]);
@@ -247,10 +263,64 @@ function Profile() {
       setCommunityPosts((current) => [...current, ...posts]);
       setHasMoreCommunityPosts(hasMore);
       setCommunityPostsPage(nextPage);
+      
+      // Load reactions for new posts
+      const reactionsData = { ...postReactions };
+      for (const post of posts) {
+        try {
+          const reaction = await getUserReaction(post.id);
+          const breakdown = await getReactionBreakdown(post.id);
+          reactionsData[post.id] = { userReaction: reaction, breakdown };
+        } catch (err) {
+          reactionsData[post.id] = { userReaction: null, breakdown: [] };
+        }
+      }
+      setPostReactions(reactionsData);
     } catch (err) {
       console.warn('Failed to load more community posts:', err);
     } finally {
       setLoadingCommunityPosts(false);
+    }
+  }
+
+  async function handlePostReactionSelect(postId, reactionType) {
+    try {
+      await toggleCommunityPostReaction(postId, reactionType);
+      const newReaction = await getUserReaction(postId);
+      const breakdown = await getReactionBreakdown(postId);
+      setPostReactions(prev => ({
+        ...prev,
+        [postId]: { userReaction: newReaction, breakdown }
+      }));
+    } catch (error) {
+      console.error('Failed to toggle reaction:', error);
+      alert(error.message);
+    }
+  }
+
+  async function handlePostLike(postId) {
+    const currentReaction = postReactions[postId]?.userReaction;
+    try {
+      if (currentReaction) {
+        await toggleCommunityPostReaction(postId, 'like');
+        const newReaction = await getUserReaction(postId);
+        const breakdown = await getReactionBreakdown(postId);
+        setPostReactions(prev => ({
+          ...prev,
+          [postId]: { userReaction: newReaction, breakdown }
+        }));
+      } else {
+        await toggleCommunityPostReaction(postId, 'like');
+        const newReaction = await getUserReaction(postId);
+        const breakdown = await getReactionBreakdown(postId);
+        setPostReactions(prev => ({
+          ...prev,
+          [postId]: { userReaction: newReaction, breakdown }
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to toggle like:', error);
+      alert(error.message);
     }
   }
 
@@ -680,10 +750,14 @@ function Profile() {
                                 <span className="feed-post-like-count">{post.like_count || 0}</span>
                               </div>
                               <div className="feed-post-action-bar">
-                                <Link to={`/community/post/${post.id}`} className="feed-post-action-btn">
-                                  <Heart size={18} />
-                                  <span>React</span>
-                                </Link>
+                                <PostReactionControl
+                                  key={`reaction-control-${postReactions[post.id]?.userReaction || 'none'}-${post.id}`}
+                                  userReaction={postReactions[post.id]?.userReaction}
+                                  onLike={() => handlePostLike(post.id)}
+                                  onReactionSelect={(reactionType) => handlePostReactionSelect(post.id, reactionType)}
+                                  buttonClassName="feed-post-action-btn"
+                                  iconSize={18}
+                                />
                                 <div className="feed-post-action-divider"></div>
                                 <Link to={`/community/post/${post.id}`} className="feed-post-action-btn">
                                   <MessageCircle size={18} />
