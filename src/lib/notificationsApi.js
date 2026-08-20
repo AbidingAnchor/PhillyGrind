@@ -82,21 +82,43 @@ export async function deleteAllNotifications() {
 export function subscribeToNotifications({ userId, onNotification }) {
   if (!hasSupabaseConfig || !userId) return () => {};
 
-  const channel = supabase
-    .channel(`notifications:${userId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-        filter: `user_id=eq.${userId}`,
-      },
-      (payload) => onNotification(payload.new),
-    )
-    .subscribe();
+  const channelName = `notifications:${userId}`;
+  
+  try {
+    // Remove any existing channel with the same name to prevent conflicts
+    try {
+      supabase.removeChannel(channelName);
+    } catch (e) {
+      // Ignore error if channel doesn't exist
+    }
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => onNotification(payload.new),
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIPTION_ERROR') {
+          console.error('Notification subscription error:', status);
+        }
+      });
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (error) {
+        console.error('Error removing notification channel:', error);
+      }
+    };
+  } catch (error) {
+    console.error('Error subscribing to notifications:', error);
+    return () => {};
+  }
 }
