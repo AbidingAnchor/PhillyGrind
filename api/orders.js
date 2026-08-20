@@ -745,12 +745,19 @@ async function handleAdminDeleteCommunityPost(req, res, admin) {
     return;
   }
 
+  console.log('[AdminDeleteCommunityPost] Attempting to delete post:', postId);
+
   const { error } = await supabaseAdmin
     .from('community_posts')
     .delete()
     .eq('id', postId);
 
-  if (error) throw error;
+  if (error) {
+    console.error('[AdminDeleteCommunityPost] Delete failed:', error);
+    throw error;
+  }
+
+  console.log('[AdminDeleteCommunityPost] Delete succeeded for post:', postId);
   sendJson(res, 200, { ok: true });
 }
 
