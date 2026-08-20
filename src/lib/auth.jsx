@@ -208,8 +208,10 @@ export function AuthProvider({ children }) {
     console.log('[Auth] Supabase signUp response:', { data: !!data, hasError: !!error, errorMessage: error?.message, errorCode: error?.code });
 
     if (error) {
+      // Log raw error unconditionally to see what Supabase actually returns
+      console.log('[Auth] RAW Supabase error:', { message: error.message, code: error.code, name: error.name, status: error.status });
+      
       // If email already exists, send notification email but keep same UI message
-      console.log('[Auth] Signup error detected:', error.message, error.code);
       if (error.message.includes('already registered') || error.message.includes('already been registered')) {
         console.log('[Auth] Existing account detected, sending notification email to:', email);
         try {
