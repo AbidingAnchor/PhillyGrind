@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { getTrendingPosts } from '../lib/communityApi';
+import { getUserAvatarColor } from '../lib/reactions.js';
 
 function TrendingPostsWidget() {
   const [trending, setTrending] = useState([]);
@@ -12,6 +13,13 @@ function TrendingPostsWidget() {
   }, []);
 
   console.log('[Trending] posts found:', trending.length);
+
+  const getInitial = (name) => {
+    if (!name) return '?';
+    const trimmed = name.trim();
+    if (!trimmed) return '?';
+    return trimmed.charAt(0).toUpperCase();
+  };
 
   if (trending.length === 0) {
     return (
@@ -28,7 +36,12 @@ function TrendingPostsWidget() {
       {trending.map(post => (
         <div key={post.id} className="trending-post-item" onClick={() => navigate(`/community?post=${post.id}`)}>
           <div className="trending-post-author">
-            <img src={post.authorAvatarUrl || '/default-avatar.png'} className="trending-post-avatar" />
+            <span 
+              className="trending-post-avatar"
+              style={!post.authorAvatarUrl ? { backgroundColor: getUserAvatarColor(post.authorId, post.authorName) } : undefined}
+            >
+              {post.authorAvatarUrl ? <img src={post.authorAvatarUrl} alt={`${post.authorName} profile`} /> : getInitial(post.authorName)}
+            </span>
             <span>{post.authorName}</span>
           </div>
           <p className="trending-post-snippet">{post.content.slice(0, 70)}{post.content.length > 70 ? '...' : ''}</p>
