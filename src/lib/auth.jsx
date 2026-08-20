@@ -205,29 +205,38 @@ export function AuthProvider({ children }) {
       },
     });
 
-    console.log('[Auth] Supabase signUp response:', { data: !!data, hasError: !!error, errorMessage: error?.message, errorCode: error?.code });
+    console.log('[Auth] Supabase signUp response:', { 
+      data: !!data, 
+      hasError: !!error, 
+      errorMessage: error?.message, 
+      errorCode: error?.code,
+      hasUser: !!data?.user,
+      userIdentitiesCount: data?.user?.identities?.length,
+      hasSession: !!data?.session
+    });
 
     if (error) {
       // Log raw error unconditionally to see what Supabase actually returns
       console.log('[Auth] RAW Supabase error:', { message: error.message, code: error.code, name: error.name, status: error.status });
-      
-      // If email already exists, send notification email but keep same UI message
-      if (error.message.includes('already registered') || error.message.includes('already been registered')) {
-        console.log('[Auth] Existing account detected, sending notification email to:', email);
-        try {
-          await fetch('/api/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'send-existing-account-email', email }),
-          });
-          console.log('[Auth] Existing account email API call completed');
-        } catch (emailError) {
-          console.warn('[Auth] Failed to send existing account email:', emailError);
-        }
-        // Still throw the error to maintain consistent UI message
-        throw error;
-      }
       throw error;
+    }
+
+    // Check if this is a duplicate signup (no error, but user has empty identities)
+    // This is Supabase's anti-enumeration pattern for existing emails
+    if (data?.user?.identities?.length === 0) {
+      console.log('[Auth] Existing account detected (empty identities), sending notification email to:', email);
+      try {
+        await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'send-existing-account-email', email }),
+        });
+        console.log('[Auth] Existing account email API call completed');
+      } catch (emailError) {
+        console.warn('[Auth] Failed to send existing account email:', emailError);
+      }
+      // Return success to maintain anti-enumeration (same UI message as new signup)
+      return data;
     }
 
     // Capture IP after successful signup
