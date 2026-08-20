@@ -88,8 +88,10 @@ export async function suspendUser(userId, reason, expiresAt = null) {
     .upsert({
       user_id: userId,
       suspension_type: 'suspend',
+      action_type: 'suspend', // Backward compatibility with existing schema
       reason,
       expires_at: expiresAt,
+      suspended_by: currentUser.user.id, // Backward compatibility with existing schema
     }, {
       onConflict: 'user_id'
     });
@@ -125,8 +127,10 @@ export async function banUser(userId, reason) {
     .upsert({
       user_id: userId,
       suspension_type: 'ban',
+      action_type: 'banned', // Backward compatibility with existing schema
       reason,
       expires_at: null,
+      suspended_by: currentUser.user.id, // Backward compatibility with existing schema
     }, {
       onConflict: 'user_id'
     });
