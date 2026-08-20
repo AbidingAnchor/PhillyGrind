@@ -110,6 +110,20 @@ async function handleCreateListing(req, res, user) {
   }
 
   if (listingType === 'community') {
+    // Check if user is suspended before allowing post creation
+    const { data: suspension, error: suspensionError } = await supabaseAdmin
+      .from('suspended_users')
+      .select('*')
+      .eq('user_id', user.id)
+      .is('lifted_at', null)
+      .or('expires_at.is.null,expires_at.gt.now()')
+      .maybeSingle();
+
+    if (suspension) {
+      sendJson(res, 403, { error: 'Your account is suspended and cannot create posts at this time.' });
+      return;
+    }
+
     const payload = {
       content: listing.content.trim(),
       neighborhood: listing.neighborhood,
@@ -145,6 +159,20 @@ async function handleCreateListing(req, res, user) {
     payload.apply_url = payload.apply_url?.trim() || null;
   } else {
     delete payload.apply_url;
+  }
+
+  // Check if user is suspended before allowing listing creation
+  const { data: suspension, error: suspensionError } = await supabaseAdmin
+    .from('suspended_users')
+    .select('*')
+    .eq('user_id', user.id)
+    .is('lifted_at', null)
+    .or('expires_at.is.null,expires_at.gt.now()')
+    .maybeSingle();
+
+  if (suspension) {
+    sendJson(res, 403, { error: 'Your account is suspended and cannot create listings at this time.' });
+    return;
   }
 
   const boostFields = ['basic', 'pro'].includes(boostTier)
