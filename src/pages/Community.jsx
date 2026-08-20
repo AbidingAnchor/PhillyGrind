@@ -1149,6 +1149,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
                 <Flag size={14} />
                 Report
               </button>
+              {console.log('[Menu render] isOwnPost:', isOwnPost, 'showing Block:', !isOwnPost, 'showing Delete:', isOwnPost)}
               {!isOwnPost && (
                 <button
                   type="button"
