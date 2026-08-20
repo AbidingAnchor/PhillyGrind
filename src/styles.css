@@ -2556,7 +2556,7 @@ main {
 .primary-button,
 .search-bar button {
   background: linear-gradient(135deg, var(--green), #0b8f62);
-  box-shadow: 0 12px 26px rgba(17, 184, 121, 0.24);
+  box-shadow: none;
   color: #fff;
 }
 
@@ -2567,7 +2567,7 @@ main {
 .secondary-detail-button:hover,
 .danger-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 16px 34px rgba(6, 21, 36, 0.16);
+  box-shadow: none;
 }
 
 .hero {
@@ -8644,7 +8644,7 @@ select {
   cursor: pointer;
   transition: all 0.2s ease;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
+  background-repeat: no-repeat !important;
   background-position: right 10px center;
 }
 
@@ -8663,6 +8663,7 @@ select:focus {
   border-color: rgba(255, 255, 255, 0.2);
   color: var(--ink, #f1f5f9);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat !important;
 }
 
 [data-theme="dark"] select:hover {
@@ -9084,14 +9085,14 @@ input[type="datetime-local"]:focus {
 .housing-post-btn {
   white-space: nowrap;
   background: linear-gradient(135deg, var(--green) 0%, #0b8f62 100%);
-  box-shadow: 0 4px 14px rgba(17, 184, 121, 0.3);
+  box-shadow: none;
   transition: all 0.2s ease;
 }
 
 .housing-post-btn:hover {
   background: linear-gradient(135deg, #0b8f62 0%, #097a54 100%);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(17, 184, 121, 0.4);
+  box-shadow: none;
 }
 
 .housing-grid {
