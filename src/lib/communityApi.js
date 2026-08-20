@@ -137,9 +137,9 @@ export async function getCommunityPosts(filters = {}) {
     const filteredUserIds = await getFilteredUsers();
     const filteredPosts = posts.filter((post) => !filteredUserIds.includes(post.user_id));
 
-    // Manually fetch comment counts for each post
+    // Manually fetch comment counts for each post (including nested replies)
     const postIds = filteredPosts.map(p => p.id);
-    const { data: commentCounts, error: countError } = postIds.length > 0
+    const { data: allComments, error: countError } = postIds.length > 0
       ? await supabase
           .from('community_comments')
           .select('post_id')
@@ -149,8 +149,8 @@ export async function getCommunityPosts(filters = {}) {
     if (countError) console.error('[getCommunityPosts] Error fetching comment counts:', countError);
 
     const countsByPost = {};
-    if (commentCounts) {
-      commentCounts.forEach(c => {
+    if (allComments) {
+      allComments.forEach(c => {
         countsByPost[c.post_id] = (countsByPost[c.post_id] || 0) + 1;
       });
     }

@@ -934,6 +934,11 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
     }
   }
 
+  // Count total comments including nested replies
+  const totalCommentCount = comments.reduce((total, comment) => {
+    return total + 1 + (comment.replies?.length || 0);
+  }, 0);
+
   async function handleToggleComments() {
     if (!showComments && comments.length === 0) {
       setLoadingComments(true);
@@ -1205,7 +1210,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
 
       {post.photo_url ? (
         <>
-          {(reactionTotal > 0 || post.comment_count > 0 || post.share_count > 0) && (
+          {(reactionTotal > 0 || (showComments ? totalCommentCount : post.comment_count) > 0 || post.share_count > 0) && (
             <div
               className="feed-post-reaction-summary"
               onClick={() => setShowReactionsModal(true)}
@@ -1213,8 +1218,8 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
             >
               <ReactionBreakdown breakdown={reactionBreakdown} userReaction={userReaction} />
               <span className="feed-post-stats">
-                {post.comment_count > 0 && `${post.comment_count} comments`}
-                {post.comment_count > 0 && post.share_count > 0 && ' · '}
+                {(showComments ? totalCommentCount : post.comment_count) > 0 && `${showComments ? totalCommentCount : post.comment_count} comments`}
+                {(showComments ? totalCommentCount : post.comment_count) > 0 && post.share_count > 0 && ' · '}
                 {post.share_count > 0 && `${post.share_count} shares`}
               </span>
             </div>
@@ -1251,7 +1256,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         </>
       ) : (
         <>
-          {(reactionTotal > 0 || post.comment_count > 0 || post.share_count > 0) && (
+          {(reactionTotal > 0 || (showComments ? totalCommentCount : post.comment_count) > 0 || post.share_count > 0) && (
             <div
               className="feed-post-reaction-summary"
               onClick={() => setShowReactionsModal(true)}
@@ -1259,8 +1264,8 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
             >
               <ReactionBreakdown breakdown={reactionBreakdown} userReaction={userReaction} />
               <span className="feed-post-stats">
-                {post.comment_count > 0 && `${post.comment_count} comments`}
-                {post.comment_count > 0 && post.share_count > 0 && ' · '}
+                {(showComments ? totalCommentCount : post.comment_count) > 0 && `${showComments ? totalCommentCount : post.comment_count} comments`}
+                {(showComments ? totalCommentCount : post.comment_count) > 0 && post.share_count > 0 && ' · '}
                 {post.share_count > 0 && `${post.share_count} shares`}
               </span>
             </div>
