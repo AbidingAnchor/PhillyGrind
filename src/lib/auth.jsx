@@ -112,7 +112,7 @@ export function AuthProvider({ children }) {
 
     loadInitialSession();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!active) return;
 
       setSession(nextSession);
@@ -123,29 +123,30 @@ export function AuthProvider({ children }) {
         loadProfile(nextSession?.user);
       }, 0);
 
-      // Check for suspension/ban immediately after login
+      // Check for suspension/ban immediately after login (non-blocking)
       if (event === 'SIGNED_IN' && nextSession?.user) {
-        try {
-          const { data: suspension, error: suspensionError } = await supabase
-            .from('suspended_users')
-            .select('*')
-            .eq('user_id', nextSession.user.id)
-            .is('lifted_at', null)
-            .or('expires_at.is.null,expires_at.gt.now()')
-            .maybeSingle();
-
-          if (suspension) {
-            console.warn('[Auth] User is suspended/banned:', suspension);
-            await supabase.auth.signOut();
-            const message = suspension.suspension_type === 'ban'
-              ? 'Your account has been banned. If you believe this is an error, please contact support.'
-              : 'Your account has been suspended. If you believe this is an error, please contact support.';
-            alert(message);
-            window.location.href = '/login';
-          }
-        } catch (error) {
-          console.error('[Auth] Suspension check failed:', error);
-        }
+        supabase
+          .from('suspended_users')
+          .select('*')
+          .eq('user_id', nextSession.user.id)
+          .is('lifted_at', null)
+          .or('expires_at.is.null,expires_at.gt.now()')
+          .maybeSingle()
+          .then(({ data: suspension }) => {
+            if (suspension) {
+              console.warn('[Auth] User is suspended/banned:', suspension);
+              supabase.auth.signOut().then(() => {
+                const message = suspension.suspension_type === 'ban'
+                  ? 'Your account has been banned. If you believe this is an error, please contact support.'
+                  : 'Your account has been suspended. If you believe this is an error, please contact support.';
+                alert(message);
+                window.location.href = '/login';
+              });
+            }
+          })
+          .catch((error) => {
+            console.error('[Auth] Suspension check failed:', error);
+          });
       }
     });
 
