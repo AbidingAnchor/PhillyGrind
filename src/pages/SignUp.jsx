@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
 
 function SignUp() {
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', birthdate: '' });
   const [agreed, setAgreed] = useState(false);
   const [status, setStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -15,10 +15,29 @@ function SignUp() {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
+  function calculateAge(birthdate) {
+    const today = new Date();
+    const birthDate = new Date(birthdate);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setSubmitting(true);
     setStatus('');
+
+    // Client-side age verification
+    const age = calculateAge(form.birthdate);
+    if (age < 18) {
+      setStatus('PhillyGrind requires users to be 18 or older.');
+      setSubmitting(false);
+      return;
+    }
 
     try {
       const data = await signUp({ ...form, tosAgreedAt: new Date().toISOString() });
@@ -70,6 +89,16 @@ function SignUp() {
           placeholder="Password"
           minLength="6" 
           required 
+        />
+        <input 
+          className="auth-input" 
+          name="birthdate" 
+          type="date" 
+          value={form.birthdate} 
+          onChange={updateField} 
+          placeholder="Date of Birth"
+          required 
+          max={new Date().toISOString().split('T')[0]}
         />
         <label className="clickwrap-label">
           <input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} required />

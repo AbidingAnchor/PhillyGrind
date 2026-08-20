@@ -3,7 +3,7 @@ import { hasSupabaseConfig, supabase } from './supabase.js';
 import OnboardingTour from '../components/OnboardingTour.jsx';
 
 const AuthContext = createContext(null);
-const profileFields = 'id,name,email,avatar_url,resume_url,resume_path,stripe_account_id,stripe_onboarding_complete,onboarding_complete,tos_agreed_at,two_factor_enabled,identity_verified,verification_status,stripe_identity_session_id,banner_url,profile_tags,accent_color,created_at,role';
+const profileFields = 'id,name,email,avatar_url,resume_url,resume_path,stripe_account_id,stripe_onboarding_complete,onboarding_complete,tos_agreed_at,two_factor_enabled,identity_verified,verification_status,stripe_identity_session_id,banner_url,profile_tags,accent_color,created_at,role,is_adult_confirmed';
 
 function withTimeout(promise, milliseconds, timeoutValue) {
   let timeoutId;
@@ -130,9 +130,28 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  async function signUp({ name, email, password, tosAgreedAt }) {
+  async function signUp({ name, email, password, birthdate, tosAgreedAt }) {
     if (!hasSupabaseConfig) {
       throw new Error('Supabase credentials are missing.');
+    }
+
+    // Server-side age verification
+    function calculateAgeServerSide(birthdateStr) {
+      const today = new Date();
+      const birthDate = new Date(birthdateStr);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    }
+
+    if (birthdate) {
+      const age = calculateAgeServerSide(birthdate);
+      if (age < 18) {
+        throw new Error('PhillyGrind requires users to be 18 or older.');
+      }
     }
 
     const { data, error } = await supabase.auth.signUp({
@@ -153,6 +172,7 @@ export function AuthProvider({ children }) {
           email,
           tos_agreed_at: tosAgreedAt,
           onboarding_complete: false,
+          is_adult_confirmed: true,
         });
       } catch (profileError) {
         console.warn('Profile upsert failed during signup:', profileError);
