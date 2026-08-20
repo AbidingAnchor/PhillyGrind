@@ -7967,15 +7967,33 @@ body {
   background: #e0e7ff;
   color: #4338ca;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: 4px;
   text-transform: capitalize;
+}
+
+.admin-category-badge.age-concern {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 [data-theme="dark"] .admin-category-badge {
   background: rgba(99, 102, 241, 0.2);
   color: #a5b4fc;
+}
+
+[data-theme="dark"] .admin-category-badge.age-concern {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fcd34d;
+}
+
+.admin-age-concern-row {
+  background: rgba(251, 191, 36, 0.1);
+}
+
+[data-theme="dark"] .admin-age-concern-row {
+  background: rgba(251, 191, 36, 0.05);
 }
 
 .admin-user-cell {

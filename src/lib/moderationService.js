@@ -17,6 +17,141 @@ async function callModerationAPI(category, content) {
   return await response.json();
 }
 
+export function detectUnder13AgeDisclosure(content) {
+  // Patterns that suggest the author is under 13
+  const patterns = [
+    // Direct age statements under 13
+    /\b(i['']?m|i am)\s+(\d{1,2})\s*(years? old|y\.?o\.?|yo)\b/gi,
+    /\b(\d{1,2})\s*(years? old|y\.?o\.?|yo)\s+old\b/gi,
+    
+    // Grade levels under 9th grade
+    /\b(\d{1,2})(th|nd|rd|st)\s+grade\b/gi,
+    /\b(kindergarten|1st|2nd|3rd|4th|5th|6th|7th|8th)\s+grade\b/gi,
+    /\b(elementary\s+school|middle\s+school|junior\s+high)\b/gi,
+    
+    // School level indicators
+    /\b(in\s+(the\s+)?(\d{1,2})(th|nd|rd|st)\s+grade)\b/gi,
+    /\b(going\s+to\s+(the\s+)?(elementary|middle|junior\s+high))\b/gi,
+    
+    // Age-inappropriate context patterns
+    /\bmy\s+(mom|dad|parents)\s+(pick\s+me\s+up|drop\s+me\s+off)\b/gi,
+    /\bneed\s+(my\s+)?(mom|dad|parents)\s+permission\b/gi,
+    /\bgrounded\b/gi,
+    /\bhomework\b/gi,
+    /\bbedtime\b/gi,
+  ];
+
+  for (const pattern of patterns) {
+    const matches = content.match(pattern);
+    if (matches) {
+      // Extract the specific matched content
+      const match = matches[0];
+      
+      // Check if it's a specific age number under 13
+      const ageMatch = match.match(/\b(\d{1,2})\b/);
+      if (ageMatch) {
+        const age = parseInt(ageMatch[1]);
+        if (age >= 13) continue; // Not under 13
+      }
+      
+      // Check if it's a grade level under 9th
+      const gradeMatch = match.match(/\b(\d{1,2})(th|nd|rd|st)\s+grade\b/i);
+      if (gradeMatch) {
+        const grade = parseInt(gradeMatch[1]);
+        if (grade >= 9) continue; // 9th grade or higher
+      }
+      
+      return {
+        detected: true,
+        matchedContent: match,
+        pattern: pattern.toString(),
+      };
+    }
+  }
+
+  return { detected: false };
+}
+
+export async function checkAgeModeration(content, userId, contentType, contentId) {
+  const detection = detectUnder13AgeDisclosure(content);
+  
+  if (!detection.detected) {
+    return { flagged: false };
+  }
+
+  try {
+    const { supabase } = await import('./supabase.js');
+    
+    // Update user profile with age flag
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        age_flag_status: 'flagged',
+        age_flag_content_id: contentId,
+      })
+      .eq('id', userId);
+
+    if (profileError) {
+      console.error('[age moderation] Failed to update profile:', profileError);
+    }
+
+    // Soft-hide the content
+    let hideError = null;
+    if (contentType === 'community_post') {
+      const { error } = await supabase
+        .from('community_posts')
+        .update({
+          hidden: true,
+          hidden_reason: 'Age Concern - possible under-13 user',
+        })
+        .eq('id', contentId);
+      hideError = error;
+    } else if (contentType === 'community_comment') {
+      const { error } = await supabase
+        .from('community_comments')
+        .update({
+          hidden: true,
+          hidden_reason: 'Age Concern - possible under-13 user',
+        })
+        .eq('id', contentId);
+      hideError = error;
+    }
+
+    if (hideError) {
+      console.error('[age moderation] Failed to hide content:', hideError);
+    }
+
+    // Log to moderation_logs with 'Age Concern' tag
+    const { error: logError } = await supabase
+      .from('moderation_logs')
+      .insert({
+        user_id: userId,
+        category: 'age_concern',
+        rule_name: 'Under-13 Age Disclosure',
+        status: 'flagged_for_review',
+        flagged_phrases: [detection.matchedContent],
+        explanation: 'Content suggests author may be under 13 years old',
+        content_preview: content.substring(0, 500),
+        content_type: contentType,
+        content_id: contentId,
+      });
+
+    if (logError) {
+      console.error('[age moderation] Failed to log to moderation_logs:', logError);
+    }
+
+    return {
+      flagged: true,
+      matchedContent: detection.matchedContent,
+      reason: 'Age Concern - possible under-13 user',
+      contentHidden: !hideError,
+    };
+  } catch (error) {
+    console.error('[age moderation] Failed to process age flag:', error);
+    return { flagged: false, error: error.message };
+  }
+}
+
 export async function checkModeration(category, content) {
   const rule = moderationRules[category];
   
@@ -91,7 +226,23 @@ export async function checkGigSafety(gig) {
 }
 
 export async function checkCommunitySafety(post) {
-  return checkModeration('community', post.content);
+  // Run standard moderation check
+  const moderationResult = await checkModeration('community', post.content);
+  
+  // Run age moderation check alongside
+  const ageResult = await checkAgeModeration(
+    post.content,
+    post.user_id,
+    'community_post',
+    post.id
+  );
+  
+  // Combine results
+  return {
+    ...moderationResult,
+    ageFlagged: ageResult.flagged,
+    ageMatchedContent: ageResult.matchedContent,
+  };
 }
 
 async function logToAdminReports({ category, ruleName, content, flagged_phrases, explanation, status }) {

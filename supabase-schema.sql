@@ -225,6 +225,12 @@ alter table profiles
   add column if not exists is_adult_confirmed boolean not null default false;
 
 alter table profiles
+  add column if not exists age_flag_status text check (age_flag_status in ('none', 'flagged', 'reviewed', 'cleared')) not null default 'none';
+
+alter table profiles
+  add column if not exists age_flag_content_id uuid;
+
+alter table profiles
   add column if not exists show_available_now boolean not null default false;
 
 alter table profiles
@@ -1349,6 +1355,8 @@ create table if not exists community_posts (
   like_count int default 0,
   share_count int default 0,
   shared_post_id uuid references community_posts(id) on delete set null,
+  hidden boolean not null default false,
+  hidden_reason text,
   created_at timestamptz default now()
 );
 
@@ -1611,11 +1619,19 @@ create table if not exists moderation_logs (
   flagged_phrases text[] not null default '{}',
   explanation text,
   content_preview text,
+  content_type text,
+  content_id uuid,
   reviewed boolean not null default false,
   created_at timestamptz default now()
 );
 
 alter table moderation_logs enable row level security;
+
+alter table moderation_logs
+  add column if not exists content_type text;
+
+alter table moderation_logs
+  add column if not exists content_id uuid;
 
 -- Contact Submissions Table
 create table if not exists contact_submissions (
@@ -1891,3 +1907,11 @@ create policy "Authenticated can delete own community photos"
 -- Add share_count and shared_post_id columns to existing community_posts table
 alter table community_posts add column if not exists share_count int default 0;
 alter table community_posts add column if not exists shared_post_id uuid references community_posts(id) on delete set null;
+
+-- Add soft-hide columns to community_posts
+alter table community_posts add column if not exists hidden boolean not null default false;
+alter table community_posts add column if not exists hidden_reason text;
+
+-- Add soft-hide columns to community_comments
+alter table community_comments add column if not exists hidden boolean not null default false;
+alter table community_comments add column if not exists hidden_reason text;

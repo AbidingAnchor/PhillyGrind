@@ -51,6 +51,7 @@ export default function AdminModeration() {
     { value: 'jobs', label: 'Jobs' },
     { value: 'gigs', label: 'Gigs' },
     { value: 'community', label: 'Community' },
+    { value: 'age_concern', label: 'Age Concern' },
   ];
 
   const statusOptions = [
@@ -129,10 +130,13 @@ export default function AdminModeration() {
               {logs.map((log) => {
                 const busy = actingId === log.id;
                 const canMarkReviewed = log.status === 'flagged_for_review' && !log.reviewed;
+                const isAgeConcern = log.category === 'age_concern';
                 return (
-                  <tr key={log.id}>
+                  <tr key={log.id} className={isAgeConcern ? 'admin-age-concern-row' : ''}>
                     <td className="admin-category-cell">
-                      <span className="admin-category-badge">{log.category}</span>
+                      <span className={`admin-category-badge ${isAgeConcern ? 'age-concern' : ''}`}>
+                        {log.category === 'age_concern' ? 'Age Concern' : log.category}
+                      </span>
                     </td>
                     <td>{log.rule_name}</td>
                     <td>
