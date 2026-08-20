@@ -44,13 +44,24 @@ function App() {
     const menuEl = document.querySelector('.site-nav');
     if (menuEl) {
       const styles = window.getComputedStyle(menuEl);
+      const rect = menuEl.getBoundingClientRect();
       console.log('[NAV DEBUG] Page load computed styles:', {
         display: styles.display,
         visibility: styles.visibility,
         opacity: styles.opacity,
         position: styles.position,
         zIndex: styles.zIndex,
-        className: menuEl.className
+        className: menuEl.className,
+        rect: {
+          width: rect.width,
+          height: rect.height,
+          top: rect.top,
+          left: rect.left,
+          right: rect.right,
+          bottom: rect.bottom
+        },
+        parent: menuEl.parentElement?.tagName,
+        childCount: menuEl.children.length
       });
     }
   }, []);
