@@ -113,6 +113,45 @@ function App() {
           </span>
         </Link>
 
+        {/* Desktop nav - always visible on desktop */}
+        <nav className="site-nav desktop-nav">
+          {navItems.map((item) => (
+            <NavLink key={item.to} to={item.to} id={item.id} data-tour={item.tour}>
+              {item.label}
+            </NavLink>
+          ))}
+          {isLoggedIn && (
+            <NavLink to="/messages" id="nav-messages" data-tour="messages">
+              Messages
+            </NavLink>
+          )}
+          {isLoggedIn && (
+            <div className="nav-user">
+              {showAdminLink && (
+                <NavLink to="/admin" id="nav-admin">
+                  <Shield size={16} />
+                  Admin
+                </NavLink>
+              )}
+              <Link className="nav-profile-link" to="/profile" id="nav-profile" data-tour="profile">
+                {displayName}
+              </Link>
+              <NotificationBell />
+              <Link className="nav-profile-link" to="/settings" id="nav-settings">
+                Settings
+              </Link>
+              <button type="button" onClick={handleLogout}>Logout</button>
+            </div>
+          )}
+          {!isLoggedIn && (
+            <div className="auth-links">
+              <NavLink to="/login">Login</NavLink>
+              <Link className="nav-cta auth-cta" to="/signup">Sign Up</Link>
+            </div>
+          )}
+        </nav>
+
+        {/* Mobile hamburger button */}
         <button
           className="menu-button"
           type="button"
@@ -124,8 +163,9 @@ function App() {
         </button>
       </header>
 
+      {/* Mobile nav - Portal-rendered for mobile only */}
       {createPortal(
-        <nav className={open ? 'site-nav open' : 'site-nav'}>
+        <nav className={open ? 'site-nav mobile-nav open' : 'site-nav mobile-nav'}>
           {navItems.map((item) => (
             <NavLink key={item.to} to={item.to} id={item.id} data-tour={item.tour} onClick={() => setOpen(false)}>
               {item.label}
