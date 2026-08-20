@@ -651,23 +651,55 @@ create policy "Anyone can read jobs"
   using (true);
 
 drop policy if exists "Anyone can post jobs" on jobs;
-create policy "Anyone can post jobs"
+create policy "Anyone can post jobs if not suspended"
   on jobs for insert
   to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and not exists (
+      select 1
+      from suspended_users
+      where suspended_users.user_id = (select auth.uid())
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  );
 
 drop policy if exists "Owners can update jobs" on jobs;
-create policy "Owners can update jobs"
+create policy "Owners can update jobs if not suspended"
   on jobs for update
   to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not exists (
+      select 1
+      from suspended_users
+      where suspended_users.user_id = (select auth.uid())
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and not exists (
+      select 1
+      from suspended_users
+      where suspended_users.user_id = (select auth.uid())
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  );
 
 drop policy if exists "Owners can delete jobs" on jobs;
-create policy "Owners can delete jobs"
+create policy "Owners can delete jobs if not suspended"
   on jobs for delete
   to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not exists (
+      select 1
+      from suspended_users
+      where suspended_users.user_id = (select auth.uid())
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  );
 
 drop policy if exists "Anyone can read gigs" on gigs;
 create policy "Anyone can read gigs"
@@ -675,23 +707,55 @@ create policy "Anyone can read gigs"
   using (true);
 
 drop policy if exists "Anyone can post gigs" on gigs;
-create policy "Anyone can post gigs"
+create policy "Anyone can post gigs if not suspended"
   on gigs for insert
   to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and not exists (
+      select 1
+      from suspended_users
+      where suspended_users.user_id = (select auth.uid())
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  );
 
 drop policy if exists "Owners can update gigs" on gigs;
-create policy "Owners can update gigs"
+create policy "Owners can update gigs if not suspended"
   on gigs for update
   to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not exists (
+      select 1
+      from suspended_users
+      where suspended_users.user_id = (select auth.uid())
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and not exists (
+      select 1
+      from suspended_users
+      where suspended_users.user_id = (select auth.uid())
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  );
 
 drop policy if exists "Owners can delete gigs" on gigs;
-create policy "Owners can delete gigs"
+create policy "Owners can delete gigs if not suspended"
   on gigs for delete
   to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not exists (
+      select 1
+      from suspended_users
+      where suspended_users.user_id = (select auth.uid())
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  );
 
 drop policy if exists "Users can read profiles" on profiles;
 create policy "Users can read profiles"
@@ -718,13 +782,19 @@ create policy "Thread members can read messages"
   using ((select auth.uid()) = sender_id or (select auth.uid()) = receiver_id);
 
 drop policy if exists "Users can send messages" on messages;
-create policy "Users can send messages"
+create policy "Users can send messages if not suspended"
   on messages for insert
   to authenticated
   with check (
     (select auth.uid()) = sender_id
     and sender_id <> receiver_id
     and length(trim(content)) > 0
+    and not exists (
+      select 1
+      from suspended_users
+      where suspended_users.user_id = (select auth.uid())
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
     and not exists (
       select 1
       from messages
@@ -752,7 +822,7 @@ create policy "Anyone can read reviews"
   using (true);
 
 drop policy if exists "Users can create reviews" on reviews;
-create policy "Users can create reviews"
+create policy "Users can create reviews if not suspended"
   on reviews for insert
   to authenticated
   with check (
@@ -760,6 +830,12 @@ create policy "Users can create reviews"
     and reviewer_id <> reviewee_id
     and rating between 1 and 5
     and length(trim(comment)) > 0
+    and not exists (
+      select 1
+      from suspended_users
+      where suspended_users.user_id = (select auth.uid())
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
   );
 
 drop policy if exists "Users can read own notifications" on notifications;
@@ -1650,21 +1726,49 @@ create policy "Anyone can read community posts"
   to authenticated
   using (true);
 
-create policy "Users can insert own community posts"
+create policy "Users can insert own community posts if not suspended"
   on community_posts for insert
   to authenticated
-  with check (auth.uid() = user_id);
+  with check (
+    auth.uid() = user_id
+    and not exists (
+      select 1 from suspended_users
+      where suspended_users.user_id = auth.uid()
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  );
 
-create policy "Users can update own community posts"
+create policy "Users can update own community posts if not suspended"
   on community_posts for update
   to authenticated
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using (
+    auth.uid() = user_id
+    and not exists (
+      select 1 from suspended_users
+      where suspended_users.user_id = auth.uid()
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  )
+  with check (
+    auth.uid() = user_id
+    and not exists (
+      select 1 from suspended_users
+      where suspended_users.user_id = auth.uid()
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  );
 
-create policy "Users can delete own community posts"
+create policy "Users can delete own community posts if not suspended"
   on community_posts for delete
   to authenticated
-  using (auth.uid() = user_id);
+  using (
+    auth.uid() = user_id
+    and not exists (
+      select 1 from suspended_users
+      where suspended_users.user_id = auth.uid()
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  );
 
 -- RLS Policies for community_comments
 alter table community_comments enable row level security;
@@ -1674,21 +1778,49 @@ create policy "Anyone can read community comments"
   to authenticated
   using (true);
 
-create policy "Users can insert own community comments"
+create policy "Users can insert own community comments if not suspended"
   on community_comments for insert
   to authenticated
-  with check (auth.uid() = user_id);
+  with check (
+    auth.uid() = user_id
+    and not exists (
+      select 1 from suspended_users
+      where suspended_users.user_id = auth.uid()
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  );
 
-create policy "Users can update own community comments"
+create policy "Users can update own community comments if not suspended"
   on community_comments for update
   to authenticated
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using (
+    auth.uid() = user_id
+    and not exists (
+      select 1 from suspended_users
+      where suspended_users.user_id = auth.uid()
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  )
+  with check (
+    auth.uid() = user_id
+    and not exists (
+      select 1 from suspended_users
+      where suspended_users.user_id = auth.uid()
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  );
 
-create policy "Users can delete own community comments"
+create policy "Users can delete own community comments if not suspended"
   on community_comments for delete
   to authenticated
-  using (auth.uid() = user_id);
+  using (
+    auth.uid() = user_id
+    and not exists (
+      select 1 from suspended_users
+      where suspended_users.user_id = auth.uid()
+      and (suspended_users.expires_at is null or suspended_users.expires_at > now())
+    )
+  );
 
 -- RLS Policies for community_post_likes
 alter table community_post_likes enable row level security;

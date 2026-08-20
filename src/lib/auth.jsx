@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { hasSupabaseConfig, supabase } from './supabase.js';
-import { checkUserSuspension } from './adminApi.js';
 import OnboardingTour from '../components/OnboardingTour.jsx';
 
 const AuthContext = createContext(null);
@@ -54,24 +53,6 @@ export function AuthProvider({ children }) {
       if (!user) {
         if (active) setProfile(null);
         return;
-      }
-
-      // Check if user is suspended/banned
-      try {
-        const suspension = await checkUserSuspension(user.id);
-        if (suspension) {
-          // User is suspended/banned, sign them out
-          await supabase.auth.signOut();
-          if (active) {
-            setSession(null);
-            setUser(null);
-            setProfile(null);
-          }
-          return;
-        }
-      } catch (error) {
-        console.warn('Failed to check suspension status:', error);
-        // Continue loading profile even if check fails
       }
 
       const { data, error } = await supabase
@@ -173,23 +154,42 @@ export function AuthProvider({ children }) {
       }
     }
 
-    // Use API endpoint for signup (handles IP capture and IP ban check)
-    const response = await fetch('/api/auth', {
+    // Check IP ban before signup
+    const ipCheckResponse = await fetch('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'signup',
-        email,
-        password,
-        name,
-        birthdate,
-        tosAgreedAt,
-      }),
+      body: JSON.stringify({ action: 'check-ip-ban' }),
+    });
+    const ipCheckData = await ipCheckResponse.json();
+    if (!ipCheckResponse.ok) {
+      throw new Error(ipCheckData.error || 'Signup failed');
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { 
+          name, 
+          tos_agreed_at: tosAgreedAt,
+          birthdate
+        },
+      },
     });
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Signup failed');
+    if (error) throw error;
+
+    // Capture IP after successful signup
+    if (data.user) {
+      try {
+        await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'capture-ip', userId: data.user.id }),
+        });
+      } catch (ipError) {
+        console.warn('Failed to capture IP:', ipError);
+      }
     }
 
     // Profile creation is now handled by Postgres trigger on auth.users insert
@@ -203,20 +203,21 @@ export function AuthProvider({ children }) {
       throw new Error('Supabase credentials are missing.');
     }
 
-    // Use API endpoint for login (handles IP capture and suspension check)
-    const response = await fetch('/api/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'login',
-        email,
-        password,
-      }),
-    });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Login failed');
+    if (error) throw error;
+
+    // Capture IP after successful login
+    if (data.user) {
+      try {
+        await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'capture-ip', userId: data.user.id }),
+        });
+      } catch (ipError) {
+        console.warn('Failed to capture IP:', ipError);
+      }
     }
 
     return data;

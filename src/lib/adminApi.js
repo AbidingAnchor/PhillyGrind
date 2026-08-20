@@ -165,7 +165,21 @@ export async function ipBanUser(userId, reason) {
     .single();
 
   if (profileError) throw new Error(profileError.message);
-  if (!profile?.last_known_ip) throw new Error('User has no IP address on record');
+  if (!profile?.last_known_ip) {
+    // If no IP on record, still ban the user but skip IP ban
+    console.warn('User has no IP address on record, skipping IP ban');
+  } else {
+    // Add IP to banned_ips table
+    const { error: ipError } = await supabase
+      .from('banned_ips')
+      .insert({
+        ip_address: profile.last_known_ip,
+        reason,
+        created_by: currentUser.user.id,
+      });
+
+    if (ipError) throw new Error(ipError.message);
+  }
 
   // Insert ban record
   const { error: banError } = await supabase
@@ -181,17 +195,6 @@ export async function ipBanUser(userId, reason) {
 
   if (banError) throw new Error(banError.message);
 
-  // Add IP to banned_ips table
-  const { error: ipError } = await supabase
-    .from('banned_ips')
-    .insert({
-      ip_address: profile.last_known_ip,
-      reason,
-      created_by: currentUser.user.id,
-    });
-
-  if (ipError) throw new Error(ipError.message);
-
   // Log to admin_action_log
   const { error: logError } = await supabase
     .from('admin_action_log')
@@ -200,7 +203,7 @@ export async function ipBanUser(userId, reason) {
       target_user_id: userId,
       action_type: 'ip_ban',
       reason,
-      metadata: { ip_address: profile.last_known_ip },
+      metadata: { ip_address: profile?.last_known_ip },
     });
 
   if (logError) throw new Error(logError.message);

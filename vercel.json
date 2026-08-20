@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/auto-release-payments",
+      "path": "/api/admin-actions?action=auto-release-payments",
       "schedule": "0 0 * * *"
     },
     {
