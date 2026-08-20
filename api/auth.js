@@ -91,9 +91,13 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'email is required' });
       }
 
+      console.log('[Auth] Sending existing account notification email to:', email);
+
       // Send email to existing account holder
       const emailHtml = createExistingAccountEmail();
       await sendEmail({ to: email, subject: 'Account Already Exists', html: emailHtml });
+
+      console.log('[Auth] Existing account notification email sent successfully to:', email);
 
       return res.status(200).json({ success: true });
     }
