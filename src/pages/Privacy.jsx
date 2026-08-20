@@ -6,7 +6,7 @@ function Privacy() {
       <div className="page-heading">
         <span className="eyebrow">Privacy</span>
         <h1>Privacy Policy</h1>
-        <p>Last Updated: August 13, 2026</p>
+        <p>Last Updated: August 20, 2026</p>
       </div>
 
       <article className="legal-card">
@@ -81,7 +81,16 @@ function Privacy() {
         <p>To exercise these rights, contact us through our <Link to="/contact">Contact page</Link>. We will respond within a reasonable time and in accordance with applicable law, including the Pennsylvania and any applicable state privacy frameworks.</p>
 
         <h2>8. Children's Privacy</h2>
-        <p>PhillyGrind is not intended for use by anyone under 18. We do not knowingly collect personal information from anyone under 18. If we learn that we have done so, we will delete that information.</p>
+        <p>PhillyGrind is intended for use by individuals 18 years of age and older. We do not knowingly collect personal information from children under the age of 13, and our services are not directed to children.</p>
+        <p>At signup, we ask for your date of birth to confirm you meet our minimum age requirement. This information is used solely to verify your age and is not retained after that verification is complete.</p>
+        <p>If we learn that we have collected personal information from a user under the age of 13, we will:</p>
+        <ul>
+          <li>Deactivate the associated account,</li>
+          <li>Delete the personal information we have collected from that user, and</li>
+          <li>Not use or disclose that information for any purpose in the interim.</li>
+        </ul>
+        <p>If you believe a child under 13 has provided us with personal information, please contact us at support@phillygrind.work so we can investigate and take appropriate action.</p>
+        <p>This policy is in addition to, and does not replace, our general age requirement that all users be 18 or older to use PhillyGrind.</p>
 
         <h2>9. Data Security</h2>
         <p>We use reasonable administrative, technical, and physical safeguards to protect your information, including encrypted data storage and transmission (via Supabase and Stripe) and role-based access controls for administrative data (including moderation logs). No system is completely secure, and we cannot guarantee absolute security.</p>
