@@ -239,6 +239,9 @@ alter table profiles
 alter table profiles
   add column if not exists account_reference text;
 
+alter table profiles
+  add column if not exists last_known_ip text;
+
 -- Create index for faster lookups by account reference
 create index if not exists profiles_account_reference_idx on profiles(account_reference);
 
@@ -333,6 +336,118 @@ create policy "Admins can insert action logs"
 create index if not exists admin_action_log_admin_id_idx on admin_action_log(admin_id);
 create index if not exists admin_action_log_target_user_id_idx on admin_action_log(target_user_id);
 create index if not exists admin_action_log_created_at_idx on admin_action_log(created_at desc);
+
+-- Suspended users table for account suspensions and bans
+create table if not exists suspended_users (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null unique references auth.users(id) on delete cascade,
+  suspension_type text not null check (suspension_type in ('suspend', 'ban')),
+  reason text not null,
+  created_at timestamptz default now(),
+  expires_at timestamptz -- null for permanent bans
+);
+
+-- Enable RLS for suspended_users
+alter table suspended_users enable row level security;
+
+-- Only admins can read suspended users
+create policy "Admins can read suspended users"
+  on suspended_users for select
+  to authenticated
+  using (
+    exists (
+      select 1 from profiles
+      where profiles.id = auth.uid()
+      and profiles.role in ('owner', 'admin')
+    )
+  );
+
+-- Only admins can insert suspended users
+create policy "Admins can insert suspended users"
+  on suspended_users for insert
+  to authenticated
+  with check (
+    exists (
+      select 1 from profiles
+      where profiles.id = auth.uid()
+      and profiles.role in ('owner', 'admin')
+    )
+  );
+
+-- Only admins can update suspended users
+create policy "Admins can update suspended users"
+  on suspended_users for update
+  to authenticated
+  using (
+    exists (
+      select 1 from profiles
+      where profiles.id = auth.uid()
+      and profiles.role in ('owner', 'admin')
+    )
+  )
+  with check (
+    exists (
+      select 1 from profiles
+      where profiles.id = auth.uid()
+      and profiles.role in ('owner', 'admin')
+    )
+  );
+
+-- Index for faster lookups
+create index if not exists suspended_users_user_id_idx on suspended_users(user_id);
+create index if not exists suspended_users_expires_at_idx on suspended_users(expires_at) where expires_at is not null;
+
+-- Banned IPs table for IP-based bans
+create table if not exists banned_ips (
+  id uuid primary key default gen_random_uuid(),
+  ip_address text not null,
+  reason text not null,
+  created_by uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique(ip_address)
+);
+
+-- Enable RLS for banned_ips
+alter table banned_ips enable row level security;
+
+-- Only admins can read banned IPs
+create policy "Admins can read banned IPs"
+  on banned_ips for select
+  to authenticated
+  using (
+    exists (
+      select 1 from profiles
+      where profiles.id = auth.uid()
+      and profiles.role in ('owner', 'admin')
+    )
+  );
+
+-- Only admins can insert banned IPs
+create policy "Admins can insert banned IPs"
+  on banned_ips for insert
+  to authenticated
+  with check (
+    exists (
+      select 1 from profiles
+      where profiles.id = auth.uid()
+      and profiles.role in ('owner', 'admin')
+    )
+  );
+
+-- Only admins can delete banned IPs
+create policy "Admins can delete banned IPs"
+  on banned_ips for delete
+  to authenticated
+  using (
+    exists (
+      select 1 from profiles
+      where profiles.id = auth.uid()
+      and profiles.role in ('owner', 'admin')
+    )
+  );
+
+-- Index for faster lookups
+create index if not exists banned_ips_ip_address_idx on banned_ips(ip_address);
 
 -- Set Drew's account to owner role
 do $$

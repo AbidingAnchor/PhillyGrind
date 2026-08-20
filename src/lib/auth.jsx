@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { hasSupabaseConfig, supabase } from './supabase.js';
+import { checkUserSuspension } from './adminApi.js';
 import OnboardingTour from '../components/OnboardingTour.jsx';
 
 const AuthContext = createContext(null);
@@ -53,6 +54,24 @@ export function AuthProvider({ children }) {
       if (!user) {
         if (active) setProfile(null);
         return;
+      }
+
+      // Check if user is suspended/banned
+      try {
+        const suspension = await checkUserSuspension(user.id);
+        if (suspension) {
+          // User is suspended/banned, sign them out
+          await supabase.auth.signOut();
+          if (active) {
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+          }
+          return;
+        }
+      } catch (error) {
+        console.warn('Failed to check suspension status:', error);
+        // Continue loading profile even if check fails
       }
 
       const { data, error } = await supabase
@@ -154,19 +173,24 @@ export function AuthProvider({ children }) {
       }
     }
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { 
-          name, 
-          tos_agreed_at: tosAgreedAt,
-          birthdate // Pass birthdate to metadata for server-side trigger
-        },
-      },
+    // Use API endpoint for signup (handles IP capture and IP ban check)
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'signup',
+        email,
+        password,
+        name,
+        birthdate,
+        tosAgreedAt,
+      }),
     });
 
-    if (error) throw error;
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Signup failed');
+    }
 
     // Profile creation is now handled by Postgres trigger on auth.users insert
     // No client-side upsert needed - trigger runs with service role privileges
@@ -179,8 +203,22 @@ export function AuthProvider({ children }) {
       throw new Error('Supabase credentials are missing.');
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    // Use API endpoint for login (handles IP capture and suspension check)
+    const response = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'login',
+        email,
+        password,
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Login failed');
+    }
+
     return data;
   }
 

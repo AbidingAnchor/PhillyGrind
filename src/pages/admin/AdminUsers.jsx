@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Loader2, ShieldOff, ShieldBan, ShieldCheck, Users, BadgeCheck, Ban, UserX } from 'lucide-react';
-import { adminVerifyLandlord, getAdminUsers, liftSuspension, suspendUser } from '../../lib/adminApi.js';
+import { adminVerifyLandlord, getAdminUsers, liftSuspension, suspendUser, banUser, ipBanUser } from '../../lib/adminApi.js';
 import { supabase } from '../../lib/supabase.js';
 import { useAuth } from '../../lib/auth.jsx';
 import KebabMenu from '../../components/KebabMenu.jsx';
@@ -95,7 +95,11 @@ export default function AdminUsers() {
     }
     setActionUserId(userId);
     try {
-      await suspendUser({ userId, actionType, reason });
+      if (actionType === 'suspended') {
+        await suspendUser(userId, reason);
+      } else if (actionType === 'banned') {
+        await banUser(userId, reason);
+      }
       await loadUsers();
       setReason('');
       setActionUserId('');
@@ -115,25 +119,20 @@ export default function AdminUsers() {
 
     setProcessingModeration(true);
     try {
-      const { error } = await supabase
-        .from('admin_action_log')
-        .insert({
-          admin_id: currentUser.id,
-          target_user_id: selectedUser.id,
-          action_type: actionType,
-          reason: moderationReason,
-          metadata: { target_name: selectedUser.name },
-        });
-
-      if (error) throw error;
-
-      // For now, just log the action. Actual suspension/banning logic would be implemented here
+      if (actionType === 'suspend') {
+        await suspendUser(selectedUser.id, moderationReason);
+      } else if (actionType === 'ban') {
+        await banUser(selectedUser.id, moderationReason);
+      } else if (actionType === 'ip_ban') {
+        await ipBanUser(selectedUser.id, moderationReason);
+      }
+      
       setModerationAction(null);
       setModerationReason('');
       setSelectedUser(null);
       await loadUsers();
     } catch (err) {
-      setError(err.message || 'Failed to log moderation action.');
+      setError(err.message || 'Failed to perform moderation action.');
     } finally {
       setProcessingModeration(false);
     }
