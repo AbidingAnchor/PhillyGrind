@@ -146,7 +146,6 @@ export default function PostReactionControl({
         type="button"
         className={`${buttonClassName} ${hasReaction ? 'liked' : ''}`.trim()}
         data-reaction={activeReactionType || undefined}
-        style={activeReaction ? { color: activeReaction.color } : undefined}
         onClick={handleClick}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

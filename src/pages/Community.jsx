@@ -1452,6 +1452,29 @@ function Community() {
     }
 
     setSubmittingPost(true);
+    
+    // Optimistic UI update - add post immediately before API call
+    const tempPostId = `temp-${Date.now()}`;
+    const tempPost = {
+      id: tempPostId,
+      content: composerContent,
+      neighborhood: composerNeighborhood,
+      photo: composerPhoto,
+      created_at: new Date().toISOString(),
+      user_id: user?.id,
+      profiles: profile,
+      like_count: 0,
+      comment_count: 0,
+      reaction_breakdown: [],
+      is_temp: true
+    };
+    
+    setPosts([tempPost, ...posts]);
+    setComposerContent('');
+    setComposerNeighborhood(COMMUNITY_NEIGHBORHOODS[0]);
+    handleRemovePhoto();
+    setShowComposer(false);
+    
     try {
       const newPost = await createCommunityPost(
         {
@@ -1461,13 +1484,23 @@ function Community() {
         composerPhoto
       );
 
-      setPosts([newPost, ...posts]);
-      setComposerContent('');
-      setComposerNeighborhood(COMMUNITY_NEIGHBORHOODS[0]);
-      handleRemovePhoto();
-      setShowComposer(false);
+      // Replace temporary post with real post from API
+      setPosts(currentPosts => 
+        currentPosts.map(post => 
+          post.id === tempPostId ? newPost : post
+        )
+      );
     } catch (error) {
+      // Remove temporary post on error
+      setPosts(currentPosts => 
+        currentPosts.filter(post => post.id !== tempPostId)
+      );
       alert(error.message);
+      // Restore composer state on error
+      setComposerContent(composerContent);
+      setComposerNeighborhood(composerNeighborhood);
+      if (composerPhoto) setComposerPhoto(composerPhoto);
+      setShowComposer(true);
     } finally {
       setSubmittingPost(false);
     }
