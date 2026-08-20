@@ -39,6 +39,22 @@ function App() {
     setOpen(false);
   }, [location.pathname]);
 
+  // Diagnostic to log computed styles of menu element on page load
+  useEffect(() => {
+    const menuEl = document.querySelector('.site-nav');
+    if (menuEl) {
+      const styles = window.getComputedStyle(menuEl);
+      console.log('[NAV DEBUG] Page load computed styles:', {
+        display: styles.display,
+        visibility: styles.visibility,
+        opacity: styles.opacity,
+        position: styles.position,
+        zIndex: styles.zIndex,
+        className: menuEl.className
+      });
+    }
+  }, []);
+
   // Diagnostic to log computed styles of menu element on state change
   useEffect(() => {
     const menuEl = document.querySelector('.site-nav');
