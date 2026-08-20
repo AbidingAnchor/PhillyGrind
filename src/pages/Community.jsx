@@ -1079,6 +1079,13 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
 
   const isOwnPost = currentUser?.id === post.authorId;
 
+  console.log('[PostCard] isOwnPost check:', {
+    currentUserId: currentUser?.id,
+    postAuthorId: post.authorId,
+    postUserId: post.user_id,
+    isOwnPost
+  });
+
   return (
     <article className="feed-post-card">
       <div className="feed-post-header">
