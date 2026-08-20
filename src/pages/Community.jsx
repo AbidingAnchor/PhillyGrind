@@ -1203,26 +1203,22 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         </div>
       ) : null}
 
-      {reactionsLoaded && reactionTotal > 0 && (
-        <div
-          className="feed-post-reaction-summary"
-          onClick={() => setShowReactionsModal(true)}
-          style={{ cursor: 'pointer' }}
-        >
-          <ReactionBreakdown breakdown={reactionBreakdown} userReaction={userReaction} />
-        </div>
-      )}
-      
       {post.photo_url ? (
         <>
-          <div className="feed-post-reaction-summary">
-            <ReactionBreakdown breakdown={reactionBreakdown} userReaction={userReaction} />
-            <span className="feed-post-stats">
-              {post.comment_count > 0 && `${post.comment_count} comments`}
-              {post.comment_count > 0 && post.share_count > 0 && ' · '}
-              {post.share_count > 0 && `${post.share_count} shares`}
-            </span>
-          </div>
+          {(reactionTotal > 0 || post.comment_count > 0 || post.share_count > 0) && (
+            <div
+              className="feed-post-reaction-summary"
+              onClick={() => setShowReactionsModal(true)}
+              style={{ cursor: 'pointer' }}
+            >
+              <ReactionBreakdown breakdown={reactionBreakdown} userReaction={userReaction} />
+              <span className="feed-post-stats">
+                {post.comment_count > 0 && `${post.comment_count} comments`}
+                {post.comment_count > 0 && post.share_count > 0 && ' · '}
+                {post.share_count > 0 && `${post.share_count} shares`}
+              </span>
+            </div>
+          )}
           <div className="feed-post-divider" />
           <div className="feed-post-photo-actions">
             <PostReactionControl
@@ -1255,14 +1251,20 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         </>
       ) : (
         <>
-          <div className="feed-post-reaction-summary">
-            <ReactionBreakdown breakdown={reactionBreakdown} userReaction={userReaction} />
-            <span className="feed-post-stats">
-              {post.comment_count > 0 && `${post.comment_count} comments`}
-              {post.comment_count > 0 && post.share_count > 0 && ' · '}
-              {post.share_count > 0 && `${post.share_count} shares`}
-            </span>
-          </div>
+          {(reactionTotal > 0 || post.comment_count > 0 || post.share_count > 0) && (
+            <div
+              className="feed-post-reaction-summary"
+              onClick={() => setShowReactionsModal(true)}
+              style={{ cursor: 'pointer' }}
+            >
+              <ReactionBreakdown breakdown={reactionBreakdown} userReaction={userReaction} />
+              <span className="feed-post-stats">
+                {post.comment_count > 0 && `${post.comment_count} comments`}
+                {post.comment_count > 0 && post.share_count > 0 && ' · '}
+                {post.share_count > 0 && `${post.share_count} shares`}
+              </span>
+            </div>
+          )}
           <div className="feed-post-divider" />
           <div className="feed-post-actions">
             <PostReactionControl

@@ -745,14 +745,16 @@ function Profile() {
                                 />
                               )}
                             </div>
-                            <div className="feed-post-reaction-summary">
-                              <ReactionBreakdown breakdown={postReactions[post.id]?.breakdown || []} userReaction={postReactions[post.id]?.userReaction} />
-                              <span className="feed-post-stats">
-                                {post.comment_count > 0 && `${post.comment_count} comments`}
-                                {post.comment_count > 0 && post.share_count > 0 && ' · '}
-                                {post.share_count > 0 && `${post.share_count} shares`}
-                              </span>
-                            </div>
+                            {(postReactions[post.id]?.breakdown?.length > 0 || post.comment_count > 0 || post.share_count > 0) && (
+                              <div className="feed-post-reaction-summary">
+                                <ReactionBreakdown breakdown={postReactions[post.id]?.breakdown || []} userReaction={postReactions[post.id]?.userReaction} />
+                                <span className="feed-post-stats">
+                                  {post.comment_count > 0 && `${post.comment_count} comments`}
+                                  {post.comment_count > 0 && post.share_count > 0 && ' · '}
+                                  {post.share_count > 0 && `${post.share_count} shares`}
+                                </span>
+                              </div>
+                            )}
                             <div className="feed-post-divider" />
                             <div className="feed-post-actions">
                               <PostReactionControl
