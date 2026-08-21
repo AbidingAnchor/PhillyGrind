@@ -1,10 +1,11 @@
 import { fallbackGigs, fallbackJobs } from '../data/listings.js';
 import { hasSupabaseConfig, supabase } from './supabase.js';
 import { attachPosterRatings, getProfileRating, getProfileRatings } from './reviewsApi.js';
-import { createListingWithModeration } from './adminApi.js';
+import { createListingWithModeration, isAdminUser } from './adminApi.js';
 import { checkJobSafety, checkGigSafety } from './moderationService.js';
 
 const tableFor = (type) => (type === 'gig' ? 'gigs' : 'jobs');
+const publicTableFor = (type) => (type === 'gig' ? 'gigs_public' : 'jobs_public');
 const fallbackFor = (type) => (type === 'gig' ? fallbackGigs : fallbackJobs);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -217,6 +218,24 @@ async function removeListingsWithActiveOrders(listings) {
   }
 }
 
+async function attachPrivateListingFields(listing, type) {
+  if (!listing?.id) return listing;
+
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData?.user;
+  if (!user) return listing;
+  if (user.id !== listing.user_id && !isAdminUser(user)) return listing;
+
+  const { data, error } = await supabase
+    .from(tableFor(type))
+    .select('contact,boost_pending,moderation_status')
+    .eq('id', listing.id)
+    .maybeSingle();
+
+  if (error || !data) return listing;
+  return { ...listing, ...data };
+}
+
 export async function getListings(type, filters = {}) {
   if (!hasSupabaseConfig) {
     return sortListings(filterFallbackListings(fallbackFor(type), type, filters));
@@ -226,10 +245,8 @@ export async function getListings(type, filters = {}) {
 
   const { keyword = '', category = 'All', neighborhood = '', postType = 'All' } = filters;
   let query = supabase
-    .from(tableFor(type))
+    .from(publicTableFor(type))
     .select('*')
-    .eq('boost_pending', false)
-    .eq('moderation_status', 'approved')
     .order('created_at', { ascending: false });
 
   if (type === 'gig') {
@@ -276,16 +293,33 @@ export async function getListing(type, id) {
     return undefined;
   }
 
-  const { data, error } = await supabase
-    .from(tableFor(type))
-    .select(type === 'gig'
-      ? 'id,user_id,post_type,status,title,company,contact,category,neighborhood,pay,description,is_boosted,boost_tier,boost_expires_at,boost_pending,created_at'
-      : 'id,user_id,title,company,contact,category,neighborhood,pay,description,apply_url,is_boosted,boost_tier,boost_expires_at,boost_pending,created_at')
+  const { data: publicData, error: publicError } = await supabase
+    .from(publicTableFor(type))
+    .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
-  if (error) {
-    throw error;
+  if (publicError) {
+    throw publicError;
+  }
+
+  let data = publicData;
+  if (!data) {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) return undefined;
+
+    const { data: ownData, error: ownError } = await supabase
+      .from(tableFor(type))
+      .select(type === 'gig'
+        ? 'id,user_id,post_type,status,title,company,contact,category,neighborhood,pay,description,is_boosted,boost_tier,boost_expires_at,boost_pending,created_at,moderation_status'
+        : 'id,user_id,title,company,contact,category,neighborhood,pay,description,apply_url,is_boosted,boost_tier,boost_expires_at,boost_pending,created_at,job_type,salary_min,salary_max,moderation_status')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (ownError) throw ownError;
+    data = ownData;
+  } else {
+    data = await attachPrivateListingFields(data, type);
   }
 
   if (!data) return undefined;
@@ -322,14 +356,12 @@ export async function getFeaturedWorkers(limit = 4) {
   await expireBoostsIfNeeded();
 
   const { data: gigs, error } = await supabase
-    .from('gigs')
-    .select('id,user_id,title,category,neighborhood,pay,description,company,created_at,is_boosted,boost_tier,boost_expires_at,boost_pending')
+    .from('gigs_public')
+    .select('id,user_id,title,category,neighborhood,pay,description,company,created_at,is_boosted,boost_tier,boost_expires_at')
     .eq('is_boosted', true)
     .eq('boost_tier', 'pro')
-    .eq('boost_pending', false)
     .eq('post_type', 'offering')
     .eq('status', 'open')
-    .eq('moderation_status', 'approved')
     .gt('boost_expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -370,15 +402,26 @@ export async function getUserListings(userId) {
 
   await expireBoostsIfNeeded();
 
+  const { data: sessionData } = await supabase.auth.getUser();
+  const isOwnListings = Boolean(sessionData?.user?.id && sessionData.user.id === userId);
+  const jobsTable = isOwnListings ? 'jobs' : 'jobs_public';
+  const gigsTable = isOwnListings ? 'gigs' : 'gigs_public';
+  const jobsSelect = isOwnListings
+    ? 'id,user_id,title,company,category,neighborhood,pay,description,apply_url,is_boosted,boost_tier,boost_expires_at,boost_pending,created_at,contact,moderation_status'
+    : 'id,user_id,title,company,category,neighborhood,pay,description,apply_url,is_boosted,boost_tier,boost_expires_at,created_at';
+  const gigsSelect = isOwnListings
+    ? 'id,user_id,post_type,title,company,category,neighborhood,pay,description,is_boosted,boost_tier,boost_expires_at,boost_pending,created_at,contact,moderation_status,status'
+    : 'id,user_id,post_type,title,company,category,neighborhood,pay,description,is_boosted,boost_tier,boost_expires_at,created_at,status';
+
   const [jobsResult, gigsResult] = await Promise.all([
     supabase
-      .from('jobs')
-      .select('id,user_id,title,company,category,neighborhood,pay,description,apply_url,is_boosted,boost_tier,boost_expires_at,boost_pending,created_at')
+      .from(jobsTable)
+      .select(jobsSelect)
       .eq('user_id', userId)
       .order('created_at', { ascending: false }),
     supabase
-      .from('gigs')
-      .select('id,user_id,post_type,title,company,category,neighborhood,pay,description,is_boosted,boost_tier,boost_expires_at,boost_pending,created_at')
+      .from(gigsTable)
+      .select(gigsSelect)
       .eq('user_id', userId)
       .order('created_at', { ascending: false }),
   ]);

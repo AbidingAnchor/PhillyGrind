@@ -178,12 +178,12 @@ export async function getConversations(userId) {
   if (listingIds.length) {
     const [jobsResult, gigsResult, marketplaceResult] = await Promise.all([
       supabase
-        .from('jobs')
-        .select('id,user_id,title,company,contact,category,neighborhood,pay,description,created_at')
+        .from('jobs_public')
+        .select('id,user_id,title,company,category,neighborhood,pay,description,created_at')
         .in('id', listingIds),
       supabase
-        .from('gigs')
-        .select('id,user_id,title,company,contact,category,neighborhood,pay,description,created_at')
+        .from('gigs_public')
+        .select('id,user_id,title,company,category,neighborhood,pay,description,created_at')
         .in('id', listingIds),
       supabase
         .from('marketplace_listings')

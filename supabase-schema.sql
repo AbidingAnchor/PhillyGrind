@@ -652,9 +652,11 @@ on conflict (id) do update
       allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp'];
 
 drop policy if exists "Anyone can read jobs" on jobs;
-create policy "Anyone can read jobs"
+drop policy if exists "Owners can read own jobs" on jobs;
+create policy "Owners can read own jobs"
   on jobs for select
-  using (true);
+  to authenticated
+  using ((select auth.uid()) = user_id);
 
 drop policy if exists "Anyone can post jobs" on jobs;
 create policy "Anyone can post jobs if not suspended"
@@ -708,9 +710,11 @@ create policy "Owners can delete jobs if not suspended"
   );
 
 drop policy if exists "Anyone can read gigs" on gigs;
-create policy "Anyone can read gigs"
+drop policy if exists "Owners can read own gigs" on gigs;
+create policy "Owners can read own gigs"
   on gigs for select
-  using (true);
+  to authenticated
+  using ((select auth.uid()) = user_id);
 
 drop policy if exists "Anyone can post gigs" on gigs;
 create policy "Anyone can post gigs if not suspended"
@@ -2240,3 +2244,31 @@ alter table community_posts add column if not exists hidden_reason text;
 -- Add soft-hide columns to community_comments
 alter table community_comments add column if not exists hidden boolean not null default false;
 alter table community_comments add column if not exists hidden_reason text;
+
+revoke select on table public.jobs from anon;
+revoke select on table public.gigs from anon;
+grant select on table public.jobs to authenticated;
+grant select on table public.gigs to authenticated;
+
+create or replace view public.jobs_public
+with (security_invoker = false)
+as
+select
+  id, user_id, title, category, neighborhood, pay, company, description, created_at,
+  apply_url, is_boosted, boost_tier, boost_expires_at, job_type, salary_min, salary_max
+from public.jobs
+where coalesce(moderation_status, 'approved') = 'approved'
+  and coalesce(boost_pending, false) = false;
+
+create or replace view public.gigs_public
+with (security_invoker = false)
+as
+select
+  id, user_id, title, category, neighborhood, pay, company, description, created_at,
+  post_type, status, is_boosted, boost_tier, boost_expires_at
+from public.gigs
+where coalesce(moderation_status, 'approved') = 'approved'
+  and coalesce(boost_pending, false) = false;
+
+grant select on public.jobs_public to anon, authenticated;
+grant select on public.gigs_public to anon, authenticated;

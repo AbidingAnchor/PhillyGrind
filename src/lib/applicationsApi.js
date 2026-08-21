@@ -65,7 +65,7 @@ export async function getMyApplications() {
 
   const jobIds = [...new Set(data.map((application) => application.job_id))];
   const { data: jobs, error: jobsError } = await supabase
-    .from('jobs')
+    .from('jobs_public')
     .select('id,title,category,neighborhood,company')
     .in('id', jobIds);
 

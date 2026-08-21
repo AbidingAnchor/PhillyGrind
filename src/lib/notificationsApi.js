@@ -7,8 +7,8 @@ async function getListingPaths(listingIds) {
   if (!ids.length) return pathsById;
 
   const [jobsResult, gigsResult] = await Promise.all([
-    supabase.from('jobs').select('id').in('id', ids),
-    supabase.from('gigs').select('id').in('id', ids),
+    supabase.from('jobs_public').select('id').in('id', ids),
+    supabase.from('gigs_public').select('id').in('id', ids),
   ]);
 
   if (jobsResult.error) throw jobsResult.error;

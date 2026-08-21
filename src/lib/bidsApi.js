@@ -83,7 +83,7 @@ export async function getMyBids() {
 
   const listingIds = [...new Set(data.map((bid) => bid.listing_id))];
   const { data: gigs, error: gigsError } = await supabase
-    .from('gigs')
+    .from('gigs_public')
     .select('id,title,category,neighborhood,status')
     .in('id', listingIds);
 
