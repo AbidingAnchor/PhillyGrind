@@ -388,7 +388,7 @@ function BrowseJobs() {
                   className="featured-worker-avatar"
                   style={!worker.posterAvatarUrl ? { backgroundColor: getUserAvatarColor(worker.user_id, worker.posterName) } : undefined}
                 >
-                  {worker.posterAvatarUrl ? <img src={worker.posterAvatarUrl} alt={`${worker.posterName} profile`} /> : initials}
+                  {worker.posterAvatarUrl ? <img src={worker.posterAvatarUrl} alt={`${worker.posterName} profile`} draggable={false} /> : initials}
                 </span>
                 <div>
                   <span className="boost-badge pro">⭐ Pro</span>

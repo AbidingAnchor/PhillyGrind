@@ -63,8 +63,11 @@ create table if not exists messages (
   receiver_id uuid not null references auth.users(id) on delete cascade,
   listing_id uuid not null,
   content text not null,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  read_at timestamptz
 );
+
+alter table messages add column if not exists read_at timestamptz;
 
 create table if not exists reviews (
   id uuid primary key default gen_random_uuid(),
@@ -232,6 +235,9 @@ alter table profiles
 
 alter table profiles
   add column if not exists show_available_now boolean not null default false;
+
+alter table profiles
+  add column if not exists notifications_enabled boolean not null default true;
 
 alter table profiles
   add column if not exists last_active_at timestamptz;
@@ -781,6 +787,13 @@ create policy "Thread members can read messages"
   to authenticated
   using ((select auth.uid()) = sender_id or (select auth.uid()) = receiver_id);
 
+drop policy if exists "Receivers can mark messages read" on messages;
+create policy "Receivers can mark messages read"
+  on messages for update
+  to authenticated
+  using ((select auth.uid()) = receiver_id)
+  with check ((select auth.uid()) = receiver_id);
+
 drop policy if exists "Users can send messages" on messages;
 create policy "Users can send messages if not suspended"
   on messages for insert
@@ -1109,6 +1122,10 @@ create index if not exists messages_listing_id_created_at_idx
 create index if not exists messages_sender_receiver_idx
   on messages (sender_id, receiver_id);
 
+create index if not exists messages_unread_for_receiver_idx
+  on messages (receiver_id, sender_id, listing_id)
+  where read_at is null;
+
 create index if not exists reviews_reviewee_id_created_at_idx
   on reviews (reviewee_id, created_at desc);
 
@@ -1177,6 +1194,10 @@ declare
   listing_title text;
   listing_kind text;
 begin
+  if new.listing_id is null or new.listing_id = '00000000-0000-0000-0000-000000000001'::uuid then
+    return new;
+  end if;
+
   select user_id, title
   into listing_owner, listing_title
   from public.jobs
@@ -1232,7 +1253,8 @@ begin
     listing_type := 'gig';
   end if;
 
-  if new.reviewee_id <> new.reviewer_id then
+  if new.reviewee_id <> new.reviewer_id
+    and public.user_wants_notifications(new.reviewee_id) then
     insert into public.notifications (user_id, type, message, listing_id, listing_type)
     values (
       new.reviewee_id,
@@ -1262,7 +1284,8 @@ begin
   if new.status = 'completed'
     and new.worker_marked_complete_at is not null
     and old.worker_marked_complete_at is null
-    and new.hirer_id <> new.worker_id then
+    and new.hirer_id <> new.worker_id
+    and public.user_wants_notifications(new.hirer_id) then
     insert into public.notifications (user_id, type, message, listing_id)
     values (
       new.hirer_id,
@@ -1434,6 +1457,19 @@ alter table notifications drop constraint if exists notifications_listing_type_c
 alter table notifications
   add constraint notifications_listing_type_check check (listing_type in ('job', 'gig', 'marketplace'));
 
+create or replace function public.user_wants_notifications(target_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    (select notifications_enabled from public.profiles where id = target_user_id),
+    true
+  );
+$$;
+
 drop trigger if exists on_message_notify_listing_poster on public.messages;
 drop function if exists public.notify_listing_poster_on_message();
 
@@ -1448,6 +1484,10 @@ declare
   listing_title text;
   listing_kind text;
 begin
+  if new.listing_id is null or new.listing_id = '00000000-0000-0000-0000-000000000001'::uuid then
+    return new;
+  end if;
+
   select user_id, title
   into listing_owner, listing_title
   from public.jobs
@@ -1471,7 +1511,7 @@ begin
   if listing_owner is null then
     select user_id, title
     into listing_owner, listing_title
-    from public.marketplace_items
+    from public.marketplace_listings
     where id = new.listing_id;
 
     if listing_owner is not null then
@@ -1479,7 +1519,9 @@ begin
     end if;
   end if;
 
-  if listing_owner is not null and listing_owner <> new.sender_id then
+  if listing_owner is not null
+    and listing_owner <> new.sender_id
+    and public.user_wants_notifications(listing_owner) then
     insert into public.notifications (user_id, type, message, listing_id, listing_type, sender_id)
     values (
       listing_owner,
@@ -1517,7 +1559,9 @@ begin
   where id = new.post_id;
 
   -- Notify post author if not the commenter
-  if post_author is not null and post_author <> new.user_id then
+  if post_author is not null
+    and post_author <> new.user_id
+    and public.user_wants_notifications(post_author) then
     insert into public.notifications (user_id, type, message, post_id, sender_id)
     values (
       post_author,
@@ -1535,7 +1579,10 @@ begin
     from public.community_comments
     where id = new.parent_comment_id;
 
-    if parent_comment_author is not null and parent_comment_author <> new.user_id and parent_comment_author <> post_author then
+    if parent_comment_author is not null
+      and parent_comment_author <> new.user_id
+      and parent_comment_author <> post_author
+      and public.user_wants_notifications(parent_comment_author) then
       insert into public.notifications (user_id, type, message, post_id, sender_id)
       values (
         parent_comment_author,

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { MessageCircle, MoreHorizontal, Upload, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft, Search } from 'lucide-react';
+import { MessageCircle, MoreHorizontal, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft, Search, Image, Smile, Briefcase, Hammer, ShoppingBag, Home, MapPin, MessageSquare } from 'lucide-react';
 import FacebookShareIcon from '../components/FacebookShareIcon.jsx';
+import ProfileListbox from '../components/ProfileListbox.jsx';
 import {
   getCommunityPosts,
   getCommunityComments,
@@ -32,6 +33,79 @@ import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
 import PostReactionControl from '../components/PostReactionControl.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import TrendingPostsWidget from '../components/TrendingPostsWidget.jsx';
+
+const COMPOSER_FEELINGS = [
+  { emoji: '😊', label: 'Happy' },
+  { emoji: '🙌', label: 'Grateful' },
+  { emoji: '💼', label: 'Hustling' },
+  { emoji: '☕', label: 'Chill' },
+  { emoji: '🔥', label: 'Motivated' },
+  { emoji: '🤝', label: 'Looking to connect' },
+];
+
+function defaultComposerNeighborhood(profileNeighborhood) {
+  if (profileNeighborhood && COMMUNITY_NEIGHBORHOODS.includes(profileNeighborhood)) {
+    return profileNeighborhood;
+  }
+  return COMMUNITY_NEIGHBORHOODS[0];
+}
+
+const COMMUNITY_QUICK_LINKS = [
+  { to: '/jobs', label: 'Jobs', icon: Briefcase },
+  { to: '/gigs', label: 'Gigs', icon: Hammer },
+  { to: '/marketplace', label: 'Marketplace', icon: ShoppingBag },
+  { to: '/housing', label: 'Housing', icon: Home },
+  { to: '/messages', label: 'Messages', icon: MessageSquare },
+];
+
+function CommunityLeftSidebar({ isLoggedIn, user, profile }) {
+  const displayName = profile?.name || user?.name || 'Neighbor';
+  const profileTo = isLoggedIn ? '/profile' : '/login';
+  const profileLinkState = isLoggedIn ? undefined : { from: '/community' };
+  const neighborhoodName = profile?.neighborhood && profile.neighborhood !== 'Any'
+    ? profile.neighborhood
+    : 'Not set yet';
+
+  return (
+    <aside className="feed-left-sidebar" aria-label="Your profile and shortcuts">
+      <div className="feed-left-card feed-left-profile-card">
+        {profile?.avatar_url ? (
+          <img src={profile.avatar_url} alt="" className="feed-left-avatar" draggable={false} />
+        ) : (
+          <div
+            className="feed-left-avatar feed-left-avatar-placeholder"
+            style={{ backgroundColor: getUserAvatarColor(user?.id, displayName) }}
+          >
+            {displayName.charAt(0) || 'Y'}
+          </div>
+        )}
+        <div className="feed-left-profile-copy">
+          <strong className="feed-left-profile-name">{displayName}</strong>
+          <Link to={profileTo} state={profileLinkState} className="feed-left-profile-link">
+            View your profile
+          </Link>
+        </div>
+      </div>
+
+      <div className="feed-left-card feed-left-neighborhood-card">
+        <MapPin size={18} />
+        <div className="feed-left-neighborhood-copy">
+          <span className="feed-left-neighborhood-label">Your Neighborhood</span>
+          <strong className="feed-left-neighborhood-name">{neighborhoodName}</strong>
+        </div>
+      </div>
+
+      <nav className="feed-left-card feed-left-nav-card" aria-label="Quick links">
+        {COMMUNITY_QUICK_LINKS.map(({ to, label, icon: Icon }) => (
+          <Link key={to} to={to} className="feed-left-nav-link">
+            <Icon size={18} />
+            <span>{label}</span>
+          </Link>
+        ))}
+      </nav>
+    </aside>
+  );
+}
 
 const SEARCH_EXAMPLES = ['Plumber', 'House Cleaner', 'Roof Repair', 'Contractor', 'House Painter', 'Electrician'];
 
@@ -465,6 +539,7 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0, allCo
               src={comment.authorAvatarUrl}
               alt={comment.authorName}
               className={isReply ? 'feed-comment-reply-avatar' : 'feed-comment-avatar'}
+              draggable={false}
             />
           ) : (
             <div
@@ -482,6 +557,7 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0, allCo
               src={comment.authorAvatarUrl}
               alt={comment.authorName}
               className={isReply ? 'feed-comment-reply-avatar' : 'feed-comment-avatar'}
+              draggable={false}
             />
           ) : (
             <div
@@ -689,7 +765,7 @@ function ShareComposerModal({ isOpen, onClose, originalPost, currentUser, onShar
             <div style={{ marginBottom: '16px', padding: '12px', background: 'var(--muted-bg)', borderRadius: '8px', border: '1px solid var(--line)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
                 {originalPost.authorAvatarUrl ? (
-                  <img src={originalPost.authorAvatarUrl} alt={originalPost.authorName} style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
+                  <img src={originalPost.authorAvatarUrl} alt={originalPost.authorName} draggable={false} style={{ width: '32px', height: '32px', borderRadius: '50%', userSelect: 'none' }} />
                 ) : (
                   <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: getUserAvatarColor(originalPost.authorId, originalPost.authorName), display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '14px' }}>
                     {originalPost.authorName?.charAt(0) || '?'}
@@ -770,7 +846,7 @@ function ReactionsListModal({ postId, onClose }) {
             {filtered.map(r => (
               <Link key={r.userId} to={`/profile/${r.userId}`} className="reactions-modal-user" onClick={onClose}>
                 {r.avatarUrl ? (
-                  <img src={r.avatarUrl} className="reactions-modal-avatar" alt={r.name} />
+                  <img src={r.avatarUrl} className="reactions-modal-avatar" alt={r.name} draggable={false} />
                 ) : (
                   <div
                     className="reactions-modal-avatar-placeholder"
@@ -1092,7 +1168,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         {post.authorId && post.authorId !== 'undefined' && post.authorId !== 'null' ? (
           <Link to={`/profile/${post.authorId}`} className="feed-post-author">
             {post.authorAvatarUrl ? (
-              <img src={post.authorAvatarUrl} alt={post.authorName} className="feed-post-avatar" />
+              <img src={post.authorAvatarUrl} alt={post.authorName} className="feed-post-avatar" draggable={false} />
             ) : (
               <div
                 className="feed-post-avatar-placeholder"
@@ -1112,7 +1188,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         ) : (
           <div className="feed-post-author">
             {post.authorAvatarUrl ? (
-              <img src={post.authorAvatarUrl} alt={post.authorName} className="feed-post-avatar" />
+              <img src={post.authorAvatarUrl} alt={post.authorName} className="feed-post-avatar" draggable={false} />
             ) : (
               <div
                 className="feed-post-avatar-placeholder"
@@ -1189,7 +1265,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
         <div className="shared-post-card">
           <div className="shared-post-header">
             {post.original_post.authorAvatarUrl ? (
-              <img src={post.original_post.authorAvatarUrl} alt={post.original_post.authorName} className="shared-post-avatar" />
+              <img src={post.original_post.authorAvatarUrl} alt={post.original_post.authorName} className="shared-post-avatar" draggable={false} />
             ) : (
               <div 
                 className="shared-post-avatar-placeholder"
@@ -1398,14 +1474,36 @@ function Community() {
   // Post composer state
   const [showComposer, setShowComposer] = useState(false);
   const [composerContent, setComposerContent] = useState('');
-  const [composerNeighborhood, setComposerNeighborhood] = useState(COMMUNITY_NEIGHBORHOODS[0]);
+  const [composerNeighborhood, setComposerNeighborhood] = useState(defaultComposerNeighborhood(profile?.neighborhood));
   const [composerPhoto, setComposerPhoto] = useState(null);
   const [composerPhotoPreview, setComposerPhotoPreview] = useState(null);
+  const [composerFeeling, setComposerFeeling] = useState(null);
+  const [showFeelingPicker, setShowFeelingPicker] = useState(false);
   const [submittingPost, setSubmittingPost] = useState(false);
+  const composerPhotoInputRef = useRef(null);
 
   useEffect(() => {
     setSearchInput(searchQuery);
   }, [searchQuery]);
+
+  useEffect(() => {
+    if (!showComposer) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeComposer();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showComposer]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1447,25 +1545,50 @@ function Community() {
     };
   }, [neighborhood, searchQuery]);
 
+  function resetComposerFields() {
+    setComposerContent('');
+    setComposerNeighborhood(defaultComposerNeighborhood(profile?.neighborhood));
+    setComposerFeeling(null);
+    setShowFeelingPicker(false);
+    setComposerPhoto(null);
+    setComposerPhotoPreview(null);
+  }
+
+  function closeComposer() {
+    setShowComposer(false);
+    setShowFeelingPicker(false);
+  }
+
   function handleComposerClick() {
     if (!isLoggedIn) {
       navigate('/login', { state: { from: '/community' } });
       return;
     }
+    setComposerNeighborhood(defaultComposerNeighborhood(profile?.neighborhood));
     setShowComposer(true);
   }
 
   function handlePhotoChange(e) {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (file) {
       setComposerPhoto(file);
       setComposerPhotoPreview(URL.createObjectURL(file));
     }
+    e.target.value = '';
   }
 
   function handleRemovePhoto() {
     setComposerPhoto(null);
     setComposerPhotoPreview(null);
+  }
+
+  function handleCreateJobShortcut() {
+    closeComposer();
+    if (!isLoggedIn) {
+      navigate('/login', { state: { from: '/jobs?tab=post' } });
+      return;
+    }
+    navigate('/jobs?tab=post');
   }
 
   function handleSearchKeyDown(e) {
@@ -1489,9 +1612,12 @@ function Community() {
     
     // Optimistic UI update - add post immediately before API call
     const tempPostId = `temp-${Date.now()}`;
+    const pendingContent = composerFeeling
+      ? `${composerFeeling.emoji} Feeling ${composerFeeling.label}\n\n${composerContent}`.trim()
+      : composerContent;
     const tempPost = {
       id: tempPostId,
-      content: composerContent,
+      content: pendingContent,
       neighborhood: composerNeighborhood,
       photo: composerPhoto,
       created_at: new Date().toISOString(),
@@ -1504,18 +1630,19 @@ function Community() {
     };
     
     setPosts([tempPost, ...posts]);
-    setComposerContent('');
-    setComposerNeighborhood(COMMUNITY_NEIGHBORHOODS[0]);
-    handleRemovePhoto();
-    setShowComposer(false);
+    const contentToPost = pendingContent;
+    const neighborhoodToPost = composerNeighborhood;
+    const photoToPost = composerPhoto;
+    resetComposerFields();
+    closeComposer();
     
     try {
       const newPost = await createCommunityPost(
         {
-          content: composerContent,
-          neighborhood: composerNeighborhood,
+          content: contentToPost,
+          neighborhood: neighborhoodToPost,
         },
-        composerPhoto
+        photoToPost
       );
 
       // Replace temporary post with real post from API
@@ -1530,10 +1657,12 @@ function Community() {
         currentPosts.filter(post => post.id !== tempPostId)
       );
       alert(error.message);
-      // Restore composer state on error
-      setComposerContent(composerContent);
-      setComposerNeighborhood(composerNeighborhood);
-      if (composerPhoto) setComposerPhoto(composerPhoto);
+      setComposerContent(contentToPost.includes('\n\n') ? contentToPost.split('\n\n').slice(1).join('\n\n') : contentToPost);
+      setComposerNeighborhood(neighborhoodToPost);
+      if (photoToPost) {
+        setComposerPhoto(photoToPost);
+        setComposerPhotoPreview(URL.createObjectURL(photoToPost));
+      }
       setShowComposer(true);
     } finally {
       setSubmittingPost(false);
@@ -1572,6 +1701,8 @@ function Community() {
 
       <section className="page-section browse-content community-content">
         <div className="feed-layout">
+          <CommunityLeftSidebar isLoggedIn={isLoggedIn} user={user} profile={profile} />
+
           {/* Main Feed Column */}
           <div className="feed-main-column">
             {/* Filter Tabs */}
@@ -1621,145 +1752,197 @@ function Community() {
 
             {/* Facebook-style Composer */}
             <div className="feed-composer-wrapper">
-              {/* Compact Inline Composer */}
-              <div className="feed-composer-compact">
+              <button
+                type="button"
+                className="feed-composer-entry"
+                onClick={handleComposerClick}
+                aria-label="Create a post"
+              >
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Your avatar" className="feed-composer-avatar" />
+                  <img src={profile.avatar_url} alt="" className="feed-composer-avatar" />
                 ) : (
-                  <div 
+                  <div
                     className="feed-composer-avatar-placeholder"
                     style={{ backgroundColor: getUserAvatarColor(user?.id, profile?.name || user?.name) }}
                   >
                     {(profile?.name || user?.name)?.charAt(0) || 'Y'}
                   </div>
                 )}
-                
-                <input
-                  type="text"
-                  className="feed-composer-input"
-                  placeholder="What's happening, neighbor?"
-                  value={composerContent}
-                  onChange={(e) => setComposerContent(e.target.value)}
-                  onFocus={() => setShowComposer(true)}
-                />
-                
-                <div className="feed-composer-actions-compact">
-                  <label className="feed-composer-photo-btn-compact" title="Add photo">
-                    <Upload size={20} />
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handlePhotoChange}
-                    />
-                  </label>
-                  {composerContent.trim() && (
+                <div className="feed-composer-entry-copy">
+                  <span className="feed-composer-entry-name">{profile?.name || user?.name || 'Neighbor'}</span>
+                  <span className="feed-composer-entry-prompt">What's on your mind, neighbor?</span>
+                </div>
+                <div className="feed-composer-entry-actions" aria-hidden="true">
+                  <span className="feed-composer-entry-action" title="Photo/video">
+                    <Image size={16} />
+                  </span>
+                  <span className="feed-composer-entry-action" title="Feeling/activity">
+                    <Smile size={16} />
+                  </span>
+                </div>
+              </button>
+            </div>
+
+            {showComposer && createPortal(
+              <div
+                className="community-compose-modal-overlay"
+                onClick={(event) => {
+                  if (event.target === event.currentTarget) closeComposer();
+                }}
+              >
+                <div
+                  className="community-compose-modal"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="community-compose-title"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div className="community-compose-modal-header">
+                    <div className="community-compose-modal-heading">
+                      <span className="eyebrow">Community</span>
+                      <h2 id="community-compose-title">Create post</h2>
+                    </div>
                     <button
                       type="button"
-                      className="feed-composer-post-btn-compact"
-                      onClick={handleSubmitPost}
+                      className="community-compose-modal-close"
+                      onClick={closeComposer}
+                      aria-label="Close"
                     >
-                      Post
+                      <X size={18} />
                     </button>
-                  )}
-                </div>
-              </div>
+                  </div>
 
-              {composerPhotoPreview && (
-                <div className="feed-composer-photo-preview-compact">
-                  <img src={composerPhotoPreview} alt="Preview" />
-                  <button
-                    type="button"
-                    className="feed-composer-photo-remove"
-                    onClick={handleRemovePhoto}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              )}
-
-              {showComposer && (
-                <div className="feed-composer-expanded-wrapper">
-                  <form onSubmit={handleSubmitPost} className="feed-composer-expanded">
-                    <div className="feed-composer-header">
+                  <form className="community-compose-form" onSubmit={handleSubmitPost}>
+                    <div className="community-compose-author">
                       {profile?.avatar_url ? (
-                        <img src={profile.avatar_url} alt="Your avatar" className="feed-composer-avatar-small" />
+                        <img src={profile.avatar_url} alt="" className="feed-composer-avatar" draggable={false} />
                       ) : (
-                        <div 
-                          className="feed-composer-avatar-placeholder-small"
+                        <div
+                          className="feed-composer-avatar-placeholder"
                           style={{ backgroundColor: getUserAvatarColor(user?.id, profile?.name || user?.name) }}
                         >
                           {(profile?.name || user?.name)?.charAt(0) || 'Y'}
                         </div>
                       )}
-                      <span className="feed-composer-user-name">{profile?.name || user?.name || 'You'}</span>
-                    </div>
-                    
-                    <textarea
-                      value={composerContent}
-                      onChange={(e) => setComposerContent(e.target.value)}
-                      placeholder="Share something with your neighbors..."
-                      rows={4}
-                      autoFocus
-                    />
-                    
-                    <div className="feed-composer-options">
-                      <select
-                        value={composerNeighborhood}
-                        onChange={(e) => setComposerNeighborhood(e.target.value)}
-                        className="feed-composer-neighborhood"
-                      >
-                        {COMMUNITY_NEIGHBORHOODS.map((item) => (
-                          <option key={item} value={item}>{item}</option>
-                        ))}
-                      </select>
-                      
-                      <label className="feed-composer-photo-btn">
-                        <Upload size={18} />
-                        <input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          onChange={handlePhotoChange}
-                        />
-                      </label>
+                      <div className="community-compose-author-meta">
+                        <strong>{profile?.name || user?.name || 'You'}</strong>
+                        {composerFeeling && (
+                          <span className="community-compose-feeling-chip">
+                            {composerFeeling.emoji} Feeling {composerFeeling.label}
+                            <button
+                              type="button"
+                              onClick={() => setComposerFeeling(null)}
+                              aria-label="Remove feeling"
+                            >
+                              <X size={12} />
+                            </button>
+                          </span>
+                        )}
+                      </div>
                     </div>
 
+                    <ProfileListbox
+                      label="Neighborhood"
+                      value={composerNeighborhood}
+                      options={COMMUNITY_NEIGHBORHOODS}
+                      placeholder="Select neighborhood"
+                      onChange={setComposerNeighborhood}
+                    />
+
+                    <textarea
+                      className="community-compose-textarea"
+                      value={composerContent}
+                      onChange={(e) => setComposerContent(e.target.value)}
+                      placeholder="What's on your mind, neighbor?"
+                      rows={5}
+                      autoFocus
+                    />
+
                     {composerPhotoPreview && (
-                      <div className="feed-composer-photo-preview">
+                      <div className="community-compose-photo-preview">
                         <img src={composerPhotoPreview} alt="Preview" />
                         <button
                           type="button"
                           className="feed-composer-photo-remove"
                           onClick={handleRemovePhoto}
+                          aria-label="Remove photo"
                         >
                           <X size={16} />
                         </button>
                       </div>
                     )}
 
-                    <div className="feed-composer-actions">
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={() => {
-                          setShowComposer(false);
-                          setComposerContent('');
-                          handleRemovePhoto();
-                        }}
-                      >
-                        Cancel
-                      </button>
+                    <div className="community-compose-toolbar">
+                      <span className="community-compose-toolbar-label">Add to your post</span>
+                      <div className="community-compose-toolbar-actions">
+                        <button
+                          type="button"
+                          className="community-compose-tool-btn"
+                          onClick={() => composerPhotoInputRef.current?.click()}
+                        >
+                          <Image size={18} />
+                          <span>Photo/video</span>
+                        </button>
+                        <div className="community-compose-feeling-wrap">
+                          <button
+                            type="button"
+                            className={`community-compose-tool-btn${showFeelingPicker ? ' is-active' : ''}`}
+                            onClick={() => setShowFeelingPicker((open) => !open)}
+                          >
+                            <Smile size={18} />
+                            <span>Feeling/activity</span>
+                          </button>
+                          {showFeelingPicker && (
+                            <div className="community-compose-feeling-panel">
+                              {COMPOSER_FEELINGS.map((feeling) => (
+                                <button
+                                  key={feeling.label}
+                                  type="button"
+                                  className={`community-compose-feeling-option${composerFeeling?.label === feeling.label ? ' is-selected' : ''}`}
+                                  onClick={() => {
+                                    setComposerFeeling(feeling);
+                                    setShowFeelingPicker(false);
+                                  }}
+                                >
+                                  <span>{feeling.emoji}</span>
+                                  {feeling.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="community-compose-tool-btn community-compose-tool-btn--job"
+                          onClick={handleCreateJobShortcut}
+                        >
+                          <Briefcase size={18} />
+                          <span>Create Job</span>
+                        </button>
+                      </div>
+                      <input
+                        ref={composerPhotoInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handlePhotoChange}
+                        hidden
+                      />
+                    </div>
+
+                    <div className="community-compose-footer">
                       <button
                         type="submit"
-                        className="primary-button"
-                        disabled={submittingPost || !composerContent.trim()}
+                        className="primary-button community-compose-submit"
+                        disabled={submittingPost || (!composerContent.trim() && !composerPhoto)}
                       >
                         {submittingPost ? 'Posting...' : 'Post'}
                       </button>
                     </div>
                   </form>
                 </div>
-              )}
-            </div>
+              </div>,
+              document.body
+            )}
 
             {loading && <p className="empty-state">Loading community posts...</p>}
             {error && <p className="empty-state error-state">{error}</p>}

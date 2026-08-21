@@ -228,7 +228,7 @@ function HousingDetail() {
               style={!listing.landlordAvatarUrl ? { backgroundColor: getUserAvatarColor(listing.landlordId, listing.landlordName) } : undefined}
             >
               {listing.landlordAvatarUrl ? (
-                <img src={listing.landlordAvatarUrl} alt={`${listing.landlordName} avatar`} />
+                <img src={listing.landlordAvatarUrl} alt={`${listing.landlordName} avatar`} draggable={false} />
               ) : (
                 <span>{listing.landlordName?.charAt(0)?.toUpperCase() || '?'}</span>
               )}

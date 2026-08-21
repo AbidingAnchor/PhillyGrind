@@ -582,12 +582,20 @@ async function handleAdminReportAction(req, res, admin) {
     }
   }
 
-  if (action === 'warn' && !isCommunityReport && finalReport.reported_type === 'user') {
-    await supabaseAdmin.from('notifications').insert({
-      user_id: finalReport.reported_id,
-      type: 'admin_warning',
-      message: warnMessage?.trim() || finalReport.reason,
-    });
+  if action === 'warn' && !isCommunityReport && finalReport.reported_type === 'user' {
+    const { data: warnTargetProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('notifications_enabled')
+      .eq('id', finalReport.reported_id)
+      .maybeSingle();
+
+    if (warnTargetProfile?.notifications_enabled !== false) {
+      await supabaseAdmin.from('notifications').insert({
+        user_id: finalReport.reported_id,
+        type: 'admin_warning',
+        message: warnMessage?.trim() || finalReport.reason,
+      });
+    }
   }
 
   sendJson(res, 200, { ok: true });

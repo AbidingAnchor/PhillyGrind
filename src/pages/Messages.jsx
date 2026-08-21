@@ -19,7 +19,10 @@ function Messages() {
 
     getConversations(user.id)
       .then(setConversations)
-      .catch((err) => setError(err.message || 'Could not load conversations.'))
+      .catch((err) => {
+        console.error(err);
+        setError('Something went wrong loading conversations, please try again');
+      })
       .finally(() => setLoading(false));
   }, [user?.id]);
 

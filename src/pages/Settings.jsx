@@ -31,6 +31,7 @@ function Settings() {
   const [isLandlord, setIsLandlord] = useState(false);
   const [housingListings, setHousingListings] = useState([]);
   const [showAvailableNow, setShowAvailableNow] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   const hasStripeAccount = Boolean(authProfile?.stripe_account_id);
   const payoutsConnected = Boolean(hasStripeAccount && authProfile?.stripe_onboarding_complete);
@@ -39,7 +40,8 @@ function Settings() {
     if (!authProfile) return;
 
     setTwoFactorEnabled(authProfile.two_factor_enabled || false);
-    setShowAvailableNow(authProfile.show_available_now || false);
+    setShowAvailableNow(Boolean(authProfile.show_available_now));
+    setNotificationsEnabled(authProfile.notifications_enabled !== false);
     const resumeStoragePath = getProfileResumePath(authProfile);
     if (resumeStoragePath) {
       getResumeUrl(resumeStoragePath).then(setResumeUrl).catch(console.warn);
@@ -152,19 +154,47 @@ function Settings() {
 
   async function handleToggleAvailableNow() {
     setProfileStatus('');
+    const nextValue = !showAvailableNow;
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ show_available_now: !showAvailableNow })
+        .update({ show_available_now: nextValue })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.log('[Available Now] Supabase update error (full object):', error);
+        throw error;
+      }
 
-      setShowAvailableNow(!showAvailableNow);
-      setProfileStatus(`Available Now badge ${!showAvailableNow ? 'enabled' : 'disabled'}.`);
+      setShowAvailableNow(nextValue);
+      setProfileStatus(`Available Now badge ${nextValue ? 'enabled' : 'disabled'}.`);
       await refreshProfile();
     } catch (err) {
+      console.log('[Available Now] catch error (full object):', err);
       setProfileStatus(err.message || 'Could not update availability settings.');
+    }
+  }
+
+  async function handleToggleNotifications() {
+    setProfileStatus('');
+    const nextValue = !notificationsEnabled;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ notifications_enabled: nextValue })
+        .eq('id', user.id);
+
+      if (error) {
+        console.log('[Notifications] Supabase update error (full object):', error);
+        throw error;
+      }
+
+      setNotificationsEnabled(nextValue);
+      setProfileStatus(`Notifications ${nextValue ? 'enabled' : 'disabled'}.`);
+      await refreshProfile();
+    } catch (err) {
+      console.log('[Notifications] catch error (full object):', err);
+      setProfileStatus(err.message || 'Could not update notification settings.');
     }
   }
 
@@ -383,6 +413,11 @@ function Settings() {
               <p className="settings-row-description">View your notifications for messages, reactions, and other activity using the bell icon in the top navigation.</p>
             </div>
           </div>
+          <SettingsToggle
+            checked={notificationsEnabled}
+            onChange={handleToggleNotifications}
+            ariaLabel={notificationsEnabled ? 'Disable notifications' : 'Enable notifications'}
+          />
         </div>
       </section>
 

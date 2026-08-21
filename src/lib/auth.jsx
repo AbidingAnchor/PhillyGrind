@@ -3,7 +3,7 @@ import { hasSupabaseConfig, supabase } from './supabase.js';
 import OnboardingTour from '../components/OnboardingTour.jsx';
 
 const AuthContext = createContext(null);
-const profileFields = 'id,name,email,avatar_url,resume_url,resume_path,stripe_account_id,stripe_onboarding_complete,onboarding_complete,tos_agreed_at,two_factor_enabled,identity_verified,verification_status,stripe_identity_session_id,banner_url,profile_tags,created_at,role,is_adult_confirmed';
+const profileFields = 'id,name,email,avatar_url,resume_url,resume_path,stripe_account_id,stripe_onboarding_complete,onboarding_complete,tos_agreed_at,two_factor_enabled,identity_verified,verification_status,stripe_identity_session_id,banner_url,profile_tags,created_at,role,is_adult_confirmed,show_available_now,notifications_enabled';
 
 function withTimeout(promise, milliseconds, timeoutValue) {
   let timeoutId;

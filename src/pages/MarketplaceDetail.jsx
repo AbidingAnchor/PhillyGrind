@@ -514,7 +514,7 @@ function MarketplaceDetail() {
                   style={!listing.profiles?.avatar_url ? { backgroundColor: getUserAvatarColor(listing.user_id, posterName) } : undefined}
                 >
                   {listing.profiles?.avatar_url ? (
-                    <img src={listing.profiles.avatar_url} alt={posterName} />
+                    <img src={listing.profiles.avatar_url} alt={posterName} draggable={false} />
                   ) : (
                     <span>{posterName?.charAt(0)?.toUpperCase() || '?'}</span>
                   )}
@@ -975,6 +975,9 @@ function MarketplaceDetail() {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          user-select: none;
+          -webkit-user-select: none;
+          -webkit-user-drag: none;
         }
 
         .mp-detail-avatar[style*="background"] {

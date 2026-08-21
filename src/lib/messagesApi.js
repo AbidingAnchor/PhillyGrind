@@ -2,6 +2,16 @@ import { hasSupabaseConfig, supabase } from './supabase.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PROFILE_CONVERSATION_LISTING_ID = '00000000-0000-0000-0000-000000000001';
+const MESSAGE_COLUMNS = 'id,sender_id,receiver_id,listing_id,content,created_at,read_at';
+
+const LOAD_MESSAGES_ERROR = 'Something went wrong loading messages, please try again';
+const SEND_MESSAGE_ERROR = 'Something went wrong sending your message, please try again';
+const LOAD_CONVERSATIONS_ERROR = 'Something went wrong loading conversations, please try again';
+
+function logAndThrowUserError(error, userMessage) {
+  console.error('[messagesApi]', error);
+  throw new Error(userMessage);
+}
 
 function safeDisplayName(value, fallback = 'PhillyGrind user') {
   const trimmed = String(value || '').trim();
@@ -18,14 +28,37 @@ export async function getProfilesByIds(userIds) {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id,name')
+    .select('id,name,avatar_url')
     .in('id', ids);
 
-  if (error) throw error;
+  if (error) logAndThrowUserError(error, LOAD_MESSAGES_ERROR);
 
   return new Map((data ?? []).map((profile) => [
     profile.id,
     profile.name || 'PhillyGrind user',
+  ]));
+}
+
+export async function getParticipantProfiles(userIds) {
+  const ids = [...new Set(userIds.filter(Boolean))];
+
+  if (!ids.length) {
+    return new Map();
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id,name,avatar_url')
+    .in('id', ids);
+
+  if (error) logAndThrowUserError(error, LOAD_MESSAGES_ERROR);
+
+  return new Map((data ?? []).map((profile) => [
+    profile.id,
+    {
+      name: profile.name || 'PhillyGrind user',
+      avatar_url: profile.avatar_url || '',
+    },
   ]));
 }
 
@@ -77,10 +110,10 @@ export async function getMessages({ listingId, receiverId, userId }) {
 
   const { data, error } = await supabase
     .from('messages')
-    .select('id,sender_id,receiver_id,listing_id,content,created_at')
+    .select(MESSAGE_COLUMNS)
     .order('created_at', { ascending: true });
 
-  if (error) throw error;
+  if (error) logAndThrowUserError(error, LOAD_MESSAGES_ERROR);
 
   const filteredMessages = (data ?? []).filter((message) => (
     (message.sender_id === userId && message.receiver_id === receiverId)
@@ -113,10 +146,10 @@ export async function sendMessage({ listingId, receiverId, content }) {
       listing_id: listingId,
       content,
     })
-    .select('id,sender_id,receiver_id,listing_id,content,created_at')
+    .select(MESSAGE_COLUMNS)
     .single();
 
-  if (error) throw error;
+  if (error) logAndThrowUserError(error, SEND_MESSAGE_ERROR);
 
   return data;
 }
@@ -128,11 +161,11 @@ export async function getConversations(userId) {
 
   const { data: messages, error } = await supabase
     .from('messages')
-    .select('id,sender_id,receiver_id,listing_id,content,created_at')
+    .select(MESSAGE_COLUMNS)
     .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
+  if (error) logAndThrowUserError(error, LOAD_CONVERSATIONS_ERROR);
 
   const listingIds = [...new Set((messages ?? []).map((message) => message.listing_id))];
   const profilesById = await getProfilesByIds([
@@ -158,9 +191,9 @@ export async function getConversations(userId) {
         .in('id', listingIds),
     ]);
 
-    if (jobsResult.error) throw jobsResult.error;
-    if (gigsResult.error) throw gigsResult.error;
-    if (marketplaceResult.error) throw marketplaceResult.error;
+    if (jobsResult.error) logAndThrowUserError(jobsResult.error, LOAD_CONVERSATIONS_ERROR);
+    if (gigsResult.error) logAndThrowUserError(gigsResult.error, LOAD_CONVERSATIONS_ERROR);
+    if (marketplaceResult.error) logAndThrowUserError(marketplaceResult.error, LOAD_CONVERSATIONS_ERROR);
 
     for (const job of jobsResult.data ?? []) {
       listingsById.set(job.id, {
@@ -240,12 +273,12 @@ export async function getProfileConversation(userId, otherUserId) {
 
   const { data, error } = await supabase
     .from('messages')
-    .select('id,sender_id,receiver_id,listing_id,content,created_at')
+    .select(MESSAGE_COLUMNS)
     .eq('listing_id', PROFILE_CONVERSATION_LISTING_ID)
     .or(`and(sender_id.eq.${userId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${userId})`)
     .order('created_at', { ascending: true });
 
-  if (error) throw error;
+  if (error) logAndThrowUserError(error, LOAD_MESSAGES_ERROR);
 
   const profilesById = await getProfilesByIds([
     ...(data ?? []).map((message) => message.sender_id),
@@ -265,7 +298,32 @@ export async function getOrCreateProfileConversation(userId, otherUserId) {
   return { existing: false, messages: [] };
 }
 
-export function subscribeToMessages({ listingId, receiverId, userId, onMessage }) {
+export async function markThreadMessagesRead({ otherUserId, userId }) {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  const { data, error } = await supabase
+    .from('messages')
+    .update({ read_at: new Date().toISOString() })
+    .eq('sender_id', otherUserId)
+    .eq('receiver_id', userId)
+    .is('read_at', null)
+    .select('id,read_at');
+
+  if (error) logAndThrowUserError(error, LOAD_MESSAGES_ERROR);
+  return data ?? [];
+}
+
+function messageBelongsToThread(message, { listingId, receiverId, userId }) {
+  if (message.listing_id !== listingId) return false;
+  return (
+    (message.sender_id === userId && message.receiver_id === receiverId)
+    || (message.sender_id === receiverId && message.receiver_id === userId)
+  );
+}
+
+export function subscribeToMessages({ listingId, receiverId, userId, onMessage, onUpdate }) {
   if (!hasSupabaseConfig) return () => {};
 
   const channel = supabase
@@ -280,13 +338,23 @@ export function subscribeToMessages({ listingId, receiverId, userId, onMessage }
       },
       (payload) => {
         const message = payload.new;
-        const belongsToThread = (
-          (message.sender_id === userId && message.receiver_id === receiverId)
-          || (message.sender_id === receiverId && message.receiver_id === userId)
-        );
-
-        if (belongsToThread) {
-          onMessage(message);
+        if (messageBelongsToThread(message, { listingId, receiverId, userId })) {
+          onMessage?.(message);
+        }
+      },
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'messages',
+        filter: `listing_id=eq.${listingId}`,
+      },
+      (payload) => {
+        const message = payload.new;
+        if (messageBelongsToThread(message, { listingId, receiverId, userId })) {
+          onUpdate?.(message);
         }
       },
     )
