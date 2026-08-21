@@ -236,6 +236,36 @@ export async function updateProfile({ name, bio, skills, availability, neighborh
   return data;
 }
 
+export async function completeOwnOnboarding(neighborhood) {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  const { data, error } = await supabase.rpc('complete_own_onboarding', {
+    p_neighborhood: neighborhood || null,
+  });
+
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] : data;
+}
+
+export async function touchOwnLastActive() {
+  if (!hasSupabaseConfig) return;
+
+  const { error } = await supabase.rpc('touch_own_last_active');
+  if (error) throw error;
+}
+
+export async function clearOwnResumeRecord() {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  const { data, error } = await supabase.rpc('clear_own_resume');
+  if (error) throw error;
+  return Array.isArray(data) ? data[0] : data;
+}
+
 export async function uploadResume(file) {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
@@ -314,16 +344,7 @@ export async function removeResume() {
 
   if (storageError) throw storageError;
 
-  // Clear resume path from profile
-  const { data, error } = await supabase
-    .from('profiles')
-    .update({ resume_path: null, resume_url: null })
-    .eq('id', userData.user.id)
-    .select(profileSelect)
-    .single();
-
-  if (error) throw error;
-
+  const data = await clearOwnResumeRecord();
   return data;
 }
 

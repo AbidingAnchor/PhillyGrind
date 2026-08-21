@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { MapPin, X, ArrowRight, Navigation } from 'lucide-react';
 import { useAuth } from '../lib/auth.jsx';
 import { HOUSING_NEIGHBORHOODS } from '../lib/housingApi.js';
-import { supabase } from '../lib/supabase.js';
 
 function OnboardingModal() {
   const [neighborhood, setNeighborhood] = useState('');
@@ -121,14 +120,7 @@ function OnboardingModal() {
     setStatus('');
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ neighborhood, onboarding_complete: true })
-        .eq('id', profile?.id);
-
-      if (error) throw error;
-
-      await completeOnboarding();
+      await completeOnboarding(neighborhood);
       await refreshProfile();
     } catch (error) {
       setStatus(error.message || 'Could not save neighborhood.');

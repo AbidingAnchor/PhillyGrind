@@ -776,6 +776,13 @@ create policy "Users can update own profile"
   using ((select auth.uid()) = id)
   with check ((select auth.uid()) = id);
 
+revoke update on table profiles from anon, authenticated, public;
+grant update (
+  name, bio, skills, avatar_url, banner_url, availability,
+  neighborhood, neighborhoods, profile_tags, accent_color,
+  notifications_enabled, show_available_now
+) on table profiles to authenticated;
+
 drop policy if exists "Users can insert own profile" on profiles;
 create policy "Users can insert own profile"
   on profiles for insert

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { hasSupabaseConfig, supabase } from './supabase.js';
-import { ensureOwnProfile } from './profileApi.js';
+import { completeOwnOnboarding, ensureOwnProfile } from './profileApi.js';
 import OnboardingTour from '../components/OnboardingTour.jsx';
 import Skeleton from '../components/Skeleton.jsx';
 
@@ -304,18 +304,11 @@ export function AuthProvider({ children }) {
     if (error) throw error;
   }
 
-  async function completeOnboarding() {
+  async function completeOnboarding(neighborhood) {
     if (!hasSupabaseConfig || !session?.user) return;
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ onboarding_complete: true })
-      .eq('id', session.user.id)
-      .select(profileFields)
-      .single();
-
-    if (error) throw error;
-    setProfile(data);
+    const data = await completeOwnOnboarding(neighborhood);
+    if (data) setProfile(data);
   }
 
   async function refreshProfile() {

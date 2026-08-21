@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ArrowRight, MessageSquare, Briefcase, Hammer, ShoppingBag, Home, Sparkles } from 'lucide-react';
-import { supabase } from '../lib/supabase.js';
+import { completeOwnOnboarding } from '../lib/profileApi.js';
 
 export default function OnboardingTour({ onComplete, onSkip }) {
   const [step, setStep] = useState(0);
@@ -89,13 +89,7 @@ export default function OnboardingTour({ onComplete, onSkip }) {
 
   const handleComplete = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('profiles')
-          .update({ onboarding_complete: true })
-          .eq('id', user.id);
-      }
+      await completeOwnOnboarding();
       onComplete();
     } catch (err) {
       console.error('Failed to complete onboarding:', err);
@@ -105,13 +99,7 @@ export default function OnboardingTour({ onComplete, onSkip }) {
 
   const handleSkip = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('profiles')
-          .update({ onboarding_complete: true })
-          .eq('id', user.id);
-      }
+      await completeOwnOnboarding();
       onSkip();
     } catch (err) {
       console.error('Failed to skip onboarding:', err);
