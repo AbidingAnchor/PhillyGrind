@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Briefcase, MapPin, Calendar, MessageCircle, Pencil, Share2, MoreHorizontal, Settings } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Briefcase, MapPin, Calendar, MessageCircle, Pencil, Share2, MoreHorizontal, Settings, X, Camera, Check, ChevronDown } from 'lucide-react';
 import FacebookShareIcon from '../components/FacebookShareIcon.jsx';
 import PostReactionControl from '../components/PostReactionControl.jsx';
 import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
@@ -41,6 +42,188 @@ function getInitials(name) {
     .map((word) => word[0])
     .join('')
     .toUpperCase();
+}
+
+function ProfileListbox({
+  label,
+  value,
+  options,
+  placeholder = 'Select an option',
+  onChange,
+}) {
+  const listboxId = useId();
+  const rootRef = useRef(null);
+  const optionRefs = useRef([]);
+  const activeIndexRef = useRef(-1);
+  const onChangeRef = useRef(onChange);
+  const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  const selectedIndex = options.findIndex((option) => option === value);
+  const displayLabel = value || placeholder;
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
+    activeIndexRef.current = activeIndex;
+  }, [activeIndex]);
+
+  function openPanel() {
+    const nextIndex = selectedIndex >= 0 ? selectedIndex : 0;
+    setClosing(false);
+    setOpen(true);
+    setActiveIndex(nextIndex);
+    activeIndexRef.current = nextIndex;
+  }
+
+  function selectOption(option) {
+    onChangeRef.current(option);
+    setClosing(true);
+  }
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function handlePointerDown(event) {
+      if (!rootRef.current?.contains(event.target)) {
+        setClosing(true);
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setClosing(true);
+        return;
+      }
+
+      if (closing) return;
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setActiveIndex((current) => {
+          const next = current < 0 ? 0 : Math.min(current + 1, options.length - 1);
+          activeIndexRef.current = next;
+          return next;
+        });
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setActiveIndex((current) => {
+          const next = current < 0 ? options.length - 1 : Math.max(current - 1, 0);
+          activeIndexRef.current = next;
+          return next;
+        });
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        activeIndexRef.current = 0;
+        setActiveIndex(0);
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        const last = Math.max(options.length - 1, 0);
+        activeIndexRef.current = last;
+        setActiveIndex(last);
+      } else if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        const index = activeIndexRef.current;
+        if (index >= 0 && options[index] != null) {
+          onChangeRef.current(options[index]);
+          setClosing(true);
+        }
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [open, closing, options]);
+
+  useEffect(() => {
+    if (!open || closing || activeIndex < 0) return;
+    optionRefs.current[activeIndex]?.scrollIntoView({ block: 'nearest' });
+  }, [activeIndex, open, closing]);
+
+  function handlePanelAnimationEnd(event) {
+    if (event.target !== event.currentTarget) return;
+    if (!closing) return;
+    setOpen(false);
+    setClosing(false);
+    setActiveIndex(-1);
+    activeIndexRef.current = -1;
+  }
+
+  return (
+    <div className="profile-listbox" ref={rootRef}>
+      <span className="profile-listbox-label" id={`${listboxId}-label`}>{label}</span>
+      <button
+        type="button"
+        className={`profile-listbox-trigger ${open && !closing ? 'is-open' : ''} ${!value ? 'is-placeholder' : ''}`}
+        aria-haspopup="listbox"
+        aria-expanded={open && !closing}
+        aria-labelledby={`${listboxId}-label`}
+        aria-controls={`${listboxId}-listbox`}
+        onClick={() => {
+          if (open && !closing) setClosing(true);
+          else openPanel();
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            if (!open || closing) openPanel();
+          }
+        }}
+      >
+        <span className="profile-listbox-value">{displayLabel}</span>
+        <ChevronDown size={16} className="profile-listbox-caret" aria-hidden="true" />
+      </button>
+
+      {open && (
+        <div
+          className={`profile-listbox-panel ${closing ? 'is-closing' : 'is-open'}`}
+          onAnimationEnd={handlePanelAnimationEnd}
+        >
+          <ul
+            id={`${listboxId}-listbox`}
+            className="profile-listbox-options"
+            role="listbox"
+            aria-labelledby={`${listboxId}-label`}
+            tabIndex={-1}
+          >
+            {options.map((option, index) => {
+              const selected = option === value;
+              const active = index === activeIndex;
+              return (
+                <li
+                  key={option}
+                  ref={(node) => {
+                    optionRefs.current[index] = node;
+                  }}
+                  id={`${listboxId}-option-${index}`}
+                  role="option"
+                  aria-selected={selected}
+                  className={`profile-listbox-option ${selected ? 'is-selected' : ''} ${active ? 'is-active' : ''}`}
+                  onMouseEnter={() => {
+                    activeIndexRef.current = index;
+                    setActiveIndex(index);
+                  }}
+                  onClick={() => selectOption(option)}
+                >
+                  <span>{option}</span>
+                  {selected && <Check size={16} className="profile-listbox-check" aria-hidden="true" />}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function TagEditor({ label, placeholder, tags, onChange }) {
@@ -126,6 +309,25 @@ function Profile() {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [actionsMenuOpen]);
+
+  useEffect(() => {
+    if (!editing) return undefined;
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setEditing(false);
+      }
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [editing]);
 
   const activeBoosts = listings.filter((listing) => (
     listing.is_boosted
@@ -1128,96 +1330,143 @@ function Profile() {
             </section>
               )}
 
-              {editing && isOwnProfile && (
-                <section className="profile-section-card">
-                  <div className="profile-section-heading">
-                    <span className="eyebrow">Profile Editor</span>
-                    <h2>Edit Profile</h2>
-                  </div>
-                  <form className="profile-edit-form" onSubmit={handleSaveProfile}>
-                    {/* Banner upload temporarily hidden - will be revisited in future profile customization session */}
-                    {false && (
-                      <label>
-                        Banner photo
-                        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleBannerUpload} />
-                        <span className="detail-note">JPG, PNG, or WebP, 5MB max. Recommended 3:1 aspect ratio (e.g., 1200x400px).</span>
-                      </label>
-                    )}
-                    <label>
-                      Display Name
-                      <input name="name" value={form.name} onChange={updateField} className="profile-editor-input" placeholder="Your public name shown on posts and listings" />
-                      <span className="detail-note">This is the name shown publicly across the platform.</span>
-                    </label>
-                    <div className="profile-field">
-                      <span className="profile-field-label">Profile photo</span>
-                      <div className="profile-photo-upload-wrapper">
-                        <input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp,image/jpg,.jpg,.jpeg,.png,.webp"
-                          onChange={handleAvatarUpload}
-                          className="profile-editor-file-input"
-                          id="avatar-upload"
-                        />
-                        <label htmlFor="avatar-upload" className="profile-photo-upload-button">
-                          {saving ? 'Uploading...' : 'Choose Photo'}
-                        </label>
-                      </div>
-                      <span className="detail-note">JPG, PNG, or WebP. Large phone photos are compressed automatically. Publicly visible on your profile.</span>
-                    </div>
-                    <label>
-                      Bio
-                      <textarea name="bio" value={form.bio} onChange={updateField} className="profile-editor-textarea" placeholder="Tell Philly what kind of work you do best." />
-                    </label>
-                    <TagEditor label="Skills" placeholder="Moving, cleaning, bartending..." tags={form.skills} onChange={(skills) => setForm((current) => ({ ...current, skills }))} />
-                    <label>
-                      Availability
-                      <select name="availability" value={form.availability} onChange={updateField} className="profile-editor-select">
-                        <option value="">Select availability</option>
-                        {availabilityOptions.map((option) => <option key={option} value={option}>{option}</option>)}
-                      </select>
-                    </label>
-                    <TagEditor label="Neighborhoods served" placeholder="South Philly, Fishtown..." tags={form.neighborhoods} onChange={(neighborhoods) => setForm((current) => ({ ...current, neighborhoods }))} />
-                    <label>
-                      Your Neighborhood
-                      <select name="neighborhood" value={form.neighborhood} onChange={updateField} className="profile-editor-select">
-                        <option value="">Select your neighborhood</option>
-                        {HOUSING_NEIGHBORHOODS.map((item) => (
-                          <option key={item} value={item}>{item}</option>
-                        ))}
-                      </select>
-                      <span className="detail-note">This helps show you nearby posts in the Community feed.</span>
-                    </label>
-                    <label>
-                      Personality tags (select up to 3)
-                      <div className="profile-tags-selector">
-                        {profileTagOptions.map((tag) => (
-                          <button
-                            key={tag}
-                            type="button"
-                            className={`profile-tag-option ${form.profile_tags.includes(tag) ? 'selected' : ''}`}
-                            onClick={() => {
-                              const currentTags = form.profile_tags;
-                              if (currentTags.includes(tag)) {
-                                setForm((current) => ({ ...current, profile_tags: currentTags.filter((t) => t !== tag) }));
-                              } else if (currentTags.length < 3) {
-                                setForm((current) => ({ ...current, profile_tags: [...currentTags, tag] }));
-                              }
-                            }}
-                          >
-                            {tag}
-                          </button>
-                        ))}
-                      </div>
-                      <span className="detail-note">Choose up to 3 tags that describe what you're here for.</span>
-                    </label>
-                    <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Profile'}</button>
-                  </form>
-                </section>
-              )}
             </main>
           </div>
           </div>
         </>
+      )}
+      {editing && isOwnProfile && profileData && createPortal(
+        <div
+          className="profile-edit-modal-overlay"
+          role="presentation"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setEditing(false);
+          }}
+        >
+          <div
+            className="profile-edit-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-edit-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="profile-edit-modal-header">
+              <div className="profile-edit-modal-heading">
+                <span className="eyebrow">Profile Editor</span>
+                <h2 id="profile-edit-modal-title">Edit Profile</h2>
+              </div>
+              <button
+                type="button"
+                className="profile-edit-modal-close"
+                aria-label="Close edit profile"
+                onClick={() => setEditing(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form className="profile-edit-form" onSubmit={handleSaveProfile}>
+              <div className="profile-edit-avatar-row">
+                <span
+                  className="profile-edit-avatar-preview"
+                  style={!profileData.profile?.avatar_url ? { backgroundColor: getUserAvatarColor(viewedUserId, profileData.profileName) } : undefined}
+                >
+                  {profileData.profile?.avatar_url ? (
+                    <img
+                      key={profileData.profile.avatar_url}
+                      src={profileData.profile.avatar_url}
+                      alt=""
+                    />
+                  ) : getInitials(form.name || profileData.profileName)}
+                </span>
+                <div className="profile-edit-avatar-actions">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/jpg,.jpg,.jpeg,.png,.webp"
+                    onChange={handleAvatarUpload}
+                    className="profile-editor-file-input"
+                    id="avatar-upload"
+                  />
+                  <label htmlFor="avatar-upload" className="profile-photo-upload-button profile-edit-avatar-button">
+                    <Camera size={16} />
+                    {saving ? 'Uploading...' : 'Choose Photo'}
+                  </label>
+                  <span className="detail-note">JPG, PNG, or WebP. Large phone photos are compressed automatically.</span>
+                </div>
+              </div>
+
+              <div className="profile-edit-section">
+                <span className="profile-edit-section-kicker">About</span>
+                <label>
+                  Display Name
+                  <input name="name" value={form.name} onChange={updateField} className="profile-editor-input" placeholder="Your public name shown on posts and listings" />
+                  <span className="detail-note">This is the name shown publicly across the platform.</span>
+                </label>
+                <label>
+                  Bio
+                  <textarea name="bio" value={form.bio} onChange={updateField} className="profile-editor-textarea" placeholder="Tell Philly what kind of work you do best." />
+                </label>
+              </div>
+
+              <div className="profile-edit-section">
+                <span className="profile-edit-section-kicker">Work & location</span>
+                <TagEditor label="Skills" placeholder="Moving, cleaning, bartending..." tags={form.skills} onChange={(skills) => setForm((current) => ({ ...current, skills }))} />
+                <ProfileListbox
+                  label="Availability"
+                  value={form.availability}
+                  placeholder="Select availability"
+                  options={availabilityOptions}
+                  onChange={(availability) => setForm((current) => ({ ...current, availability }))}
+                />
+                <TagEditor label="Neighborhoods served" placeholder="South Philly, Fishtown..." tags={form.neighborhoods} onChange={(neighborhoods) => setForm((current) => ({ ...current, neighborhoods }))} />
+                <ProfileListbox
+                  label="Your Neighborhood"
+                  value={form.neighborhood}
+                  placeholder="Select your neighborhood"
+                  options={HOUSING_NEIGHBORHOODS}
+                  onChange={(neighborhood) => setForm((current) => ({ ...current, neighborhood }))}
+                />
+                <span className="detail-note profile-listbox-note">This helps show you nearby posts in the Community feed.</span>
+              </div>
+
+              <div className="profile-edit-section">
+                <span className="profile-edit-section-kicker">Personality tags</span>
+                <label>
+                  Select up to 3
+                  <div className="profile-tags-selector">
+                    {profileTagOptions.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        className={`profile-tag-option ${form.profile_tags.includes(tag) ? 'selected' : ''}`}
+                        onClick={() => {
+                          const currentTags = form.profile_tags;
+                          if (currentTags.includes(tag)) {
+                            setForm((current) => ({ ...current, profile_tags: currentTags.filter((t) => t !== tag) }));
+                          } else if (currentTags.length < 3) {
+                            setForm((current) => ({ ...current, profile_tags: [...currentTags, tag] }));
+                          }
+                        }}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                  <span className="detail-note">Choose up to 3 tags that describe what you&apos;re here for.</span>
+                </label>
+              </div>
+
+              {profileStatus && <p className="form-status profile-edit-modal-status">{profileStatus}</p>}
+
+              <div className="profile-edit-modal-footer">
+                <button className="primary-button profile-edit-save-button" type="submit" disabled={saving}>
+                  {saving ? 'Saving...' : 'Save Profile'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body,
       )}
       {chatModalOpen && profileConversation && (
         <ChatModal
