@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
 import DatePicker from 'react-datepicker';
@@ -9,8 +9,15 @@ function SignUp() {
   const [agreed, setAgreed] = useState(false);
   const [status, setStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { signUp } = useAuth();
+  const { signUp, isLoggedIn } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect authenticated users away from signup page
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigate('/', { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
 
   function updateField(event) {
     const { name, value } = event.target;
