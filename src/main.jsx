@@ -37,6 +37,7 @@ import PostHousing from './pages/PostHousing.jsx';
 import HousingDetail from './pages/HousingDetail.jsx';
 import Community from './pages/Community.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import ProfileUpdateTest from './pages/ProfileUpdateTest.jsx';
 import { AuthProvider } from './lib/auth.jsx';
 import { ThemeProvider } from './lib/theme.jsx';
 import './styles.css';
@@ -87,6 +88,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               </Route>
               <Route path="/jobs/:id" element={<ListingDetail type="job" />} />
               <Route path="/gigs/:id" element={<ListingDetail type="gig" />} />
+              <Route path="/debug/profile-update-test" element={<ProtectedRoute><ProfileUpdateTest /></ProtectedRoute>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
