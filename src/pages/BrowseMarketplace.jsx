@@ -9,6 +9,7 @@ import MarketplacePostModal from '../components/MarketplacePostModal.jsx';
 import ChatModal from '../components/ChatModal.jsx';
 
 import EmptyState from '../components/EmptyState.jsx';
+import Skeleton from '../components/Skeleton.jsx';
 
 
 import { getMarketplaceListing, getMarketplaceListings } from '../lib/marketplaceApi.js';
@@ -282,7 +283,7 @@ function BrowseMarketplace() {
           </div>
         </div>
         {error && <p className="empty-state error-state">{error}</p>}
-
+        {loading && <Skeleton variant="cards" />}
         {!loading && !error && (
 
           <>

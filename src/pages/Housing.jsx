@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Home, MapPin, PlusCircle } from 'lucide-react';
 import { getHousingImagePublicUrl, getHousingListings, HOUSING_NEIGHBORHOODS } from '../lib/housingApi.js';
 import { useAuth } from '../lib/auth.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import Skeleton from '../components/Skeleton.jsx';
 
 function withTimeout(promise, milliseconds, message) {
   let timeoutId;
@@ -160,7 +161,7 @@ function Housing() {
         </div>
 
         {error && <p className="empty-state error-state">{error}</p>}
-
+        {loading && <Skeleton variant="cards" />}
         {!loading && !error && (
           <>
             <div className="housing-grid">

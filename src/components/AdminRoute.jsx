@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
+import Skeleton from './Skeleton.jsx';
 
 const ADMIN_EMAIL = 'drewnegron95@gmail.com';
 
@@ -9,7 +10,7 @@ export default function AdminRoute({ children }) {
   if (loading) {
     return (
       <section className="page-section">
-        <p className="empty-state">Loading...</p>
+        <Skeleton variant="page" />
       </section>
     );
   }

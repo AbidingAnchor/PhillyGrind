@@ -32,6 +32,7 @@ import { getReactionTotalCount, getUserAvatarColor } from '../lib/reactions.js';
 import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
 import PostReactionControl from '../components/PostReactionControl.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import Skeleton from '../components/Skeleton.jsx';
 import TrendingPostsWidget from '../components/TrendingPostsWidget.jsx';
 
 const COMPOSER_FEELINGS = [
@@ -1400,7 +1401,7 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
       {showComments && (
         <div className="feed-post-comments">
           {loadingComments ? (
-            <p className="feed-comments-loading">Loading comments...</p>
+            <Skeleton variant="comments" count={3} />
           ) : comments.length === 0 ? (
             <p className="feed-comments-empty">No comments yet. Be the first to comment!</p>
           ) : (
@@ -1955,7 +1956,7 @@ function Community() {
               document.body
             )}
 
-            {loading && <p className="empty-state">Loading community posts...</p>}
+            {loading && <Skeleton variant="feed" count={4} />}
             {error && <p className="empty-state error-state">{error}</p>}
 
             {!loading && !error && (

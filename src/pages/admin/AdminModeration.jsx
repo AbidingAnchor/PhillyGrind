@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ShieldAlert, Loader2, Check, X, UserX, RefreshCw } from 'lucide-react';
 import { getModerationLogs, markModerationLogReviewed, clearAgeConcern, confirmMinorUser } from '../../lib/adminApi.js';
+import Skeleton from '../../components/Skeleton.jsx';
 
 export default function AdminModeration() {
   const [logs, setLogs] = useState([]);
@@ -142,7 +143,7 @@ export default function AdminModeration() {
         </label>
       </div>
 
-      {loading && <p className="empty-state">Loading moderation logs...</p>}
+      {loading && <Skeleton variant="list" />}
       {error && <p className="form-status error-text">{error}</p>}
 
       {!loading && logs.length === 0 && (

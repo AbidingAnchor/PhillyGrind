@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, ShoppingBag, Trash2 } from 'lucide-react';
 import { adminDeleteListing, getAdminListings } from '../../lib/adminApi.js';
 import AdminDetailModal from '../../components/AdminDetailModal.jsx';
+import Skeleton from '../../components/Skeleton.jsx';
 
 export default function AdminListings() {
   const [listings, setListings] = useState([]);
@@ -94,7 +95,7 @@ export default function AdminListings() {
         </label>
       </div>
 
-      {loading && <p className="empty-state">Loading listings...</p>}
+      {loading && <Skeleton variant="list" />}
       {error && <p className="form-status error-text">{error}</p>}
 
       {!loading && (

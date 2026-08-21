@@ -9,6 +9,7 @@ import ListingCard from '../components/ListingCard.jsx';
 import StarRating from '../components/StarRating.jsx';
 import ChatModal from '../components/ChatModal.jsx';
 import ProfileListbox from '../components/ProfileListbox.jsx';
+import Skeleton from '../components/Skeleton.jsx';
 import { createBoostCheckout } from '../lib/boostsApi.js';
 import { getUserListings } from '../lib/listingsApi.js';
 import { updateProfile, uploadAvatar, uploadBanner } from '../lib/profileApi.js';
@@ -119,7 +120,7 @@ export function OwnProfileRedirect() {
   }, [user?.id, user?.email, session?.user?.id, profile?.id, profile?.name]);
 
   if (!isUsableUserId(user?.id)) {
-    return <section className="page-section"><p className="empty-state">Loading profile...</p></section>;
+    return <section className="page-section"><Skeleton variant="profile" /></section>;
   }
 
   return <Navigate to={`/profile/${user.id}`} replace />;
@@ -691,7 +692,7 @@ function Profile() {
 
   return (
     <section className="profile-page">
-      {loading && <p className="empty-state">Loading profile...</p>}
+      {loading && <Skeleton variant="profile" />}
       {error && <p className="empty-state error-state">{error}</p>}
       {!loading && !error && profileData && (
         <>
@@ -815,9 +816,38 @@ function Profile() {
 
             {profileStatus && <p className="form-status">{profileStatus}</p>}
 
-            {/* Two-column layout */}
+            <div className="profile-tabs">
+              <button
+                className={`profile-tab ${activeTab === 'activity' ? 'active' : ''}`}
+                type="button"
+                onClick={() => setActiveTab('activity')}
+              >
+                Activity
+              </button>
+              <button
+                className={`profile-tab ${activeTab === 'about' ? 'active' : ''}`}
+                type="button"
+                onClick={() => setActiveTab('about')}
+              >
+                About
+              </button>
+              <button
+                className={`profile-tab ${activeTab === 'reviews' ? 'active' : ''}`}
+                type="button"
+                onClick={() => setActiveTab('reviews')}
+              >
+                Reviews
+              </button>
+              <button
+                className={`profile-tab ${activeTab === 'listings' ? 'active' : ''}`}
+                type="button"
+                onClick={() => setActiveTab('listings')}
+              >
+                Listings
+              </button>
+            </div>
+
             <div className="profile-content-grid">
-              {/* Left column - About at a glance */}
               <aside className="profile-sidebar">
                 <div className="profile-intro-card">
                   <div className="profile-intro-item">
@@ -920,41 +950,7 @@ function Profile() {
                 )}
               </aside>
 
-              {/* Right column - Tabs and content */}
               <main className="profile-main-content">
-                {/* Tab Bar */}
-                <div className="profile-tabs">
-                  <button
-                    className={`profile-tab ${activeTab === 'activity' ? 'active' : ''}`}
-                    type="button"
-                    onClick={() => setActiveTab('activity')}
-                  >
-                    Activity
-                  </button>
-                  <button
-                    className={`profile-tab ${activeTab === 'about' ? 'active' : ''}`}
-                    type="button"
-                    onClick={() => setActiveTab('about')}
-                  >
-                    About
-                  </button>
-                  <button
-                    className={`profile-tab ${activeTab === 'reviews' ? 'active' : ''}`}
-                    type="button"
-                    onClick={() => setActiveTab('reviews')}
-                  >
-                    Reviews
-                  </button>
-                  <button
-                    className={`profile-tab ${activeTab === 'listings' ? 'active' : ''}`}
-                    type="button"
-                    onClick={() => setActiveTab('listings')}
-                  >
-                    Listings
-                  </button>
-                </div>
-
-              {/* Tab Content */}
               {activeTab === 'activity' && (
                 <section className="profile-section-card">
                   <div className="profile-section-heading">
@@ -962,7 +958,7 @@ function Profile() {
                     <h2>Recent Activity</h2>
                   </div>
                   {loadingCommunityPosts ? (
-                    <p className="empty-state">Loading posts...</p>
+                    <Skeleton variant="feed" count={2} />
                   ) : communityPosts.length > 0 ? (
                     <>
                       <div className="profile-community-posts">

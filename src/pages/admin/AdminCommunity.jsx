@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MessageSquare, Loader2, Trash2, Eye, EyeOff } from 'lucide-react';
 import { getAdminCommunityPosts, adminDeleteCommunityPost, adminDismissCommunityReport } from '../../lib/adminApi.js';
+import Skeleton from '../../components/Skeleton.jsx';
 
 export default function AdminCommunity() {
   const [posts, setPosts] = useState([]);
@@ -100,7 +101,7 @@ export default function AdminCommunity() {
         </button>
       </div>
 
-      {loading && <p className="empty-state">Loading community data...</p>}
+      {loading && <Skeleton variant="list" />}
       {error && <p className="form-status error-text">{error}</p>}
 
       {!loading && activeTab === 'posts' && (

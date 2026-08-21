@@ -9,6 +9,7 @@ import {
   getContactReplies 
 } from '../../lib/contactApi.js';
 import { useAdminCounts } from '../../components/AdminLayout.jsx';
+import Skeleton from '../../components/Skeleton.jsx';
 
 export default function AdminContact() {
   const [submissions, setSubmissions] = useState([]);
@@ -209,7 +210,7 @@ export default function AdminContact() {
         </label>
       </div>
 
-      {loading && <p className="empty-state">Loading contact submissions...</p>}
+      {loading && <Skeleton variant="list" />}
       {error && <p className="form-status error-text">{error}</p>}
 
       {!loading && submissions.length === 0 && (

@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import SettingsToggle from '../components/SettingsToggle.jsx';
+import Skeleton from '../components/Skeleton.jsx';
 
 function resumeFilename(path) {
   if (!path) return '';
@@ -216,6 +217,10 @@ function Settings() {
 
   if (!isLoggedIn) {
     return <p className="empty-state">Please log in to view settings.</p>;
+  }
+
+  if (!authProfile) {
+    return <Skeleton variant="settings" />;
   }
 
   return (

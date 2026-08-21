@@ -11,6 +11,7 @@ import {
 } from '../lib/messagesApi.js';
 import { useAuth } from '../lib/auth.jsx';
 import { getUserAvatarColor } from '../lib/reactions.js';
+import Skeleton from './Skeleton.jsx';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -248,7 +249,7 @@ function ChatModal({ listing, onClose, receiverId: receiverIdOverride, receiverL
         </header>
 
         <div className="chat-thread">
-          {loading && <p className="empty-state">Loading messages...</p>}
+          {loading && <Skeleton variant="messages" />}
           {!loading && !messages.length && !status && (
             <p className="empty-state">Start the conversation with a quick note about this listing.</p>
           )}

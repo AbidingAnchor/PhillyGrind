@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import CategoryFilters from '../components/CategoryFilters.jsx';
 import ListingCard from '../components/ListingCard.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import Skeleton from '../components/Skeleton.jsx';
 import { gigCategories } from '../data/listings.js';
 import { getListings } from '../lib/listingsApi.js';
 import { attachPosterRatings } from '../lib/reviewsApi.js';
@@ -101,6 +102,7 @@ function BrowseGigs() {
       </div>
       <CategoryFilters categories={gigCategories} activeCategory={category} onChange={setCategory} />
       {error && <p className="empty-state error-state">{error}</p>}
+      {loading && <Skeleton variant="cards" />}
       {!loading && !error && (
         <>
           <div className="listing-grid">

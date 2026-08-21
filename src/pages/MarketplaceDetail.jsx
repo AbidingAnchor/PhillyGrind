@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AlertTriangle, ArrowLeft, Camera, Check, CreditCard, DollarSign, MapPin, MessageCircle, Package, Pencil, Shield, Tag, Trash2, User, X } from 'lucide-react';
 import { supabase } from '../lib/supabase.js';
 import ChatModal from '../components/ChatModal.jsx';
+import Skeleton from '../components/Skeleton.jsx';
 import DeleteConfirmModal from '../components/DeleteConfirmModal.jsx';
 import PaymentModal from '../components/PaymentModal.jsx';
 import HandoffPhotoModal from '../components/HandoffPhotoModal.jsx';
@@ -415,7 +416,7 @@ function MarketplaceDetail() {
   if (loading) {
     return (
       <section className="page-section">
-        <p className="empty-state">Loading listing...</p>
+        <Skeleton variant="detail" />
       </section>
     );
   }

@@ -5,6 +5,7 @@ import ListingCard from '../components/ListingCard.jsx';
 import QuickApplyModal from '../components/QuickApplyModal.jsx';
 import StarRating from '../components/StarRating.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import Skeleton from '../components/Skeleton.jsx';
 import { jobCategories } from '../data/listings.js';
 import { getListings, getFeaturedWorkers } from '../lib/listingsApi.js';
 import { attachPosterRatings } from '../lib/reviewsApi.js';
@@ -323,6 +324,7 @@ function BrowseJobs() {
       </div>
       <CategoryFilters categories={jobCategories} activeCategory={category} onChange={setCategory} />
       {error && <p className="empty-state error-state">{error}</p>}
+      {loading && <Skeleton variant="cards" />}
       {!loading && !error && (
         <>
           {usingFallback && <p className="empty-state" style={{ color: '#f59e0b' }}>Showing local job listings (external API unavailable)</p>}

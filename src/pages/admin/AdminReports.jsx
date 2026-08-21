@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ClipboardList, Loader2, User, Clock } from 'lucide-react';
 import { adminReportAction, getAdminReports } from '../../lib/adminApi.js';
 import { useAdminCounts } from '../../components/AdminLayout.jsx';
+import Skeleton from '../../components/Skeleton.jsx';
 
 export default function AdminReports() {
   const [reports, setReports] = useState([]);
@@ -64,7 +65,7 @@ export default function AdminReports() {
         </label>
       </div>
 
-      {loading && <p className="empty-state">Loading reports...</p>}
+      {loading && <Skeleton variant="list" />}
       {error && <p className="form-status error-text">{error}</p>}
 
       {!loading && reports.length === 0 && (

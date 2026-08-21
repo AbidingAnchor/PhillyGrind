@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createReview, getExistingReview, getReviewTargets } from '../lib/reviewsApi.js';
 import { useAuth } from '../lib/auth.jsx';
+import Skeleton from './Skeleton.jsx';
 
 function ReviewForm({ listing, onReviewed }) {
   const { user, isLoggedIn } = useAuth();
@@ -62,7 +63,7 @@ function ReviewForm({ listing, onReviewed }) {
   return (
     <section className="review-panel">
       <h2>Leave a Review</h2>
-      {loading && <p className="detail-note">Checking review eligibility...</p>}
+      {loading && <Skeleton variant="list" count={2} />}
       {!loading && existingReview && <p className="detail-note">You already reviewed someone for this listing.</p>}
       {!loading && !existingReview && Boolean(targets.length) && (
         <form className="review-form" onSubmit={handleSubmit}>

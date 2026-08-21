@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import ChatModal from '../components/ChatModal.jsx';
+import Skeleton from '../components/Skeleton.jsx';
 import { getConversations } from '../lib/messagesApi.js';
 import { useAuth } from '../lib/auth.jsx';
 
@@ -34,7 +35,7 @@ function Messages() {
         <p>Keep track of conversations about jobs and gigs you have posted or replied to.</p>
       </div>
 
-      {loading && <p className="empty-state">Loading conversations...</p>}
+      {loading && <Skeleton variant="list" />}
       {error && <p className="empty-state error-state">{error}</p>}
       {!loading && !error && !conversations.length && (
         <p className="empty-state">No conversations yet. Message a poster from a job or gig detail page to start one.</p>

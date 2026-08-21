@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Home, Loader2, Trash2 } from 'lucide-react';
 import { adminDeactivateHousing, getAdminHousing } from '../../lib/adminApi.js';
+import Skeleton from '../../components/Skeleton.jsx';
 
 export default function AdminHousing() {
   const [listings, setListings] = useState([]);
@@ -49,7 +50,7 @@ export default function AdminHousing() {
         </div>
       </header>
 
-      {loading && <p className="empty-state">Loading housing listings...</p>}
+      {loading && <Skeleton variant="list" />}
       {error && <p className="form-status error-text">{error}</p>}
 
       {!loading && (

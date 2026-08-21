@@ -9,6 +9,7 @@ import PaymentModal from '../components/PaymentModal.jsx';
 import BidModal from '../components/BidModal.jsx';
 import QuickApplyModal from '../components/QuickApplyModal.jsx';
 import ReviewForm from '../components/ReviewForm.jsx';
+import Skeleton from '../components/Skeleton.jsx';
 import StarRating from '../components/StarRating.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import {
@@ -239,7 +240,7 @@ function ListingDetail({ type }) {
   }
 
   if (loading) {
-    return <section className="page-section"><p className="empty-state">Loading listing...</p></section>;
+    return <section className="page-section"><Skeleton variant="detail" /></section>;
   }
 
   if (!listing) {
@@ -254,7 +255,7 @@ function ListingDetail({ type }) {
   }
 
   if (checkingRestrictedGigAccess) {
-    return <section className="page-section"><p className="empty-state">Checking gig access...</p></section>;
+    return <section className="page-section"><Skeleton variant="page" /></section>;
   }
 
   if (listing.boost_pending && !isOwner) {
@@ -632,7 +633,7 @@ function ListingDetail({ type }) {
               <span className="eyebrow">Applications</span>
               <h2>Applicants</h2>
             </div>
-            {applicationsLoading && <p className="empty-state">Loading applications...</p>}
+            {applicationsLoading && <Skeleton variant="list" count={3} />}
             {!applicationsLoading && applications.length === 0 && <p className="empty-state">No applications yet.</p>}
             {!applicationsLoading && applications.length > 0 && (
               <div className="applicants-list">
@@ -667,7 +668,7 @@ function ListingDetail({ type }) {
               <span className="eyebrow">Worker bids</span>
               <h2>Bids on this gig</h2>
             </div>
-            {bidsLoading && <p className="empty-state">Loading bids...</p>}
+            {bidsLoading && <Skeleton variant="list" count={3} />}
             {!bidsLoading && bids.length === 0 && <p className="empty-state">No bids yet.</p>}
             {!bidsLoading && bids.length > 0 && (
               <div className="bids-list">

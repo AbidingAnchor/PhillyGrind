@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase.js';
 import { useAuth } from '../../lib/auth.jsx';
 import KebabMenu from '../../components/KebabMenu.jsx';
 import AdminDetailModal from '../../components/AdminDetailModal.jsx';
+import Skeleton from '../../components/Skeleton.jsx';
 
 export default function AdminUsers() {
   const { isAdmin, isOwner, user: currentUser, profile, refreshProfile } = useAuth();
@@ -209,7 +210,7 @@ export default function AdminUsers() {
         </label>
       </div>
 
-      {loading && <p className="empty-state">Loading users...</p>}
+      {loading && <Skeleton variant="list" />}
       {error && <p className="form-status error-text">{error}</p>}
 
       {!loading && (

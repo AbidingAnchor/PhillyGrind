@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Activity, Briefcase, FileText, LayoutDashboard, ShoppingBag, Users, AlertTriangle, ClipboardList } from 'lucide-react';
 import { getAdminOverview } from '../../lib/adminApi.js';
+import Skeleton from '../../components/Skeleton.jsx';
 
 const statCards = [
   { key: 'totalUsers', label: 'Total Users', icon: Users },
@@ -60,7 +61,7 @@ export default function AdminOverview() {
         </div>
       </header>
 
-      {loading && <p className="empty-state">Loading overview...</p>}
+      {loading && <Skeleton variant="cards" count={4} />}
       {error && <p className="empty-state error-state">{error}</p>}
 
       {stats && (

@@ -6,6 +6,7 @@ import {
   listDisputes,
   resolveDispute,
 } from '../lib/marketplaceOrdersApi.js';
+import Skeleton from '../components/Skeleton.jsx';
 
 function formatCents(cents) {
   return `$${((cents || 0) / 100).toFixed(2)}`;
@@ -78,7 +79,7 @@ function DisputeDetail({ disputeId, onBack, onResolved }) {
   }
 
   if (loading) {
-    return <p className="empty-state">Loading dispute...</p>;
+    return <Skeleton variant="detail" />;
   }
 
   if (!dispute) {
@@ -203,7 +204,7 @@ export default function AdminDisputes() {
         </div>
       </header>
 
-      {loading && <p className="empty-state">Loading disputes...</p>}
+      {loading && <Skeleton variant="list" />}
       {error && <p className="empty-state error-state">{error}</p>}
 
       {!loading && !error && disputes.length === 0 && (

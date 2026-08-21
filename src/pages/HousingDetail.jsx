@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import ChatModal from '../components/ChatModal.jsx';
 import DeleteConfirmModal from '../components/DeleteConfirmModal.jsx';
+import Skeleton from '../components/Skeleton.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { getUserAvatarColor } from '../lib/reactions.js';
 import {
@@ -141,7 +142,7 @@ function HousingDetail() {
   }
 
   if (loading) {
-    return <section className="page-section"><p className="empty-state">Loading rental...</p></section>;
+    return <section className="page-section"><Skeleton variant="detail" /></section>;
   }
 
   if (!listing) {
