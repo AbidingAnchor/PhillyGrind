@@ -169,10 +169,11 @@ export async function requireAdmin(req, res) {
 export async function isUserSuspended(userId) {
   const { data, error } = await supabaseAdmin
     .from('suspended_users')
-    .select('action_type')
+    .select('id')
     .eq('user_id', userId)
     .is('lifted_at', null)
-    .in('action_type', ['suspended', 'banned']);
+    .or('expires_at.is.null,expires_at.gt.now()')
+    .limit(1);
 
   if (error) throw error;
   return (data ?? []).length > 0;
