@@ -1,4 +1,4 @@
-import { sendJson, supabaseAdmin, stripe } from './_utils.js';
+import { isCronAuthorized, sendJson, supabaseAdmin, stripe } from './_utils.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -10,8 +10,7 @@ export default async function handler(req, res) {
 
   // Auto-release payments (cron job)
   if (action === 'auto-release-payments') {
-    const expectedSecret = process.env.AUTO_RELEASE_SECRET || process.env.CRON_SECRET;
-    if (expectedSecret && req.headers.authorization !== `Bearer ${expectedSecret}`) {
+    if (!isCronAuthorized(req)) {
       sendJson(res, 401, { error: 'Unauthorized.' });
       return;
     }

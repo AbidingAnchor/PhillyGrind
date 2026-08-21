@@ -1,5 +1,6 @@
 import {
   getUserFromRequest,
+  isCronAuthorized,
   sendJson,
   stripe,
   supabaseAdmin,
@@ -582,10 +583,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const isAutoRelease = action === 'auto-release' && (
-    req.headers.authorization === `Bearer ${process.env.AUTO_RELEASE_SECRET || process.env.CRON_SECRET}`
-    || req.headers['x-phillygrind-auto-release'] === process.env.AUTO_RELEASE_SECRET
-  );
+  const isAutoRelease = action === 'auto-release' && isCronAuthorized(req);
 
   if (isAutoRelease) {
     try {

@@ -43,6 +43,26 @@ export const supabaseAdmin = createClient(
   },
 );
 
+function headerValue(req, name) {
+  const value = req.headers[name] || req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+export function getCronSecret() {
+  const secret = process.env.CRON_SECRET || process.env.AUTO_RELEASE_SECRET;
+  return typeof secret === 'string' && secret.trim() ? secret.trim() : '';
+}
+
+export function isCronAuthorized(req) {
+  const secret = getCronSecret();
+  if (!secret) return false;
+
+  const authorization = headerValue(req, 'authorization') || '';
+  const customHeader = headerValue(req, 'x-phillygrind-auto-release') || '';
+  return authorization === `Bearer ${secret}` || customHeader === secret;
+}
+
 export function sendJson(res, status, body) {
   res.status(status).json(body);
 }

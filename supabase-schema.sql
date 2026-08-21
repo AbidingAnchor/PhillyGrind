@@ -2272,3 +2272,7 @@ where coalesce(moderation_status, 'approved') = 'approved'
 
 grant select on public.jobs_public to anon, authenticated;
 grant select on public.gigs_public to anon, authenticated;
+
+revoke update, insert on table public.orders from anon, authenticated, public;
+grant update (before_photo_url, after_photo_url) on table public.orders to authenticated;
+revoke update, insert on table public.marketplace_orders from anon, authenticated, public;

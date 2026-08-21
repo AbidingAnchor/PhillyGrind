@@ -2,6 +2,7 @@ import {
   getUserFromRequest,
   handleProfileStatsRequest,
   hasServerSupabaseConfig,
+  isCronAuthorized,
   requireAdmin,
   requireMethod,
   sendJson,
@@ -14,7 +15,7 @@ const limiter = createRateLimiter(30, '60 s');
 
 async function releasePayment(req, res) {
   const user = await getUserFromRequest(req);
-  const isAutoRelease = req.headers['x-phillygrind-auto-release'] === process.env.AUTO_RELEASE_SECRET;
+  const isAutoRelease = isCronAuthorized(req);
 
   if (!user && !isAutoRelease) {
     sendJson(res, 401, { error: 'Authentication required.' });

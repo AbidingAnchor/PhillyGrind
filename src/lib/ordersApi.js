@@ -83,15 +83,9 @@ export async function releasePayment(orderId) {
 export async function markOrderComplete(orderId) {
   if (!hasSupabaseConfig) throw new Error('Supabase credentials are missing.');
 
-  const { data, error } = await supabase
-    .from('orders')
-    .update({
-      status: 'completed',
-      worker_marked_complete_at: new Date().toISOString(),
-    })
-    .eq('id', orderId)
-    .select(ORDER_SELECT)
-    .single();
+  const { data, error } = await supabase.rpc('mark_own_order_complete', {
+    p_order_id: orderId,
+  });
 
   if (error) throw error;
 

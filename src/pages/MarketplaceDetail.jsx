@@ -9,7 +9,7 @@ import PaymentModal from '../components/PaymentModal.jsx';
 import HandoffPhotoModal from '../components/HandoffPhotoModal.jsx';
 import DisputeFormModal from '../components/DisputeFormModal.jsx';
 import { useAuth } from '../lib/auth.jsx';
-import { createConnectAccount, parsePayToCents } from '../lib/ordersApi.js';
+import { createConnectAccount } from '../lib/ordersApi.js';
 import { getUserAvatarColor } from '../lib/reactions.js';
 import {
   confirmMarketplaceReceipt,
@@ -367,27 +367,6 @@ function MarketplaceDetail() {
         return;
       }
 
-      // Create order
-      const amountCents = parsePayToCents(listing.price.toString());
-      const feeCents = Math.round(amountCents * 0.08);
-      const totalCents = amountCents + feeCents;
-
-      const { data: newOrder, error: orderError } = await supabase
-        .from('marketplace_orders')
-        .insert({
-          listing_id: listing.id,
-          buyer_id: user.id,
-          seller_id: listing.user_id,
-          amount: amountCents,
-          fee: feeCents,
-          status: 'pending',
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      setOrder(newOrder);
       setPaymentOpen(true);
     } catch (err) {
       console.error('Secure checkout error:', err);
@@ -673,7 +652,7 @@ function MarketplaceDetail() {
         />
       )}
 
-      {paymentOpen && order && (
+      {paymentOpen && (
         <PaymentModal
           listing={listing}
           order={order}

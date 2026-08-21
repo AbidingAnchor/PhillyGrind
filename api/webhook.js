@@ -22,12 +22,21 @@ export default async function handler(req, res) {
     return;
   }
 
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    res.status(500).json({ error: 'Webhook secret is not configured.' });
+    return;
+  }
+
   try {
     const rawBody = await buffer(req);
     const signature = req.headers['stripe-signature'];
-    const event = process.env.STRIPE_WEBHOOK_SECRET
-      ? stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET)
-      : JSON.parse(rawBody.toString('utf8'));
+    if (!signature) {
+      res.status(400).json({ error: 'Missing Stripe signature.' });
+      return;
+    }
+
+    const event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
 
     if (event.type === 'payment_intent.amount_capturable_updated') {
       const paymentIntent = event.data.object;

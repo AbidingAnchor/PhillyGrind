@@ -615,7 +615,7 @@ function ListingDetail({ type }) {
                 )}
               </div>
             )}
-            {isWorker && ['pending', 'escrowed'].includes(currentOrder.status) && (
+            {isWorker && currentOrder.status === 'escrowed' && (
               <button className="primary-button" type="button" onClick={handleMarkComplete} disabled={orderNeedsAfterPhoto}>
                 {orderNeedsAfterPhoto ? 'Upload After Photo First' : 'Mark as Complete'}
               </button>
