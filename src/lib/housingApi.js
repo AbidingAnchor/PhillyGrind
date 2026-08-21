@@ -168,13 +168,12 @@ export async function getHousingListing(id) {
 export async function getLandlordReportCount(listingId) {
   if (!hasSupabaseConfig || !listingId) return 0;
 
-  const { count, error } = await supabase
-    .from('landlord_reports')
-    .select('id', { count: 'exact', head: true })
-    .eq('listing_id', listingId);
+  const { data, error } = await supabase.rpc('landlord_report_count', {
+    p_listing_id: listingId,
+  });
 
   if (error) throw error;
-  return count ?? 0;
+  return Number(data) || 0;
 }
 
 export async function submitLandlordReport({ listingId, reason, details }) {
