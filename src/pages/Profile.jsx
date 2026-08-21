@@ -820,11 +820,6 @@ function Profile() {
               {/* Left column - About at a glance */}
               <aside className="profile-sidebar">
                 <div className="profile-intro-card">
-                  <div className="profile-section-heading">
-                    <span className="eyebrow">About</span>
-                    <h2>At a glance</h2>
-                  </div>
-
                   <div className="profile-intro-item">
                     <Briefcase className="profile-intro-icon" />
                     <div className="profile-intro-content">
