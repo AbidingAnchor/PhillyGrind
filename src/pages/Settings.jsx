@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { CreditCard, Shield, BadgeCheck, Palette, User, Bell, FileText } from 'lucide-react';
 import { sendTwoFactorCode, toggleTwoFactorAuth, verifyTwoFactorCode } from '../lib/twoFactorApi.js';
 import { createConnectAccount } from '../lib/ordersApi.js';
-import { checkConnectStatus, getResumeUrl, uploadResume, removeResume } from '../lib/profileApi.js';
+import { getResumeUrl, uploadResume, removeResume } from '../lib/profileApi.js';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
+import SettingsToggle from '../components/SettingsToggle.jsx';
 
 function resumeFilename(path) {
   if (!path) return '';
@@ -192,7 +193,7 @@ function Settings() {
       <h1>Settings</h1>
       {profileStatus && <p className="form-status">{profileStatus}</p>}
 
-      <section className={payoutsConnected ? 'payout-profile-card connected' : 'payout-profile-card'}>
+      <section className={`settings-row-card${payoutsConnected ? ' is-connected' : ''}`}>
         <div className="settings-row-content">
           <div className="settings-row-left">
             <div className="section-icon-wrapper">
@@ -211,7 +212,7 @@ function Settings() {
             </div>
           </div>
           {payoutsConnected ? (
-            <span className="payout-ready-badge">Payouts connected ✓</span>
+            <span className="settings-status-chip settings-status-chip--success">Payouts connected ✓</span>
           ) : (
             <button className="primary-button" type="button" onClick={handleConnectPayouts} disabled={connectingPayouts}>
               {connectingPayouts ? 'Connecting...' : hasStripeAccount ? 'Finish Stripe' : 'Connect Stripe'}
@@ -220,7 +221,7 @@ function Settings() {
         </div>
       </section>
 
-      <section className="profile-section-card">
+      <section className="settings-row-card">
         <div className="settings-row-content">
           <div className="settings-row-left">
             <div className="section-icon-wrapper">
@@ -237,14 +238,12 @@ function Settings() {
             </div>
           </div>
           {twoFactorStep === 'idle' && (
-            <button
-              className="primary-button"
-              type="button"
-              onClick={() => twoFactorEnabled ? handleToggleTwoFactor() : handleSendTwoFactorCode()}
+            <SettingsToggle
+              checked={twoFactorEnabled}
               disabled={twoFactorSending}
-            >
-              {twoFactorSending ? 'Processing...' : twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
-            </button>
+              onChange={() => (twoFactorEnabled ? handleToggleTwoFactor() : handleSendTwoFactorCode())}
+              ariaLabel={twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
+            />
           )}
         </div>
         {twoFactorStep !== 'idle' && (
@@ -264,7 +263,7 @@ function Settings() {
                     {twoFactorSending ? 'Verifying...' : 'Verify'}
                   </button>
                 </div>
-                <button className="text-link" type="button" onClick={resetTwoFactorFlow}>Cancel</button>
+                <button className="settings-ghost-button" type="button" onClick={resetTwoFactorFlow}>Cancel</button>
                 {twoFactorError && <p className="error-text">{twoFactorError}</p>}
               </div>
             )}
@@ -274,7 +273,7 @@ function Settings() {
                 <button className="primary-button" type="button" onClick={handleToggleTwoFactor} disabled={twoFactorSending}>
                   {twoFactorSending ? 'Enabling...' : 'Confirm Enable 2FA'}
                 </button>
-                <button className="text-link" type="button" onClick={resetTwoFactorFlow}>Cancel</button>
+                <button className="settings-ghost-button" type="button" onClick={resetTwoFactorFlow}>Cancel</button>
               </div>
             )}
           </div>
@@ -282,7 +281,7 @@ function Settings() {
         {twoFactorError && twoFactorStep === 'idle' && <p className="error-text">{twoFactorError}</p>}
       </section>
 
-      <section className="profile-section-card">
+      <section className="settings-row-card">
         <div className="settings-row-content">
           <div className="settings-row-left">
             <div className="section-icon-wrapper">
@@ -303,9 +302,9 @@ function Settings() {
             </div>
           </div>
           {authProfile?.identity_verified ? (
-            <span className="verified-badge">✓ Verified</span>
+            <span className="settings-status-chip settings-status-chip--verified">✓ Verified</span>
           ) : authProfile?.verification_status === 'pending' ? (
-            <span className="pending-badge">Pending</span>
+            <span className="settings-status-chip settings-status-chip--pending">Pending</span>
           ) : isLandlord ? (
             <button className="primary-button" type="button" onClick={async () => {
               try {
@@ -327,12 +326,12 @@ function Settings() {
               Get Verified ($2)
             </button>
           ) : (
-            <span className="coming-soon-badge">Coming Soon</span>
+            <span className="settings-status-chip">Coming Soon</span>
           )}
         </div>
       </section>
 
-      <section className="profile-section-card">
+      <section className="settings-row-card">
         <div className="settings-row-content">
           <div className="settings-row-left">
             <div className="section-icon-wrapper">
@@ -348,7 +347,7 @@ function Settings() {
         </div>
       </section>
 
-      <section className="profile-section-card">
+      <section className="settings-row-card">
         <div className="settings-row-content">
           <div className="settings-row-left">
             <div className="section-icon-wrapper">
@@ -364,17 +363,15 @@ function Settings() {
               </p>
             </div>
           </div>
-          <button
-            className="primary-button"
-            type="button"
-            onClick={handleToggleAvailableNow}
-          >
-            {showAvailableNow ? 'Disable Badge' : 'Enable Badge'}
-          </button>
+          <SettingsToggle
+            checked={showAvailableNow}
+            onChange={handleToggleAvailableNow}
+            ariaLabel={showAvailableNow ? 'Disable Badge' : 'Enable Badge'}
+          />
         </div>
       </section>
 
-      <section className="profile-section-card">
+      <section className="settings-row-card">
         <div className="settings-row-content">
           <div className="settings-row-left">
             <div className="section-icon-wrapper">
@@ -389,7 +386,7 @@ function Settings() {
         </div>
       </section>
 
-      <section className="profile-section-card">
+      <section className="settings-row-card">
         <div className="settings-row-content">
           <div className="settings-row-left">
             <div className="section-icon-wrapper">
@@ -408,7 +405,7 @@ function Settings() {
           {getProfileResumePath(authProfile) ? (
             <div className="resume-upload-actions">
               {resumeUrl && (
-                <a className="text-link" href={resumeUrl} target="_blank" rel="noreferrer">
+                <a className="settings-ghost-button" href={resumeUrl} target="_blank" rel="noreferrer">
                   View
                 </a>
               )}
@@ -416,7 +413,7 @@ function Settings() {
                 Replace
                 <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleResumeUpload} hidden />
               </label>
-              <button className="danger-button" type="button" onClick={handleRemoveResume}>
+              <button className="settings-danger-outline" type="button" onClick={handleRemoveResume}>
                 Remove
               </button>
             </div>
