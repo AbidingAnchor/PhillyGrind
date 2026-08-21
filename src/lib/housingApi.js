@@ -1,4 +1,5 @@
 import { hasSupabaseConfig, supabase } from './supabase.js';
+import { isAdminUser } from './adminApi.js';
 import { checkFairHousingCompliance } from './moderationService.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -106,9 +107,8 @@ export async function getHousingListings(filters = {}) {
   } = filters;
 
   let query = supabase
-    .from('housing_listings')
+    .from('housing_listings_public')
     .select('*')
-    .eq('status', 'active')
     .order('created_at', { ascending: false });
 
   if (user_id) {
@@ -149,20 +149,38 @@ export async function getHousingListings(filters = {}) {
   return attachLandlordInfo(data ?? []);
 }
 
+async function attachAddressIfAllowed(listing) {
+  if (!listing?.id) return listing;
+
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData?.user;
+  if (!user) return listing;
+  if (user.id !== listing.user_id && !isAdminUser(user)) return listing;
+
+  const { data, error } = await supabase
+    .from('housing_listings')
+    .select('address')
+    .eq('id', listing.id)
+    .maybeSingle();
+
+  if (error || !data?.address) return listing;
+  return { ...listing, address: data.address };
+}
+
 export async function getHousingListing(id) {
   if (!hasSupabaseConfig || !uuidPattern.test(id)) return undefined;
 
   const { data, error } = await supabase
-    .from('housing_listings')
+    .from('housing_listings_public')
     .select('*')
     .eq('id', id)
     .maybeSingle();
 
   if (error) throw error;
-  if (!data || data.status !== 'active') return undefined;
+  if (!data) return undefined;
 
   const [listing] = await attachLandlordInfo([data]);
-  return listing;
+  return attachAddressIfAllowed(listing);
 }
 
 export async function getLandlordReportCount(listingId) {

@@ -185,7 +185,7 @@ function Housing() {
                       </p>
                       <p className="housing-card-address">
                         <MapPin size={14} />
-                        {listing.address}
+                        Message the landlord for the exact address
                       </p>
                       <p className="housing-card-date">Available {formatAvailableDate(listing.available_date)}</p>
                       <div className="housing-card-landlord">

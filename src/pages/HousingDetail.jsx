@@ -19,6 +19,7 @@ import ChatModal from '../components/ChatModal.jsx';
 import DeleteConfirmModal from '../components/DeleteConfirmModal.jsx';
 import Skeleton from '../components/Skeleton.jsx';
 import { useAuth } from '../lib/auth.jsx';
+import { isAdminUser } from '../lib/adminApi.js';
 import { getUserAvatarColor } from '../lib/reactions.js';
 import {
   deleteHousingListing,
@@ -75,6 +76,7 @@ function HousingDetail() {
   const [reportCount, setReportCount] = useState(0);
 
   const isOwner = isLoggedIn && listing?.user_id === user?.id;
+  const canSeeAddress = Boolean(isOwner || isAdminUser(user));
   const images = listing?.images?.length
     ? listing.images.map(getHousingImagePublicUrl)
     : [];
@@ -212,7 +214,12 @@ function HousingDetail() {
           <div className="housing-detail-pills">
             <span className="housing-detail-pill"><BedDouble size={18} /> {listing.bedrooms} bedrooms</span>
             <span className="housing-detail-pill"><Bath size={18} /> {listing.bathrooms} bathrooms</span>
-            <span className="housing-detail-pill"><MapPin size={18} /> {listing.address}</span>
+            <span className="housing-detail-pill">
+              <MapPin size={18} />
+              {canSeeAddress && listing.address
+                ? listing.address
+                : 'Message the landlord for the exact address'}
+            </span>
             <span className="housing-detail-pill"><Calendar size={18} /> {formatAvailableDate(listing.available_date)}</span>
             <span className="housing-detail-pill"><PawPrint size={18} /> {listing.pets_allowed ? 'Pets allowed' : 'No pets'}</span>
             <span className="housing-detail-pill"><Zap size={18} /> {listing.utilities_included ? 'Utilities included' : 'Utilities not included'}</span>
