@@ -133,7 +133,7 @@ function App() {
                   Admin
                 </NavLink>
               )}
-              <Link className="nav-profile-link" to="/profile" id="nav-profile" data-tour="profile">
+              <Link className="nav-profile-link" to={user?.id ? `/profile/${user.id}` : '/profile'} id="nav-profile" data-tour="profile">
                 {displayName}
               </Link>
               <NotificationBell />
@@ -184,7 +184,7 @@ function App() {
                   Admin
                 </NavLink>
               )}
-              <Link className="nav-profile-link" to="/profile" id="nav-profile" data-tour="profile" onClick={() => setOpen(false)}>
+              <Link className="nav-profile-link" to={user?.id ? `/profile/${user.id}` : '/profile'} id="nav-profile" data-tour="profile" onClick={() => setOpen(false)}>
                 {displayName}
               </Link>
               <NotificationBell />

@@ -16,6 +16,66 @@ const bannerExtensionFor = (file) => {
   return 'jpg';
 };
 const profileSelect = 'id,name,bio,skills,availability,neighborhoods,resume_path,resume_url,avatar_url,banner_url,profile_tags,created_at,account_reference';
+
+function displayNameFromUser(user) {
+  return user?.user_metadata?.name
+    || String(user?.email || '').split('@')[0]
+    || 'Neighbor';
+}
+
+export async function ensureOwnProfile() {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw new Error('Please log in first.');
+  }
+
+  const user = userData.user;
+
+  const existing = await supabase
+    .from('profiles')
+    .select(profileSelect)
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (existing.error) throw existing.error;
+  if (existing.data) return existing.data;
+
+  const { data: rpcData, error: rpcError } = await supabase.rpc('ensure_own_profile');
+  if (!rpcError && rpcData) {
+    const created = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+    if (created?.id) return created;
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .insert({
+      id: user.id,
+      name: displayNameFromUser(user),
+      email: user.email || '',
+      tos_agreed_at: user.user_metadata?.tos_agreed_at || null,
+      onboarding_complete: false,
+      is_adult_confirmed: false,
+    })
+    .select(profileSelect)
+    .single();
+
+  if (error) {
+    const retry = await supabase
+      .from('profiles')
+      .select(profileSelect)
+      .eq('id', user.id)
+      .maybeSingle();
+    if (retry.data) return retry.data;
+    throw error;
+  }
+
+  return data;
+}
+
 const ALLOWED_RESUME_TYPES = [
   'application/pdf',
   'application/msword',

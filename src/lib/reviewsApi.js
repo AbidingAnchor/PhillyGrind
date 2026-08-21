@@ -1,5 +1,6 @@
 import { hasSupabaseConfig, supabase } from './supabase.js';
 import { getProfilesByIds } from './messagesApi.js';
+import { ensureOwnProfile } from './profileApi.js';
 
 function summarizeRatings(reviews) {
   const grouped = new Map();
@@ -152,8 +153,8 @@ export async function getUserReviews(userId) {
 
   const [profileResult, reviewsResult] = await Promise.all([
     supabase
-      .from('profiles')
-      .select('id,name,bio,skills,availability,neighborhoods,resume_path,resume_url,avatar_url,banner_url,profile_tags,created_at')
+      .from('profiles_public')
+      .select('id,name,bio,skills,availability,neighborhoods,avatar_url,banner_url,profile_tags,identity_verified,created_at')
       .eq('id', userId)
       .maybeSingle(),
     supabase
@@ -166,6 +167,18 @@ export async function getUserReviews(userId) {
   if (profileResult.error) throw profileResult.error;
   if (reviewsResult.error) throw reviewsResult.error;
 
+  let profile = profileResult.data;
+  if (!profile) {
+    const { data: authData } = await supabase.auth.getUser();
+    if (authData?.user?.id === userId) {
+      profile = await ensureOwnProfile();
+    }
+  }
+
+  if (!profile) {
+    throw new Error('This profile could not be loaded. Please try again.');
+  }
+
   const data = reviewsResult.data ?? [];
 
   const profilesById = await getProfilesByIds([
@@ -175,9 +188,9 @@ export async function getUserReviews(userId) {
   const rating = summarizeRatings(data).get(userId) || { average: 0, count: 0 };
 
   return {
-    profileName: profileResult.data?.name || profilesById.get(userId) || 'PhillyGrind user',
-    profileCreatedAt: profileResult.data?.created_at,
-    profile: profileResult.data,
+    profileName: profile.name || profilesById.get(userId) || profile.id,
+    profileCreatedAt: profile.created_at,
+    profile,
     rating,
     reviews: data.map((review) => ({
       ...review,

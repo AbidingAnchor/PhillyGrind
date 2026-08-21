@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { hasSupabaseConfig, supabase } from './supabase.js';
+import { ensureOwnProfile } from './profileApi.js';
 import OnboardingTour from '../components/OnboardingTour.jsx';
 
 const AuthContext = createContext(null);
@@ -59,20 +60,33 @@ export function AuthProvider({ children }) {
         .from('profiles')
         .select(profileFields)
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        console.warn(error);
-        if (active) setProfile({
-          id: user.id,
-          name: user.user_metadata?.name || 'PhillyGrind user',
-          email: user.email,
-          onboarding_complete: true,
-        });
+      if (!error && data) {
+        if (active) setProfile(data);
         return;
       }
 
-      if (active) setProfile(data);
+      if (error) {
+        console.warn('[Auth] Profile select failed, ensuring row', error);
+      }
+
+      try {
+        const ensured = await ensureOwnProfile();
+        if (!active) return;
+
+        const { data: refreshed, error: refreshError } = await supabase
+          .from('profiles')
+          .select(profileFields)
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (refreshError) throw refreshError;
+        setProfile(refreshed || ensured);
+      } catch (ensureError) {
+        console.error('[Auth] Could not load or create profile row', ensureError);
+        if (active) setProfile(null);
+      }
     }
 
     async function loadInitialSession() {

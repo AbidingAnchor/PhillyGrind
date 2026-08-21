@@ -60,8 +60,19 @@ const COMMUNITY_QUICK_LINKS = [
 
 function CommunityLeftSidebar({ isLoggedIn, user, profile }) {
   const displayName = profile?.name || user?.name || 'Neighbor';
-  const profileTo = isLoggedIn ? '/profile' : '/login';
+  const profileTo = isLoggedIn && user?.id ? `/profile/${user.id}` : '/login';
   const profileLinkState = isLoggedIn ? undefined : { from: '/community' };
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    console.log('[CommunitySidebar] View your profile link', {
+      hrefTarget: profileTo,
+      contextUserId: user?.id ?? null,
+      contextEmail: user?.email ?? null,
+      authProfileId: profile?.id ?? null,
+      authProfileName: profile?.name ?? null,
+    });
+  }, [isLoggedIn, profileTo, user?.id, user?.email, profile?.id, profile?.name]);
   const neighborhoodName = profile?.neighborhood && profile.neighborhood !== 'Any'
     ? profile.neighborhood
     : 'Not set yet';

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Briefcase, MapPin, Calendar, MessageCircle, Pencil, Share2, MoreHorizontal, Settings, X, Camera } from 'lucide-react';
 import FacebookShareIcon from '../components/FacebookShareIcon.jsx';
@@ -83,10 +83,52 @@ function TagEditor({ label, placeholder, tags, onChange }) {
   );
 }
 
+function isUsableUserId(value) {
+  return Boolean(value) && value !== 'undefined' && value !== 'null';
+}
+
+export function OwnProfileRedirect() {
+  const { user, profile, session } = useAuth();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function logRedirectIdentity() {
+      const { data, error } = await supabase.auth.getUser();
+      if (cancelled) return;
+      const liveUid = data?.user?.id ?? null;
+      console.log('[ProfileRedirect] identity at redirect time', {
+        href: window.location.href,
+        contextUserId: user?.id ?? null,
+        contextEmail: user?.email ?? null,
+        sessionUserId: session?.user?.id ?? null,
+        liveAuthUid: liveUid,
+        liveEmail: data?.user?.email ?? null,
+        getUserError: error?.message ?? null,
+        authProfileId: profile?.id ?? null,
+        authProfileName: profile?.name ?? null,
+        idsMatch: Boolean(liveUid && user?.id && liveUid === user?.id),
+        willRedirectTo: user?.id ? `/profile/${user.id}` : null,
+      });
+    }
+
+    logRedirectIdentity();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.email, session?.user?.id, profile?.id, profile?.name]);
+
+  if (!isUsableUserId(user?.id)) {
+    return <section className="page-section"><p className="empty-state">Loading profile...</p></section>;
+  }
+
+  return <Navigate to={`/profile/${user.id}`} replace />;
+}
+
 function Profile() {
   const { userId } = useParams();
   const { user, isLoggedIn, profile: authProfile, refreshProfile } = useAuth();
-  const viewedUserId = userId || user?.id;
+  const viewedUserId = isUsableUserId(userId) ? userId : null;
 
   const [profileData, setProfileData] = useState(null);
   const [listings, setListings] = useState([]);
@@ -115,6 +157,35 @@ function Profile() {
   const [profileConversation, setProfileConversation] = useState(null);
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const isOwnProfile = isLoggedIn && user?.id === viewedUserId;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function logProfilePageIdentity() {
+      const { data, error } = await supabase.auth.getUser();
+      if (cancelled) return;
+      console.log('[ProfilePage] route vs session', {
+        href: window.location.href,
+        pathname: window.location.pathname,
+        routeUserId: userId ?? null,
+        viewedUserId,
+        contextUserId: user?.id ?? null,
+        contextEmail: user?.email ?? null,
+        liveAuthUid: data?.user?.id ?? null,
+        liveEmail: data?.user?.email ?? null,
+        getUserError: error?.message ?? null,
+        authProfileId: authProfile?.id ?? null,
+        authProfileName: authProfile?.name ?? null,
+        routeMatchesLiveAuth: Boolean(data?.user?.id && userId && data.user.id === userId),
+        isOwnProfile: Boolean(user?.id && user.id === viewedUserId),
+      });
+    }
+
+    logProfilePageIdentity();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, viewedUserId, user?.id, user?.email, authProfile?.id, authProfile?.name]);
 
   useEffect(() => {
     if (!actionsMenuOpen) return undefined;
@@ -156,8 +227,11 @@ function Profile() {
   ));
 
   useEffect(() => {
-    if (!viewedUserId || viewedUserId === 'undefined' || viewedUserId === 'null') return;
+    if (!isUsableUserId(viewedUserId)) return undefined;
 
+    let cancelled = false;
+    setProfileData(null);
+    setListings([]);
     setLoading(true);
     setError('');
 
@@ -166,8 +240,16 @@ function Profile() {
       getUserListings(viewedUserId),
     ])
       .then(([nextProfileData, nextListings]) => {
-        console.log('[Profile] Profile loaded:', { 
-          profile: nextProfileData.profile 
+        if (cancelled) return;
+        console.log('[ProfilePage] fetch result', {
+          requestedId: viewedUserId,
+          fetchedProfileId: nextProfileData.profile?.id ?? null,
+          fetchedName: nextProfileData.profileName,
+          fetchedHasAvatar: Boolean(nextProfileData.profile?.avatar_url),
+          fetchedBioPreview: (nextProfileData.profile?.bio || '').slice(0, 80),
+          ratingCount: nextProfileData.rating?.count ?? 0,
+          idsMatch: nextProfileData.profile?.id === viewedUserId,
+          profileRowMissing: !nextProfileData.profile,
         });
         setProfileData(nextProfileData);
         setListings(nextListings);
@@ -181,8 +263,17 @@ function Profile() {
           neighborhood: nextProfileData.profile?.neighborhood || '',
         });
       })
-      .catch((err) => setError(err.message || 'Could not load this profile.'))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err.message || 'Could not load this profile.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [viewedUserId]);
 
   useEffect(() => {
@@ -197,7 +288,9 @@ function Profile() {
   }, [isOwnProfile]);
 
   useEffect(() => {
-    if (!viewedUserId || viewedUserId === 'undefined' || viewedUserId === 'null') return;
+    if (!isUsableUserId(viewedUserId)) return undefined;
+
+    let cancelled = false;
 
     async function loadMarketplaceData() {
       try {
@@ -214,6 +307,7 @@ function Profile() {
             .order('created_at', { ascending: false }),
         ]);
 
+        if (cancelled) return;
         setMarketplaceListings(listingsData.data || []);
         setMarketplaceOrders(ordersData.data || []);
       } catch (err) {
@@ -222,14 +316,20 @@ function Profile() {
     }
 
     loadMarketplaceData();
+    return () => {
+      cancelled = true;
+    };
   }, [viewedUserId]);
 
   useEffect(() => {
-    if (!viewedUserId || viewedUserId === 'undefined' || viewedUserId === 'null') return;
+    if (!isUsableUserId(viewedUserId)) return undefined;
+
+    let cancelled = false;
 
     async function loadHousingData() {
       try {
         const housingData = await getHousingListings({ user_id: viewedUserId });
+        if (cancelled) return;
         setHousingListings(housingData);
         setIsLandlord(housingData.length > 0);
       } catch (err) {
@@ -238,10 +338,15 @@ function Profile() {
     }
 
     loadHousingData();
+    return () => {
+      cancelled = true;
+    };
   }, [viewedUserId]);
 
   useEffect(() => {
-    if (!viewedUserId || viewedUserId === 'undefined' || viewedUserId === 'null') return;
+    if (!isUsableUserId(viewedUserId)) return undefined;
+
+    let cancelled = false;
 
     async function loadCommunityPosts() {
       if (!canViewActivity(user?.id, viewedUserId)) {
@@ -253,6 +358,7 @@ function Profile() {
       setLoadingCommunityPosts(true);
       try {
         const { posts, hasMore } = await getUserCommunityPosts(viewedUserId, 1);
+        if (cancelled) return;
         setCommunityPosts(posts);
         setHasMoreCommunityPosts(hasMore);
         setCommunityPostsPage(1);
@@ -268,21 +374,26 @@ function Profile() {
             reactionsData[post.id] = { userReaction: null, breakdown: [] };
           }
         }
+        if (cancelled) return;
         setPostReactions(reactionsData);
       } catch (err) {
+        if (cancelled) return;
         console.warn('Failed to load community posts:', err);
         setCommunityPosts([]);
         setHasMoreCommunityPosts(false);
       } finally {
-        setLoadingCommunityPosts(false);
+        if (!cancelled) setLoadingCommunityPosts(false);
       }
     }
 
     loadCommunityPosts();
+    return () => {
+      cancelled = true;
+    };
   }, [viewedUserId, user?.id]);
 
   async function loadMoreCommunityPosts() {
-    if (loadingCommunityPosts || !hasMoreCommunityPosts || !viewedUserId || viewedUserId === 'undefined' || viewedUserId === 'null') return;
+    if (loadingCommunityPosts || !hasMoreCommunityPosts || !isUsableUserId(viewedUserId)) return;
 
     setLoadingCommunityPosts(true);
     try {
@@ -1308,4 +1419,9 @@ function Profile() {
   );
 }
 
-export default Profile;
+function ProfileRoute() {
+  const { userId } = useParams();
+  return <Profile key={userId} />;
+}
+
+export default ProfileRoute;

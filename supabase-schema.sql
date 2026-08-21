@@ -764,9 +764,10 @@ create policy "Owners can delete gigs if not suspended"
   );
 
 drop policy if exists "Users can read profiles" on profiles;
-create policy "Users can read profiles"
+create policy "Users can read own full profile"
   on profiles for select
-  using (true);
+  to authenticated
+  using ((select auth.uid()) = id);
 
 drop policy if exists "Users can update own profile" on profiles;
 create policy "Users can update own profile"

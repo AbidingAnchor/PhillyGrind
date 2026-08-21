@@ -18,7 +18,7 @@ import Messages from './pages/Messages.jsx';
 import Contact from './pages/Contact.jsx';
 import Terms from './pages/Terms.jsx';
 import Privacy from './pages/Privacy.jsx';
-import Profile from './pages/Profile.jsx';
+import Profile, { OwnProfileRedirect } from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
 import AdminDisputes from './pages/AdminDisputes.jsx';
 import AdminRoute from './components/AdminRoute.jsx';
@@ -64,7 +64,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/contact" element={<Contact />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><OwnProfileRedirect /></ProtectedRoute>} />
               <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
