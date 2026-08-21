@@ -752,7 +752,7 @@ function MarketplaceDetail() {
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
-          color: #22c55e;
+          color: var(--accent-color);
           text-decoration: none;
           font-size: 14px;
           font-weight: 500;
@@ -823,7 +823,7 @@ function MarketplaceDetail() {
         }
 
         .mp-detail-thumb-selected {
-          border-color: #22c55e;
+          border-color: var(--accent-color);
         }
 
         .mp-detail-no-photos {
@@ -866,7 +866,7 @@ function MarketplaceDetail() {
         .mp-detail-price {
           font-size: 36px;
           font-weight: 800;
-          color: #22c55e;
+          color: var(--accent-color);
           margin: 0 0 16px 0;
         }
 
@@ -885,7 +885,7 @@ function MarketplaceDetail() {
           color: white;
         }
 
-        .mp-detail-condition-new { background: #22c55e; }
+        .mp-detail-condition-new { background: var(--accent-color); }
         .mp-detail-condition-like-new { background: #14b8a6; }
         .mp-detail-condition-good { background: #3b82f6; }
         .mp-detail-condition-fair { background: #f59e0b; }
@@ -961,7 +961,7 @@ function MarketplaceDetail() {
           width: 48px;
           height: 48px;
           border-radius: 50%;
-          background: #22c55e;
+          background: var(--accent-color);
           color: white;
           display: flex;
           align-items: center;
@@ -1017,7 +1017,7 @@ function MarketplaceDetail() {
           height: 32px;
           border-radius: 50%;
           background: #dcfce7;
-          color: #22c55e;
+          color: var(--accent-color);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1057,7 +1057,7 @@ function MarketplaceDetail() {
 
         .mp-detail-buy-btn {
           width: 100%;
-          background: #22c55e;
+          background: var(--accent-color);
           color: white;
           border: none;
           border-radius: 10px;

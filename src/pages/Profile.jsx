@@ -40,6 +40,11 @@ const accentColorOptions = [
   { name: 'Teal', value: '#14b8a6' },
   { name: 'Indigo', value: '#6366f1' },
   { name: 'Rose', value: '#f43f5e' },
+  { name: 'Yellow', value: '#f7dc6f' },
+  { name: 'Brown', value: '#964b00' },
+  { name: 'Gray', value: '#6b7280' },
+  { name: 'Turquoise', value: '#1abc9c' },
+  { name: 'Lavender', value: '#c7b8ea' },
 ];
 const activeGigStatuses = new Set(['in progress', 'in_progress']);
 

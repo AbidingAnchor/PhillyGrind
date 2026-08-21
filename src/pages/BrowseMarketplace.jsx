@@ -439,7 +439,7 @@ function BrowseMarketplace() {
     border-color: #4ade80;
   }
   .marketplace-post-btn {
-    background-color: #22c55e !important;
+    background-color: var(--accent-color) !important;
     border: none !important;
     white-space: nowrap;
     padding: 10px 20px !important;
@@ -593,7 +593,7 @@ function BrowseMarketplace() {
     color: var(--ink);
   }
   .marketplace-card-price {
-    font-size: 1.25rem; font-weight: 700; color: #22c55e;
+    font-size: 1.25rem; font-weight: 700; color: var(--accent-color);
     margin: 0 0 0.75rem 0;
   }
   [data-theme="dark"] .marketplace-card-price {

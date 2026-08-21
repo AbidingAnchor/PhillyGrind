@@ -356,7 +356,7 @@ function MarketplacePostForm({ onClose, onPosted }) {
                 style={{
                   alignItems: 'flex-start',
                   background: selected ? '#f0fdf4' : '#ffffff',
-                  border: `2px solid ${selected ? '#22c55e' : '#d1d5db'}`,
+                  border: `2px solid ${selected ? 'var(--accent-color)' : '#d1d5db'}`,
                   borderRadius: '10px',
                   color: '#1a2332',
                   cursor: 'pointer',
@@ -376,7 +376,7 @@ function MarketplacePostForm({ onClose, onPosted }) {
                   <span
                     style={{
                       alignSelf: 'flex-start',
-                      background: '#22c55e',
+                      background: 'var(--accent-color)',
                       borderRadius: '9999px',
                       color: '#ffffff',
                       fontSize: '11px',

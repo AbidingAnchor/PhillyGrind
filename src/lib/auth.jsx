@@ -38,6 +38,10 @@ export function AuthProvider({ children }) {
       if (!profile.onboarding_complete) {
         setShowOnboarding(true);
       }
+      // Apply user's accent color to root element for site-wide theming
+      if (profile.accent_color) {
+        document.documentElement.style.setProperty('--accent-color', profile.accent_color);
+      }
     }
   }, [profile]);
 
