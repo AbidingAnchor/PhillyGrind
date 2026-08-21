@@ -364,16 +364,29 @@ function Profile() {
     if (!file) return;
 
     setSaving(true);
-    setProfileStatus('');
+    setProfileStatus('Uploading profile photo...');
 
     try {
+      console.log('[Profile] Avatar upload selected:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      });
       const nextProfile = await uploadAvatar(file);
       setProfileData((current) => current ? {
         ...current,
-        profile: nextProfile,
+        profile: {
+          ...(current.profile || {}),
+          ...nextProfile,
+        },
+        profileName: nextProfile.name || current.profileName,
       } : current);
+      if (typeof refreshProfile === 'function') {
+        await refreshProfile();
+      }
       setProfileStatus('Profile photo uploaded.');
     } catch (err) {
+      console.error('[Profile] Avatar upload failed:', err);
       setProfileStatus(err.message || 'Could not upload profile photo.');
     } finally {
       setSaving(false);
@@ -501,7 +514,13 @@ function Profile() {
               className="profile-avatar-large"
               style={!profileData.profile?.avatar_url ? { backgroundColor: getUserAvatarColor(viewedUserId, profileData.profileName) } : undefined}
             >
-              {profileData.profile?.avatar_url ? <img src={profileData.profile.avatar_url} alt={`${profileData.profileName} profile`} /> : getInitials(profileData.profileName)}
+              {profileData.profile?.avatar_url ? (
+                <img
+                  key={profileData.profile.avatar_url}
+                  src={profileData.profile.avatar_url}
+                  alt={`${profileData.profileName} profile`}
+                />
+              ) : getInitials(profileData.profileName)}
             </span>
             <div>
               <span className="eyebrow">PhillyGrind Profile</span>
@@ -992,16 +1011,22 @@ function Profile() {
                       <input name="name" value={form.name} onChange={updateField} className="profile-editor-input" placeholder="Your public name shown on posts and listings" />
                       <span className="detail-note">This is the name shown publicly across the platform.</span>
                     </label>
-                    <label>
-                      Profile photo
+                    <div className="profile-field">
+                      <span className="profile-field-label">Profile photo</span>
                       <div className="profile-photo-upload-wrapper">
-                        <input type="file" accept="image/jpeg,image/png" onChange={handleAvatarUpload} className="profile-editor-file-input" id="avatar-upload" />
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/jpg,.jpg,.jpeg,.png,.webp"
+                          onChange={handleAvatarUpload}
+                          className="profile-editor-file-input"
+                          id="avatar-upload"
+                        />
                         <label htmlFor="avatar-upload" className="profile-photo-upload-button">
-                          Choose Photo
+                          {saving ? 'Uploading...' : 'Choose Photo'}
                         </label>
                       </div>
-                      <span className="detail-note">JPG or PNG, 2MB max. Publicly visible on your profile.</span>
-                    </label>
+                      <span className="detail-note">JPG, PNG, or WebP. Large phone photos are compressed automatically. Publicly visible on your profile.</span>
+                    </div>
                     <label>
                       Bio
                       <textarea name="bio" value={form.bio} onChange={updateField} className="profile-editor-textarea" placeholder="Tell Philly what kind of work you do best." />

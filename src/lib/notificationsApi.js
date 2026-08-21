@@ -85,13 +85,6 @@ export function subscribeToNotifications({ userId, onNotification }) {
   const channelName = `notifications:${userId}`;
   
   try {
-    // Remove any existing channel with the same name to prevent conflicts
-    try {
-      supabase.removeChannel(channelName);
-    } catch (e) {
-      // Ignore error if channel doesn't exist
-    }
-
     const channel = supabase
       .channel(channelName)
       .on(

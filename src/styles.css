@@ -12609,6 +12609,16 @@ input[type="datetime-local"]:focus {
   background: rgba(255,255,255,0.14);
 }
 
+.profile-field {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-field-label {
+  font-weight: 600;
+  color: var(--ink);
+}
+
 .profile-photo-upload-wrapper {
   display: flex;
   align-items: center;
