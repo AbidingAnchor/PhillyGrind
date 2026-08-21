@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Briefcase, MapPin, Calendar, Star, Heart, MessageCircle } from 'lucide-react';
+import { Briefcase, MapPin, Calendar, MessageCircle, Pencil, Share2, MoreHorizontal, Settings } from 'lucide-react';
 import FacebookShareIcon from '../components/FacebookShareIcon.jsx';
 import PostReactionControl from '../components/PostReactionControl.jsx';
 import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
@@ -111,7 +111,21 @@ function Profile() {
   const [postReactions, setPostReactions] = useState({});
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [profileConversation, setProfileConversation] = useState(null);
+  const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const isOwnProfile = isLoggedIn && user?.id === viewedUserId;
+
+  useEffect(() => {
+    if (!actionsMenuOpen) return undefined;
+
+    function handleClick(event) {
+      if (!event.target.closest('.profile-actions-menu')) {
+        setActionsMenuOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [actionsMenuOpen]);
 
   const activeBoosts = listings.filter((listing) => (
     listing.is_boosted
@@ -459,6 +473,45 @@ function Profile() {
     }
   }
 
+  async function handleShareProfile() {
+    const shareUrl = `${window.location.origin}/profile/${viewedUserId}`;
+    const shareData = {
+      title: `${profileData?.profileName || 'PhillyGrind'} profile`,
+      text: `Check out ${profileData?.profileName || 'this neighbor'} on PhillyGrind`,
+      url: shareUrl,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+      await navigator.clipboard.writeText(shareUrl);
+      setProfileStatus('Profile link copied.');
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+      setProfileStatus('Could not share this profile.');
+    }
+  }
+
+  function truncateBio(bio, maxLength = 140) {
+    const text = String(bio || '').trim();
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return `${text.slice(0, maxLength).trimEnd()}…`;
+  }
+
+  function EmptyProfilePrompt({ children, onAction }) {
+    if (isOwnProfile && onAction) {
+      return (
+        <button type="button" className="profile-empty-prompt" onClick={onAction}>
+          {children}
+        </button>
+      );
+    }
+    return <p className="empty-state">{children}</p>;
+  }
+
   function isActiveAcceptedBid(bid) {
     return Boolean(
       bid.status === 'accepted'
@@ -509,206 +562,268 @@ function Profile() {
       {error && <p className="empty-state error-state">{error}</p>}
       {!loading && !error && profileData && (
         <>
-          <div className="profile-header">
-            <span 
-              className="profile-avatar-large"
-              style={!profileData.profile?.avatar_url ? { backgroundColor: getUserAvatarColor(viewedUserId, profileData.profileName) } : undefined}
+          <div className="profile-cover-bleed">
+            <div
+              className={`profile-cover ${profileData.profile?.banner_url ? 'has-photo' : 'profile-cover-fallback'}`}
+              style={profileData.profile?.banner_url ? { backgroundImage: `url(${profileData.profile.banner_url})` } : undefined}
             >
-              {profileData.profile?.avatar_url ? (
-                <img
-                  key={profileData.profile.avatar_url}
-                  src={profileData.profile.avatar_url}
-                  alt={`${profileData.profileName} profile`}
-                />
-              ) : getInitials(profileData.profileName)}
-            </span>
-            <div>
-              <span className="eyebrow">PhillyGrind Profile</span>
-              <div className="profile-name-row">
-                <h1>{profileData.profileName}</h1>
-                {profileData.profile?.identity_verified && <span className="verified-badge-small">✓</span>}
-              </div>
-              {profileData.profile?.profile_tags && profileData.profile.profile_tags.length > 0 && (
-                <div className="profile-tags-row">
-                  {profileData.profile.profile_tags.map((tag) => (
-                    <span className="profile-tag-pill" key={tag}>{tag}</span>
-                  ))}
-                </div>
-              )}
-              <p>
-                Member since{' '}
-                {profileData.profileCreatedAt
-                  ? new Date(profileData.profileCreatedAt).toLocaleDateString([], { month: 'long', year: 'numeric' })
-                  : 'recently'}
-              </p>
-              <div className="profile-rating-row">
-                <StarRating rating={profileData.rating.average} count={profileData.rating.count} />
-                <span>{profileData.rating.count} review{profileData.rating.count === 1 ? '' : 's'}</span>
-              </div>
-              {profileData.profile?.availability === 'Available Now' && profileData.profile?.show_available_now && <span className="availability-badge available">{profileData.profile.availability}</span>}
-              {profileData.profile?.availability && profileData.profile?.availability !== 'Available Now' && <span className={`availability-badge ${profileData.profile.availability === 'Not Available' ? 'unavailable' : ''}`}>{profileData.profile.availability}</span>}
-              {!isOwnProfile && isLoggedIn && (
-                <button 
-                  className="profile-edit-button" 
-                  type="button" 
-                  onClick={handleMessageClick} 
-                  disabled={loadingConversation}
-                  style={{ marginTop: '12px' }}
-                >
-                  {loadingConversation ? 'Loading...' : 'Message'}
-                </button>
-              )}
-              {isOwnProfile && (
-                <button className="profile-edit-button" type="button" onClick={() => setEditing((value) => !value)} style={{ marginTop: '12px' }}>
-                  {editing ? 'Close Editor' : 'Edit Profile'}
-                </button>
-              )}
+              <div className="profile-cover-overlay" />
+            </div>
+            <div className="profile-cover-content">
+              <span
+                className="profile-avatar-large profile-avatar-overlap"
+                style={!profileData.profile?.avatar_url ? { backgroundColor: getUserAvatarColor(viewedUserId, profileData.profileName) } : undefined}
+              >
+                {profileData.profile?.avatar_url ? (
+                  <img
+                    key={profileData.profile.avatar_url}
+                    src={profileData.profile.avatar_url}
+                    alt={`${profileData.profileName} profile`}
+                  />
+                ) : getInitials(profileData.profileName)}
+              </span>
             </div>
           </div>
 
-          {profileStatus && <p className="form-status">{profileStatus}</p>}
-
-          {/* Two-column layout */}
-          <div className="profile-content-grid">
-            {/* Left column - Intro card */}
-            <aside className="profile-sidebar">
-              <div className="profile-intro-card">
-                <div className="profile-section-heading">
-                  <span className="eyebrow">About</span>
-                  <h2>Intro</h2>
+          <div className="profile-body">
+            <div className="profile-identity-row">
+              <div className="profile-identity-main">
+                <div className="profile-name-row">
+                  <h1>{profileData.profileName}</h1>
+                  {profileData.profile?.identity_verified && <span className="verified-badge-small">✓</span>}
                 </div>
-                
-                {profileData.profile?.bio && (
+                {profileData.profile?.profile_tags && profileData.profile.profile_tags.length > 0 && (
+                  <div className="profile-tags-row">
+                    {profileData.profile.profile_tags.map((tag) => (
+                      <span className="profile-tag-pill" key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                )}
+                <div className="profile-identity-meta">
+                  <StarRating rating={profileData.rating.average} count={profileData.rating.count} />
+                  <span>
+                    {profileData.rating.count} review{profileData.rating.count === 1 ? '' : 's'}
+                  </span>
+                  <span className="profile-identity-sep" aria-hidden="true">·</span>
+                  <span>
+                    Member since{' '}
+                    {profileData.profileCreatedAt
+                      ? new Date(profileData.profileCreatedAt).toLocaleDateString([], { month: 'long', year: 'numeric' })
+                      : 'recently'}
+                  </span>
+                </div>
+                {profileData.profile?.availability === 'Available Now' && profileData.profile?.show_available_now && (
+                  <span className="availability-badge available">{profileData.profile.availability}</span>
+                )}
+                {profileData.profile?.availability && profileData.profile?.availability !== 'Available Now' && (
+                  <span className={`availability-badge ${profileData.profile.availability === 'Not Available' ? 'unavailable' : ''}`}>
+                    {profileData.profile.availability}
+                  </span>
+                )}
+              </div>
+
+              <div className="profile-action-cluster">
+                {isOwnProfile ? (
+                  <button
+                    className="profile-icon-button"
+                    type="button"
+                    aria-label={editing ? 'Close profile editor' : 'Edit profile'}
+                    title={editing ? 'Close editor' : 'Edit Profile'}
+                    onClick={() => setEditing((value) => !value)}
+                  >
+                    <Pencil size={18} />
+                  </button>
+                ) : isLoggedIn ? (
+                  <button
+                    className="profile-icon-button profile-icon-button-primary"
+                    type="button"
+                    aria-label="Message"
+                    title="Message"
+                    onClick={handleMessageClick}
+                    disabled={loadingConversation}
+                  >
+                    <MessageCircle size={18} />
+                  </button>
+                ) : null}
+                <button
+                  className="profile-icon-button"
+                  type="button"
+                  aria-label="Share profile"
+                  title="Share Profile"
+                  onClick={handleShareProfile}
+                >
+                  <Share2 size={18} />
+                </button>
+                {isOwnProfile && (
+                  <div className="profile-actions-menu">
+                    <button
+                      className="profile-icon-button"
+                      type="button"
+                      aria-label="More profile actions"
+                      aria-expanded={actionsMenuOpen}
+                      title="More"
+                      onClick={() => setActionsMenuOpen((open) => !open)}
+                    >
+                      <MoreHorizontal size={18} />
+                    </button>
+                    {actionsMenuOpen && (
+                      <div className="profile-actions-dropdown">
+                        <Link to="/settings" className="profile-actions-dropdown-item" onClick={() => setActionsMenuOpen(false)}>
+                          <Settings size={16} />
+                          Settings
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {profileStatus && <p className="form-status">{profileStatus}</p>}
+
+            {/* Two-column layout */}
+            <div className="profile-content-grid">
+              {/* Left column - About at a glance */}
+              <aside className="profile-sidebar">
+                <div className="profile-intro-card">
+                  <div className="profile-section-heading">
+                    <span className="eyebrow">About</span>
+                    <h2>At a glance</h2>
+                  </div>
+
                   <div className="profile-intro-item">
                     <Briefcase className="profile-intro-icon" />
                     <div className="profile-intro-content">
                       <div className="profile-intro-label">Bio</div>
-                      <div className="profile-intro-value">{profileData.profile.bio}</div>
+                      {profileData.profile?.bio ? (
+                        <div className="profile-intro-value">
+                          {truncateBio(profileData.profile.bio)}
+                          {profileData.profile.bio.trim().length > 140 && (
+                            <>
+                              {' '}
+                              <button type="button" className="profile-more-link" onClick={() => setActiveTab('about')}>
+                                more
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <EmptyProfilePrompt onAction={() => setEditing(true)}>
+                          Add a bio so neighbors know who they&apos;re working with →
+                        </EmptyProfilePrompt>
+                      )}
                     </div>
                   </div>
-                )}
 
-                {profileData.profile?.skills?.length > 0 && (
                   <div className="profile-intro-item">
                     <Briefcase className="profile-intro-icon" />
                     <div className="profile-intro-content">
                       <div className="profile-intro-label">Skills</div>
-                      <div className="profile-intro-value skills-list">
-                        {profileData.profile.skills.map((skill) => (
-                          <span key={skill} className="profile-intro-skill">{skill}</span>
-                        ))}
-                      </div>
+                      {profileData.profile?.skills?.length > 0 ? (
+                        <div className="profile-intro-value skills-list">
+                          {profileData.profile.skills.map((skill) => (
+                            <span key={skill} className="profile-intro-skill">{skill}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <EmptyProfilePrompt onAction={() => setEditing(true)}>
+                          Add your skills so the right gigs find you →
+                        </EmptyProfilePrompt>
+                      )}
                     </div>
                   </div>
-                )}
 
-                {profileData.profile?.neighborhoods?.length > 0 && (
                   <div className="profile-intro-item">
                     <MapPin className="profile-intro-icon" />
                     <div className="profile-intro-content">
-                      <div className="profile-intro-label">Neighborhoods</div>
-                      <div className="profile-intro-value">{profileData.profile.neighborhoods.join(', ')}</div>
+                      <div className="profile-intro-label">Neighborhoods served</div>
+                      {profileData.profile?.neighborhoods?.length > 0 ? (
+                        <div className="profile-intro-value skills-list">
+                          {profileData.profile.neighborhoods.map((neighborhood) => (
+                            <span key={neighborhood} className="profile-intro-neighborhood">{neighborhood}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <EmptyProfilePrompt onAction={() => setEditing(true)}>
+                          Add neighborhoods you work so locals can find you →
+                        </EmptyProfilePrompt>
+                      )}
                     </div>
                   </div>
-                )}
 
-                <div className="profile-intro-item">
-                  <Calendar className="profile-intro-icon" />
-                  <div className="profile-intro-content">
-                    <div className="profile-intro-label">Member since</div>
-                    <div className="profile-intro-value">
-                      {profileData.profileCreatedAt
-                        ? new Date(profileData.profileCreatedAt).toLocaleDateString([], { month: 'long', year: 'numeric' })
-                        : 'Recently'}
-                    </div>
-                  </div>
-                </div>
-
-                {profileData.rating.count > 0 && (
-                  <div className="profile-intro-item">
-                    <Star className="profile-intro-icon" />
-                    <div className="profile-intro-content">
-                      <div className="profile-intro-label">Rating</div>
-                      <div className="profile-intro-value">
-                        {profileData.rating.average.toFixed(1)} · {profileData.rating.count} review{profileData.rating.count === 1 ? '' : 's'}
+                  {profileData.profile?.availability && (
+                    <div className="profile-intro-item">
+                      <Calendar className="profile-intro-icon" />
+                      <div className="profile-intro-content">
+                        <div className="profile-intro-label">Availability</div>
+                        <div className="profile-intro-value">{profileData.profile.availability}</div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
-                {profileData.profile?.availability && (
-                  <div className="profile-intro-item">
-                    <Briefcase className="profile-intro-icon" />
-                    <div className="profile-intro-content">
-                      <div className="profile-intro-label">Availability</div>
-                      <div className="profile-intro-value">{profileData.profile.availability}</div>
+                {isOwnProfile && activeBoosts.length > 0 && (
+                  <section className="profile-section-card" style={{ marginTop: '24px' }}>
+                    <div className="profile-section-heading">
+                      <span className="eyebrow">Boosts</span>
+                      <h2>Active Boosts</h2>
                     </div>
-                  </div>
+                    <div className="boost-dashboard-list">
+                      {activeBoosts.map((listing) => (
+                        <article className="boost-dashboard-card" key={`${listing.type}-${listing.id}`}>
+                          <div>
+                            <span className={`boost-badge ${listing.boost_tier}`}>{listing.boost_tier === 'pro' ? '⭐ Pro' : '⭐ Featured'}</span>
+                            <h3>{listing.title}</h3>
+                            <p>Expires {new Date(listing.boost_expires_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                          </div>
+                          <button
+                            className="secondary-detail-button"
+                            type="button"
+                            onClick={() => handleRenewBoost(listing)}
+                            disabled={renewingBoostId === `${listing.type}-${listing.id}`}
+                          >
+                            {renewingBoostId === `${listing.type}-${listing.id}` ? 'Opening...' : 'Renew Boost'}
+                          </button>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
                 )}
-              </div>
+              </aside>
 
-              {isOwnProfile && activeBoosts.length > 0 && (
-                <section className="profile-section-card" style={{ marginTop: '24px' }}>
-                  <div className="profile-section-heading">
-                    <span className="eyebrow">Boosts</span>
-                    <h2>Active Boosts</h2>
-                  </div>
-                  <div className="boost-dashboard-list">
-                    {activeBoosts.map((listing) => (
-                      <article className="boost-dashboard-card" key={`${listing.type}-${listing.id}`}>
-                        <div>
-                          <span className={`boost-badge ${listing.boost_tier}`}>{listing.boost_tier === 'pro' ? '⭐ Pro' : '⭐ Featured'}</span>
-                          <h3>{listing.title}</h3>
-                          <p>Expires {new Date(listing.boost_expires_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                        </div>
-                        <button
-                          className="secondary-detail-button"
-                          type="button"
-                          onClick={() => handleRenewBoost(listing)}
-                          disabled={renewingBoostId === `${listing.type}-${listing.id}`}
-                        >
-                          {renewingBoostId === `${listing.type}-${listing.id}` ? 'Opening...' : 'Renew Boost'}
-                        </button>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              )}
-            </aside>
-
-            {/* Right column - Tabs and content */}
-            <main className="profile-main-content">
-              {/* Tab Bar */}
-              <div className="profile-tabs">
-                <button 
-                  className={`profile-tab ${activeTab === 'activity' ? 'active' : ''}`}
-                  type="button"
-                  onClick={() => setActiveTab('activity')}
-                >
-                  Activity
-                </button>
-                <button 
-                  className={`profile-tab ${activeTab === 'about' ? 'active' : ''}`}
-                  type="button"
-                  onClick={() => setActiveTab('about')}
-                >
-                  About
-                </button>
-                <button 
-                  className={`profile-tab ${activeTab === 'reviews' ? 'active' : ''}`}
-                  type="button"
-                  onClick={() => setActiveTab('reviews')}
-                >
-                  Reviews
-                </button>
-                <button 
-                  className={`profile-tab ${activeTab === 'listings' ? 'active' : ''}`}
-                  type="button"
-                  onClick={() => setActiveTab('listings')}
-                >
-                  Listings
-                </button>
-              </div>
+              {/* Right column - Tabs and content */}
+              <main className="profile-main-content">
+                {/* Tab Bar */}
+                <div className="profile-tabs">
+                  <button
+                    className={`profile-tab ${activeTab === 'activity' ? 'active' : ''}`}
+                    type="button"
+                    onClick={() => setActiveTab('activity')}
+                  >
+                    Activity
+                  </button>
+                  <button
+                    className={`profile-tab ${activeTab === 'about' ? 'active' : ''}`}
+                    type="button"
+                    onClick={() => setActiveTab('about')}
+                  >
+                    About
+                  </button>
+                  <button
+                    className={`profile-tab ${activeTab === 'reviews' ? 'active' : ''}`}
+                    type="button"
+                    onClick={() => setActiveTab('reviews')}
+                  >
+                    Reviews
+                  </button>
+                  <button
+                    className={`profile-tab ${activeTab === 'listings' ? 'active' : ''}`}
+                    type="button"
+                    onClick={() => setActiveTab('listings')}
+                  >
+                    Listings
+                  </button>
+                </div>
 
               {/* Tab Content */}
               {activeTab === 'activity' && (
@@ -809,7 +924,11 @@ function Profile() {
                       )}
                     </>
                   ) : (
-                    <p className="empty-state">No posts yet.</p>
+                    <EmptyProfilePrompt onAction={() => { window.location.href = '/'; }}>
+                      {isOwnProfile
+                        ? 'Share something with the neighborhood — your first post starts here →'
+                        : 'No posts yet.'}
+                    </EmptyProfilePrompt>
                   )}
                 </section>
               )}
@@ -823,7 +942,11 @@ function Profile() {
               {profileData.profile?.bio ? (
                 <p className="profile-bio">{profileData.profile.bio}</p>
               ) : (
-                <p className="empty-state">No bio added yet.</p>
+                <EmptyProfilePrompt onAction={() => setEditing(true)}>
+                  {isOwnProfile
+                    ? 'Add a bio so neighbors know who they\'re working with →'
+                    : 'No bio added yet.'}
+                </EmptyProfilePrompt>
               )}
               {profileData.profile?.skills?.length > 0 ? (
                 <div>
@@ -833,7 +956,11 @@ function Profile() {
               ) : (
                 <div>
                   <h3 className="profile-mini-heading">Skills</h3>
-                  <p className="empty-state">No skills listed yet.</p>
+                  <EmptyProfilePrompt onAction={() => setEditing(true)}>
+                    {isOwnProfile
+                      ? 'Add your skills so the right gigs find you →'
+                      : 'No skills listed yet.'}
+                  </EmptyProfilePrompt>
                 </div>
               )}
               {profileData.profile?.neighborhoods?.length > 0 ? (
@@ -844,7 +971,11 @@ function Profile() {
               ) : (
                 <div>
                   <h3 className="profile-mini-heading">Neighborhoods served</h3>
-                  <p className="empty-state">No neighborhoods specified yet.</p>
+                  <EmptyProfilePrompt onAction={() => setEditing(true)}>
+                    {isOwnProfile
+                      ? 'Add neighborhoods you work so locals can find you →'
+                      : 'No neighborhoods specified yet.'}
+                  </EmptyProfilePrompt>
                 </div>
               )}
             </section>
@@ -869,7 +1000,9 @@ function Profile() {
                     </article>
                   ))
                 ) : (
-                  <p className="empty-state">No reviews yet.</p>
+                  <EmptyProfilePrompt onAction={undefined}>
+                    No reviews yet.
+                  </EmptyProfilePrompt>
                 )}
               </div>
             </section>
@@ -957,7 +1090,11 @@ function Profile() {
                     {listings.map((listing) => <ListingCard key={`${listing.type}-${listing.id}`} listing={listing} />)}
                   </div>
                 ) : (
-                  <p className="empty-state">No active listings posted yet.</p>
+                  <EmptyProfilePrompt onAction={isOwnProfile ? () => { window.location.href = '/post-gig'; } : undefined}>
+                    {isOwnProfile
+                      ? 'Post a job or gig so Philly can hire you →'
+                      : 'No active listings posted yet.'}
+                  </EmptyProfilePrompt>
                 )}
               </section>
             </>
@@ -1078,6 +1215,7 @@ function Profile() {
                 </section>
               )}
             </main>
+          </div>
           </div>
         </>
       )}
