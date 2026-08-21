@@ -583,7 +583,7 @@ async function handleAdminReportAction(req, res, admin) {
     }
   }
 
-  if action === 'warn' && !isCommunityReport && finalReport.reported_type === 'user' {
+  if (action === 'warn' && !isCommunityReport && finalReport.reported_type === 'user') {
     const { data: warnTargetProfile } = await supabaseAdmin
       .from('profiles')
       .select('notifications_enabled')

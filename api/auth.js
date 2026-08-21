@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { getUserFromRequest, hasServerSupabaseConfig, supabaseAdmin } from './_utils.js';
 import { sendEmail } from './_utils/email.js';
 import { createExistingAccountEmail } from './_utils/emailTemplate.js';
 
@@ -36,26 +37,36 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { action, userId, email } = req.body;
+  const { action, email } = req.body;
   const clientIP = getClientIP(req);
 
-  console.log('[Auth] API request received:', { action, userId: !!userId, email: !!email, ip: clientIP });
+  console.log('[Auth] API request received:', { action, email: !!email, ip: clientIP });
 
   try {
     if (action === 'capture-ip') {
-      if (!userId) {
-        return res.status(400).json({ error: 'userId is required' });
+      const user = await getUserFromRequest(req);
+      if (!user) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      if (!hasServerSupabaseConfig) {
+        return res.status(500).json({ error: 'Server configuration missing' });
       }
 
-      // Update profile with IP
-      const { error } = await supabase
+      // last_known_ip is not PATCH-able by authenticated clients (column grants).
+      // Write it here with the service role from the request IP so users cannot spoof it.
+      const ip = typeof clientIP === 'string' ? clientIP.trim() : '';
+      if (!ip || ip === 'unknown' || ip.length > 64) {
+        return res.status(200).json({ success: true, skipped: true });
+      }
+
+      const { error } = await supabaseAdmin
         .from('profiles')
-        .update({ last_known_ip: clientIP })
-        .eq('id', userId);
+        .update({ last_known_ip: ip })
+        .eq('id', user.id);
 
       if (error) throw error;
 
-      return res.status(200).json({ success: true, ip: clientIP });
+      return res.status(200).json({ success: true, ip });
     }
 
     if (action === 'check-ip-ban') {

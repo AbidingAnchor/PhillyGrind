@@ -7,6 +7,24 @@ import Skeleton from '../components/Skeleton.jsx';
 const AuthContext = createContext(null);
 const profileFields = 'id,name,email,avatar_url,resume_url,resume_path,stripe_account_id,stripe_onboarding_complete,onboarding_complete,tos_agreed_at,two_factor_enabled,identity_verified,verification_status,stripe_identity_session_id,banner_url,profile_tags,created_at,role,is_adult_confirmed,show_available_now,notifications_enabled';
 
+async function captureLoginIp(session) {
+  const token = session?.access_token;
+  if (!token) return;
+
+  try {
+    await fetch('/api/auth', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ action: 'capture-ip' }),
+    });
+  } catch (ipError) {
+    console.warn('Failed to capture IP:', ipError);
+  }
+}
+
 function withTimeout(promise, milliseconds, timeoutValue) {
   let timeoutId;
   const timeoutPromise = new Promise((resolve) => {
@@ -254,18 +272,7 @@ export function AuthProvider({ children }) {
       return data;
     }
 
-    // Capture IP after successful signup
-    if (data.user) {
-      try {
-        await fetch('/api/auth', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'capture-ip', userId: data.user.id }),
-        });
-      } catch (ipError) {
-        console.warn('Failed to capture IP:', ipError);
-      }
-    }
+    await captureLoginIp(data.session);
 
     // Profile creation is now handled by Postgres trigger on auth.users insert
     // No client-side upsert needed - trigger runs with service role privileges
@@ -282,18 +289,7 @@ export function AuthProvider({ children }) {
 
     if (error) throw error;
 
-    // Capture IP after successful login
-    if (data.user) {
-      try {
-        await fetch('/api/auth', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'capture-ip', userId: data.user.id }),
-        });
-      } catch (ipError) {
-        console.warn('Failed to capture IP:', ipError);
-      }
-    }
+    await captureLoginIp(data.session);
 
     return data;
   }
