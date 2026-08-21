@@ -31,21 +31,6 @@ const profileTagOptions = [
   'Renting Out a Place',
 ];
 
-const accentColorOptions = [
-  { name: 'Green', value: '#22c55e' },
-  { name: 'Blue', value: '#3b82f6' },
-  { name: 'Purple', value: '#a855f7' },
-  { name: 'Pink', value: '#ec4899' },
-  { name: 'Orange', value: '#f97316' },
-  { name: 'Teal', value: '#14b8a6' },
-  { name: 'Indigo', value: '#6366f1' },
-  { name: 'Rose', value: '#f43f5e' },
-  { name: 'Yellow', value: '#f7dc6f' },
-  { name: 'Brown', value: '#964b00' },
-  { name: 'Gray', value: '#6b7280' },
-  { name: 'Turquoise', value: '#1abc9c' },
-  { name: 'Lavender', value: '#c7b8ea' },
-];
 const activeGigStatuses = new Set(['in progress', 'in_progress']);
 
 function getInitials(name) {
@@ -107,7 +92,7 @@ function Profile() {
   const [marketplaceListings, setMarketplaceListings] = useState([]);
   const [marketplaceOrders, setMarketplaceOrders] = useState([]);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: '', bio: '', skills: [], availability: '', neighborhoods: [], profile_tags: [], accent_color: '#22c55e', neighborhood: '' });
+  const [form, setForm] = useState({ name: '', bio: '', skills: [], availability: '', neighborhoods: [], profile_tags: [], neighborhood: '' });
   const [profileStatus, setProfileStatus] = useState('');
   const [saving, setSaving] = useState(false);
   const [renewingBoostId, setRenewingBoostId] = useState('');
@@ -147,7 +132,6 @@ function Profile() {
     ])
       .then(([nextProfileData, nextListings]) => {
         console.log('[Profile] Profile loaded:', { 
-          accent_color: nextProfileData.profile?.accent_color, 
           profile: nextProfileData.profile 
         });
         setProfileData(nextProfileData);
@@ -159,7 +143,6 @@ function Profile() {
           availability: nextProfileData.profile?.availability || '',
           neighborhoods: nextProfileData.profile?.neighborhoods || [],
           profile_tags: nextProfileData.profile?.profile_tags || [],
-          accent_color: nextProfileData.profile?.accent_color || '#22c55e',
           neighborhood: nextProfileData.profile?.neighborhood || '',
         });
       })
@@ -352,7 +335,6 @@ function Profile() {
         availability: form.availability,
         neighborhoods: form.neighborhoods,
         profile_tags: form.profile_tags,
-        accent_color: form.accent_color,
         neighborhood: form.neighborhood,
       });
       setProfileData((current) => current ? {
@@ -514,8 +496,7 @@ function Profile() {
       {error && <p className="empty-state error-state">{error}</p>}
       {!loading && !error && profileData && (
         <>
-          {console.log('[Profile] Applying accent color to DOM:', profileData.profile?.accent_color || '#22c55e')}
-          <div className="profile-header" style={{ '--profile-accent': profileData.profile?.accent_color || '#22c55e' }}>
+          <div className="profile-header">
             <span 
               className="profile-avatar-large"
               style={!profileData.profile?.avatar_url ? { backgroundColor: getUserAvatarColor(viewedUserId, profileData.profileName) } : undefined}
@@ -1066,24 +1047,6 @@ function Profile() {
                         ))}
                       </div>
                       <span className="detail-note">Choose up to 3 tags that describe what you're here for.</span>
-                    </label>
-                    <label>
-                      Accent color
-                      <div className="accent-color-selector">
-                        {accentColorOptions.map((color) => (
-                          <button
-                            key={color.value}
-                            type="button"
-                            className={`accent-swatch ${form.accent_color === color.value ? 'selected' : ''}`}
-                            style={{ backgroundColor: color.value }}
-                            onClick={() => setForm((current) => ({ ...current, accent_color: color.value }))}
-                            title={color.name}
-                          >
-                            {form.accent_color === color.value && <span className="accent-check">✓</span>}
-                          </button>
-                        ))}
-                      </div>
-                      <span className="detail-note">Choose an accent color for your profile badges and buttons.</span>
                     </label>
                     <button className="primary-button" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Profile'}</button>
                   </form>

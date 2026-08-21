@@ -6,14 +6,14 @@ const bannerExtensionFor = (file) => {
   if (file.type === 'image/webp') return 'webp';
   return 'jpg';
 };
-const profileSelect = 'id,name,bio,skills,availability,neighborhoods,resume_path,resume_url,avatar_url,banner_url,profile_tags,accent_color,created_at,account_reference';
+const profileSelect = 'id,name,bio,skills,availability,neighborhoods,resume_path,resume_url,avatar_url,banner_url,profile_tags,created_at,account_reference';
 const ALLOWED_RESUME_TYPES = [
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
 
-export async function updateProfile({ name, bio, skills, availability, neighborhoods, profile_tags, accent_color, neighborhood }) {
+export async function updateProfile({ name, bio, skills, availability, neighborhoods, profile_tags, neighborhood }) {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
   }
@@ -52,14 +52,13 @@ export async function updateProfile({ name, bio, skills, availability, neighborh
       availability,
       neighborhoods,
       profile_tags,
-      accent_color,
       neighborhood,
     })
     .eq('id', userData.user.id)
     .select(profileSelect)
     .single();
 
-  console.log('[Profile API] Update profile response:', { error, data, accent_color: data?.accent_color });
+  console.log('[Profile API] Update profile response:', { error, data });
 
   if (error) throw error;
 
