@@ -141,6 +141,10 @@ function Profile() {
       getUserListings(viewedUserId),
     ])
       .then(([nextProfileData, nextListings]) => {
+        console.log('[Profile] Profile loaded:', { 
+          accent_color: nextProfileData.profile?.accent_color, 
+          profile: nextProfileData.profile 
+        });
         setProfileData(nextProfileData);
         setListings(nextListings);
         setForm({
@@ -505,6 +509,7 @@ function Profile() {
       {error && <p className="empty-state error-state">{error}</p>}
       {!loading && !error && profileData && (
         <>
+          {console.log('[Profile] Applying accent color to DOM:', profileData.profile?.accent_color || '#22c55e')}
           <div className="profile-header" style={{ '--profile-accent': profileData.profile?.accent_color || '#22c55e' }}>
             <span 
               className="profile-avatar-large"

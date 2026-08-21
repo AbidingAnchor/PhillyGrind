@@ -59,6 +59,8 @@ export async function updateProfile({ name, bio, skills, availability, neighborh
     .select(profileSelect)
     .single();
 
+  console.log('[Profile API] Update profile response:', { error, data, accent_color: data?.accent_color });
+
   if (error) throw error;
 
   return data;
