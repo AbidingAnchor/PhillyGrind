@@ -5133,11 +5133,12 @@ body {
 
   .profile-cover-bleed {
     margin-bottom: 8px;
-    padding-bottom: 56px;
+    padding-bottom: 64px;
   }
 
   .profile-cover-content {
     width: calc(100% - 32px);
+    transform: none;
   }
 
   .profile-avatar-overlap {
@@ -5148,7 +5149,7 @@ body {
 
   .profile-identity-main {
     padding-left: 0;
-    padding-top: 8px;
+    padding-top: 24px;
   }
 
   .profile-identity-row {
@@ -5168,6 +5169,10 @@ body {
 }
 
 @media (max-width: 480px) {
+  .profile-cover-bleed {
+    padding-bottom: 68px;
+  }
+
   .profile-cover-content {
     display: flex;
     justify-content: center;
@@ -5176,6 +5181,7 @@ body {
 
   .profile-identity-main {
     text-align: center;
+    padding-top: 28px;
   }
 
   .profile-identity-meta {
