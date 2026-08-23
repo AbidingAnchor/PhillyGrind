@@ -12666,7 +12666,7 @@ input[type="datetime-local"]:focus {
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: rgba(148, 163, 184, 0.16);
+  background: #2c2c2c;
   color: #94a3b8;
   flex-shrink: 0;
   overflow: hidden;
@@ -12711,34 +12711,16 @@ input[type="datetime-local"]:focus {
   stroke: #7dd3fc;
 }
 
-.feed-weather-fx--sun {
-  background: rgba(250, 204, 21, 0.18);
-}
-
-.feed-weather-fx--moon {
-  background: rgba(186, 230, 253, 0.2);
-}
-
+.feed-weather-fx--sun,
+.feed-weather-fx--moon,
 .feed-weather-fx--cloud,
 .feed-weather-fx--fog,
-.feed-weather-fx--wind {
-  background: rgba(148, 163, 184, 0.18);
-}
-
-.feed-weather-fx--partly {
-  background: rgba(250, 204, 21, 0.12);
-}
-
-.feed-weather-fx--rain {
-  background: rgba(59, 130, 246, 0.14);
-}
-
-.feed-weather-fx--storm {
-  background: rgba(71, 85, 105, 0.18);
-}
-
+.feed-weather-fx--wind,
+.feed-weather-fx--partly,
+.feed-weather-fx--rain,
+.feed-weather-fx--storm,
 .feed-weather-fx--snow {
-  background: rgba(125, 211, 252, 0.16);
+  background: #2c2c2c;
 }
 
 .feed-weather-now-icon::before,
@@ -12794,19 +12776,6 @@ input[type="datetime-local"]:focus {
   opacity: 0.7;
 }
 
-.feed-weather-fx--rain::after,
-.feed-weather-fx--storm::after {
-  inset: -12px 4px;
-  background-image: repeating-linear-gradient(
-    -22deg,
-    transparent 0 7px,
-    rgba(255, 255, 255, 0.38) 7px 8px
-  );
-  background-size: 10px 18px;
-  animation: weather-rain-fall 1.15s linear infinite;
-  opacity: 0.55;
-}
-
 .feed-weather-fx--storm::before {
   inset: -20%;
   border-radius: 50%;
@@ -12841,11 +12810,6 @@ input[type="datetime-local"]:focus {
   50% { transform: translateX(14px); }
 }
 
-@keyframes weather-rain-fall {
-  0% { transform: translateY(-18px); }
-  100% { transform: translateY(18px); }
-}
-
 @keyframes weather-storm-flash {
   0%, 8%, 12%, 100% { opacity: 0; }
   10% { opacity: 0.85; }
@@ -12865,8 +12829,17 @@ input[type="datetime-local"]:focus {
   }
 }
 
-[data-theme="dark"] .feed-weather-now-icon {
-  background: rgba(148, 163, 184, 0.12);
+[data-theme="dark"] .feed-weather-now-icon,
+[data-theme="dark"] .feed-weather-fx--sun,
+[data-theme="dark"] .feed-weather-fx--moon,
+[data-theme="dark"] .feed-weather-fx--cloud,
+[data-theme="dark"] .feed-weather-fx--fog,
+[data-theme="dark"] .feed-weather-fx--wind,
+[data-theme="dark"] .feed-weather-fx--partly,
+[data-theme="dark"] .feed-weather-fx--rain,
+[data-theme="dark"] .feed-weather-fx--storm,
+[data-theme="dark"] .feed-weather-fx--snow {
+  background: #2c2c2c;
 }
 
 [data-theme="dark"] .feed-weather-glyph .wx-sun {
