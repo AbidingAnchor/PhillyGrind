@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ClipboardList, Loader2, User, Clock } from 'lucide-react';
-import { adminReportAction, getAdminReports } from '../../lib/adminApi.js';
-import { useAdminCounts } from '../../components/AdminLayout.jsx';
+import { Link } from 'react-router-dom';
+import { ClipboardList, Clock, User, ChevronRight } from 'lucide-react';
+import { getAdminReports, reportCaseType } from '../../lib/adminApi.js';
 import Skeleton from '../../components/Skeleton.jsx';
 
 export default function AdminReports() {
@@ -9,8 +9,6 @@ export default function AdminReports() {
   const [statusFilter, setStatusFilter] = useState('pending');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [actingId, setActingId] = useState('');
-  const { loadCounts } = useAdminCounts();
 
   async function loadReports() {
     try {
@@ -28,27 +26,13 @@ export default function AdminReports() {
     loadReports();
   }, [statusFilter]);
 
-  async function handleAction(reportId, action) {
-    setActingId(reportId);
-    setError('');
-    try {
-      await adminReportAction(reportId, action);
-      await loadReports();
-      await loadCounts(); // Refetch badge counts
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setActingId('');
-    }
-  }
-
   return (
     <div className="admin-page">
       <header className="admin-page-header">
         <ClipboardList size={28} />
         <div>
           <h1>Reports Queue</h1>
-          <p>Flagged listings, reported users, and auto-moderation flags</p>
+          <p>Flagged listings, reported users, and community reports — open a case to review and act.</p>
         </div>
       </header>
 
@@ -74,9 +58,14 @@ export default function AdminReports() {
 
       <div className="admin-report-list">
         {reports.map((report) => {
-          const busy = actingId === report.id;
+          const caseType = reportCaseType(report);
           return (
-            <article key={report.id} className="report-card" data-status={report.status}>
+            <Link
+              key={report.id}
+              to={`/admin/cases/${caseType}/${report.id}`}
+              className="report-card admin-report-link"
+              data-status={report.status}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="report-status-badge" data-status={report.status}>
                   {report.status}
@@ -100,35 +89,10 @@ export default function AdminReports() {
                   <span>{new Date(report.created_at).toLocaleString()}</span>
                 </div>
               </div>
-              {report.status === 'pending' && (
-                <div className="report-actions">
-                  <button
-                    type="button"
-                    className="admin-moderation-btn dismiss"
-                    disabled={busy}
-                    onClick={() => handleAction(report.id, 'dismiss')}
-                  >
-                    {busy ? <Loader2 size={14} className="spin" /> : 'Dismiss'}
-                  </button>
-                  <button
-                    type="button"
-                    className="admin-moderation-btn warn"
-                    disabled={busy}
-                    onClick={() => handleAction(report.id, 'warn')}
-                  >
-                    Warn
-                  </button>
-                  <button
-                    type="button"
-                    className="admin-moderation-btn delete"
-                    disabled={busy}
-                    onClick={() => handleAction(report.id, 'remove')}
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
-            </article>
+              <span className="admin-report-open">
+                Open case <ChevronRight size={16} />
+              </span>
+            </Link>
           );
         })}
       </div>

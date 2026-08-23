@@ -4,6 +4,8 @@ import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../lib/auth.jsx';
 import { hasSupabaseConfig, supabase } from '../lib/supabase.js';
 import { grindBotUserFacingError } from '../lib/grindbotErrors.js';
+import { sendGrindBotMessage } from '../lib/grindbotApi.js';
+import { getPendingTicketHint } from '../lib/grindbotConfirm.js';
 
 const welcomeMessage = {
   role: 'assistant',
@@ -267,27 +269,20 @@ function GrindBot() {
     setSending(true);
     scrollThread();
 
+    const clientHint = getPendingTicketHint(messages);
+
     try {
-      const response = await fetch('/api/grindbotai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          messages: payloadMessages,
-        }),
+      const payload = await sendGrindBotMessage({
+        token: session.access_token,
+        messages: payloadMessages,
+        clientHint,
       });
 
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(grindBotUserFacingError(payload.error));
-      }
-      if (!payload.reply) {
-        throw new Error(grindBotUserFacingError(''));
-      }
-
-      setMessages((current) => [...current, { role: 'assistant', content: payload.reply }]);
+      setMessages((current) => [...current, {
+        role: 'assistant',
+        content: payload.reply,
+        meta: payload.meta || null,
+      }]);
       scrollThread();
     } catch (error) {
       setStatus(grindBotUserFacingError(error.message));

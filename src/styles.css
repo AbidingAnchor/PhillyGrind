@@ -16247,3 +16247,328 @@ input[type="datetime-local"]:focus {
     order: -1;
   }
 }
+
+/* Admin unified case view (Reports v1) */
+.admin-case-view {
+  padding-bottom: 120px;
+}
+
+.admin-case-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  color: var(--green);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.admin-case-back:hover {
+  text-decoration: underline;
+}
+
+.admin-case-header-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admin-case-header-main h1 {
+  margin: 0;
+}
+
+.admin-case-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.admin-case-column {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+}
+
+.admin-case-panel {
+  padding: 20px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.admin-case-panel h2 {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+}
+
+.admin-case-panel h3 {
+  margin: 16px 0 8px;
+  font-size: 1rem;
+}
+
+.admin-case-profile-meta p {
+  margin: 4px 0;
+}
+
+.admin-case-dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.admin-case-dl div {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-case-dl dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.admin-case-dl dd {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.admin-case-complaint-reason .report-reason {
+  margin: 12px 0 0;
+  font-size: 1.05rem;
+}
+
+.admin-case-reporter {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.admin-case-meta-line {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.admin-case-moderation-scores pre {
+  margin: 8px 0 0;
+  padding: 12px;
+  font-size: 0.8rem;
+  overflow-x: auto;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 8px;
+}
+
+.admin-case-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.admin-case-tabs button {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.admin-case-tabs button.active {
+  background: var(--mint);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.admin-case-activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.admin-case-activity-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.admin-case-policy-note {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  margin: 0 0 12px;
+}
+
+.admin-case-policy-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 8px;
+}
+
+.admin-case-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.admin-case-timeline-item {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.admin-case-timeline-dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.admin-case-timeline-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-case-action-bar {
+  position: sticky;
+  bottom: 0;
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.admin-case-action-bar--resolved {
+  text-align: center;
+}
+
+.admin-case-warn-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+.admin-case-warn-field textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  resize: vertical;
+}
+
+.admin-case-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-report-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+}
+
+.admin-report-link:hover {
+  border-color: var(--green);
+}
+
+.admin-report-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: var(--green);
+}
+
+@media (max-width: 900px) {
+  .admin-case-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-case-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.admin-case-panel-head h2 {
+  margin: 0;
+}
+
+.admin-case-live-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-case-live-toggle input {
+  accent-color: var(--green);
+}
+
+.admin-case-recovery-q {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.admin-case-recovery-q p {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+}
+
+.admin-case-replies {
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.admin-case-reply {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.admin-case-reply p {
+  margin: 6px 0 0;
+}
+
+.admin-case-evidence-grid {
+  margin-top: 16px;
+}
+
+.admin-case-evidence-grid .admin-evidence-panel {
+  margin: 0;
+}
+
+.admin-dispute-card.admin-report-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}

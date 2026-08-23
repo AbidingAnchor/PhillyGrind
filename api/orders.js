@@ -16,6 +16,7 @@ import {
   denyRecoveryRequest,
   listPendingRecoveryRequests,
 } from './_utils/accountRecovery.js';
+import { loadCaseDetail } from './_utils/adminCaseDetail.js';
 
 const limiter = createRateLimiter(30, '60 s');
 
@@ -467,6 +468,28 @@ async function handleAdminReports(req, res) {
   sendJson(res, 200, { reports: allReports });
 }
 
+async function handleAdminCaseDetail(req, res) {
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
+
+  const caseType = String(req.query.case_type || '').trim();
+  const caseId = String(req.query.case_id || '').trim();
+
+  if (!caseType || !caseId) {
+    sendJson(res, 400, { error: 'case_type and case_id are required.' });
+    return;
+  }
+
+  const snapshotMode = req.query.snapshot_mode === 'live' ? 'live' : 'frozen';
+  const result = await loadCaseDetail(caseType, caseId, { snapshotMode });
+  if (result.error) {
+    sendJson(res, result.status || 400, { error: result.error });
+    return;
+  }
+
+  sendJson(res, 200, result);
+}
+
 async function handleAdminSuspendUser(req, res, admin) {
   const { user_id: userId, reason, action_type: actionType } = req.body ?? {};
   if (!userId || !reason?.trim()) {
@@ -828,7 +851,7 @@ async function handleAdminRecoveryDeny(req, res, admin) {
   sendJson(res, 200, { ok: true });
 }
 
-const adminGetActions = new Set(['admin-overview', 'admin-users', 'admin-listings', 'admin-reports', 'admin-disputes', 'admin-housing', 'admin-community-posts', 'admin-recovery-list']);
+const adminGetActions = new Set(['admin-overview', 'admin-users', 'admin-listings', 'admin-reports', 'admin-case-detail', 'admin-disputes', 'admin-housing', 'admin-community-posts', 'admin-recovery-list']);
 const adminPostActions = new Set([
   'admin-suspend-user',
   'admin-lift-suspension',
@@ -869,6 +892,9 @@ export default async function handler(req, res) {
           break;
         case 'admin-reports':
           await handleAdminReports(req, res);
+          break;
+        case 'admin-case-detail':
+          await handleAdminCaseDetail(req, res);
           break;
         case 'admin-disputes':
           await handleAdminDisputes(req, res);

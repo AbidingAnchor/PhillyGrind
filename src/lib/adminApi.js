@@ -74,6 +74,44 @@ export async function getAdminReports(status = 'pending') {
   return adminRequest('admin-reports', { method: 'GET', query: { status } });
 }
 
+export function reportCaseType(report) {
+  if (report.source === 'community' || report.post_id) return 'community_report';
+  if (report.reported_type === 'user') return 'user_report';
+  return 'listing_report';
+}
+
+export async function getAdminCaseDetail(caseType, caseId, { snapshotMode } = {}) {
+  const query = { case_type: caseType, case_id: caseId };
+  if (snapshotMode === 'live') query.snapshot_mode = 'live';
+  return adminRequest('admin-case-detail', { method: 'GET', query });
+}
+
+export function caseQueuePath(caseType) {
+  switch (caseType) {
+    case 'recovery':
+      return '/admin/recovery';
+    case 'contact':
+      return '/admin/contact';
+    case 'dispute':
+      return '/admin/disputes';
+    default:
+      return '/admin/reports';
+  }
+}
+
+export function caseQueueLabel(caseType) {
+  switch (caseType) {
+    case 'recovery':
+      return 'Recovery queue';
+    case 'contact':
+      return 'Contact queue';
+    case 'dispute':
+      return 'Disputes queue';
+    default:
+      return 'Reports queue';
+  }
+}
+
 export async function getAdminDisputes() {
   return adminRequest('admin-disputes', { method: 'GET' });
 }

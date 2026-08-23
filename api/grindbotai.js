@@ -1,9 +1,20 @@
 import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
 import { createClient } from '@supabase/supabase-js';
+import {
+  buildTicketConfirmMeta,
+  buildTicketDraft,
+  classifyConfirmation,
+  debugTicketConfirmGates,
+  isAwaitingTicketConfirm,
+  passesTicketConfirmSafetyGates,
+} from './_utils/grindbotConfirm.js';
 
 const limiter = createRateLimiter(20, '60 s');
 const MAX_TOOL_ROUNDS = 3;
 const ACTIVITY_LIMIT = 6;
+const TICKET_FILED_REPLY = "Done — I've submitted your support ticket. Our team will review it and follow up by email. Anything else I can help with?";
+const TICKET_DECLINED_REPLY = 'No problem! Feel free to ask me anything else about PhillyGrind.';
+const TICKET_BLOCKED_REPLY = "I need a bit more detail about your issue before I can file a ticket. Tell me what's going on and what you've already tried.";
 const USER_BUSY_MESSAGE = "I'm handling a lot right now — give me a second and try again.";
 const USER_DOWN_MESSAGE = 'GrindBot is taking five. Try again in a minute.';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -26,6 +37,10 @@ const supabase = createClient(
 if (!process.env.SUPABASE_URL && !process.env.VITE_SUPABASE_URL) {
   console.error('[GrindBot] Missing Supabase URL');
 }
+
+console.log('[GrindBot] Server env:', {
+  hasGroqKey: !!process.env.GROQ_API_KEY,
+});
 
 function sendJson(res, status, body) {
   res.status(status).json(body);
@@ -468,7 +483,9 @@ async function searchListings({ query, category, neighborhood, type = 'all' }) {
   return { listings: groups.flat().slice(0, 16) };
 }
 
-async function createSupportTicket({ category, message }, uid) {
+async function createSupportTicket(args, uid) {
+  const category = args?.category;
+  const message = args?.message;
   const safeCategory = TICKET_CATEGORIES.has(category) ? category : 'general';
   const body = String(message || '').trim().slice(0, 4000);
   if (!body) throw new Error('A ticket message is required.');
@@ -479,16 +496,24 @@ async function createSupportTicket({ category, message }, uid) {
     .eq('id', uid)
     .maybeSingle();
 
+  const email = String(profile?.email || '').trim();
+  if (!email) {
+    throw new Error('Your profile needs an email before we can open a support ticket.');
+  }
+
+  const insertPayload = {
+    name: profile?.name || 'Neighbor',
+    email,
+    category: safeCategory,
+    message: body,
+    user_id: uid,
+    status: 'open',
+  };
+  console.log('[GrindBot] createSupportTicket insert payload', insertPayload);
+
   const { data, error } = await supabase
     .from('contact_submissions')
-    .insert({
-      name: profile?.name || 'Neighbor',
-      email: profile?.email || '',
-      category: safeCategory,
-      message: body,
-      user_id: uid,
-      status: 'open',
-    })
+    .insert(insertPayload)
     .select('id,category,status,created_at')
     .single();
 
@@ -620,28 +645,83 @@ export default async function handler(req, res) {
       return;
     }
 
-    if (!process.env.GROQ_API_KEY) {
-      sendJson(res, 500, { error: USER_DOWN_MESSAGE });
-      return;
-    }
-
     const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
     const safeMessages = messages
-      .filter((message) => ['user', 'assistant'].includes(message.role) && String(message.content || '').trim())
-      .slice(-8)
+      .filter((message) => ['user', 'assistant'].includes(message.role))
       .map((message) => ({
         role: message.role,
-        content: String(message.content).slice(0, 3200),
-      }));
+        content: String(message.content || '').slice(0, 3200),
+        meta: message.meta || null,
+        kind: message.kind || null,
+      }))
+      .filter((message) => message.content.trim() || message.meta?.awaitingTicketConfirm || message.kind === 'ticket_offer')
+      .slice(-12);
 
     if (!safeMessages.length) {
       sendJson(res, 400, { error: 'A message is required.' });
       return;
     }
 
+    const clientHint = req.body?.clientHint || null;
+    const lastUserText = safeMessages[safeMessages.length - 1]?.content || '';
+    const bypassDebug = debugTicketConfirmGates(safeMessages, clientHint);
+
+    if (isAwaitingTicketConfirm(safeMessages, clientHint)) {
+      const decision = classifyConfirmation(lastUserText);
+
+      if (decision === 'no') {
+        sendJson(res, 200, {
+          reply: TICKET_DECLINED_REPLY,
+          meta: { ticketConfirmDeclined: true },
+        });
+        return;
+      }
+
+      if (decision === 'yes') {
+        if (!passesTicketConfirmSafetyGates(safeMessages)) {
+          console.log('[GrindBot] Ticket confirm blocked by safety gates', bypassDebug);
+          sendJson(res, 200, {
+            reply: TICKET_BLOCKED_REPLY,
+            meta: { ticketConfirmBlocked: true },
+          });
+          return;
+        }
+
+        const draft = clientHint?.ticketDraft || buildTicketDraft(safeMessages.slice(0, -1));
+        console.log('[GrindBot] Ticket confirm bypass — calling createSupportTicket', {
+          userId: user.id,
+          draft,
+        });
+        try {
+          const result = await createSupportTicket(draft, user.id);
+          console.log('[GrindBot] Ticket filed via confirm bypass', result.ticket?.id);
+          sendJson(res, 200, {
+            reply: TICKET_FILED_REPLY,
+            meta: { ticketFiled: true, ticket: result.ticket },
+          });
+          return;
+        } catch (error) {
+          console.error('[GrindBot] Ticket confirm insert failed', error.message);
+          sendJson(res, 500, { error: error.message || 'Could not submit your ticket.' });
+          return;
+        }
+      }
+
+      console.log('[GrindBot] Ticket confirm awaiting but ambiguous user reply — falling through to Groq', bypassDebug);
+    }
+
+    console.log('[GrindBot] Pre-Groq bypass check (no bypass taken)', bypassDebug);
+
+    if (!process.env.GROQ_API_KEY) {
+      console.error('[GrindBot] GROQ_API_KEY missing — returning fallback (check .env / .env.local and restart dev:full)');
+      sendJson(res, 500, { error: USER_DOWN_MESSAGE });
+      return;
+    }
+
+    const groqMessages = safeMessages.map(({ role, content }) => ({ role, content }));
     let currentMessages = [
       { role: 'system', content: systemPrompt },
-      ...safeMessages,
+      ...groqMessages,
     ];
 
     async function callGroq(messages, includeTools = true, attempt = 0) {
@@ -676,8 +756,14 @@ export default async function handler(req, res) {
         }
         console.error('[GrindBot API] Groq API error', {
           status: response.status,
+          message: payload?.error?.message,
+          code: payload?.error?.code,
+          type: payload?.error?.type,
           remainingTokens: response.headers.get('x-ratelimit-remaining-tokens'),
+          limitTokens: response.headers.get('x-ratelimit-limit-tokens'),
+          remainingRequests: response.headers.get('x-ratelimit-remaining-requests'),
           resetTokens: response.headers.get('x-ratelimit-reset-tokens'),
+          retryAfter: response.headers.get('retry-after'),
         });
         const err = new Error(rateLimited ? USER_BUSY_MESSAGE : USER_DOWN_MESSAGE);
         err.status = rateLimited ? 429 : 503;
@@ -733,7 +819,10 @@ export default async function handler(req, res) {
       return;
     }
 
-    sendJson(res, 200, { reply });
+    sendJson(res, 200, {
+      reply,
+      meta: buildTicketConfirmMeta(safeMessages, reply) || undefined,
+    });
   } catch (error) {
     const status = error.status === 429 ? 429 : 500;
     sendJson(res, status, { error: publicGrindBotError(error, error.status) });

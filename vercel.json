@@ -1,4 +1,6 @@
 {
+  "framework": null,
+  "devCommand": "node scripts/vercel-api-only.cjs",
   "crons": [
     {
       "path": "/api/admin-actions?action=auto-release-payments",

@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Send, Bot } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../lib/auth.jsx';
 import { sendContactSubmission } from '../lib/contactApi.js';
 import { grindBotUserFacingError } from '../lib/grindbotErrors.js';
+import { sendGrindBotMessage } from '../lib/grindbotApi.js';
+import { buildTicketDraft, getPendingTicketHint } from '../lib/grindbotConfirm.js';
 
 const welcomeMessage = {
   role: 'assistant',
@@ -44,6 +46,10 @@ function userAskedForHumanSupport(text) {
   return phrases.some((phrase) => value.includes(phrase));
 }
 
+function toPayloadMessages(messages) {
+  return messages.filter((message) => message.role !== 'system');
+}
+
 function Contact() {
   const { user, profile, session } = useAuth();
   const [messages, setMessages] = useState([welcomeMessage]);
@@ -55,7 +61,6 @@ function Contact() {
   const [ticketData, setTicketData] = useState({ category: 'general', description: '' });
   const threadRef = useRef(null);
 
-  // Redirect if not logged in
   if (!user) {
     return <Navigate to="/login" state={{ from: '/contact' }} replace />;
   }
@@ -125,26 +130,19 @@ function Contact() {
   }
 
   async function handleSubmit(event) {
-    console.log('[DEBUG] Contact handleSubmit CALLED');
     event.preventDefault();
     const trimmed = input.trim();
     if (!trimmed || sending) return;
 
-    // Guard against session not being ready yet
     if (!session?.access_token) {
-      console.log('[DEBUG] Session not ready, returning early');
       setStatus('Not logged in. Please refresh and try again.');
       return;
     }
 
-    console.log('[DEBUG] messages state at submit:', messages);
-    console.log('[DEBUG] input value:', trimmed);
-
     const newUserMessage = { role: 'user', content: trimmed };
     const nextMessages = [...messages, newUserMessage];
-    const payloadMessages = nextMessages.filter((message) => message.role !== 'system');
-    
-    console.log('[DEBUG] payloadMessages:', payloadMessages);
+    const payloadMessages = toPayloadMessages(nextMessages);
+    const clientHint = getPendingTicketHint(messages);
 
     addUserMessage(trimmed);
     setInput('');
@@ -153,32 +151,21 @@ function Contact() {
     scrollThread();
 
     try {
-      const response = await fetch('/api/grindbotai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          messages: payloadMessages,
-        }),
+      const payload = await sendGrindBotMessage({
+        token: session.access_token,
+        messages: payloadMessages,
+        clientHint,
       });
 
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(grindBotUserFacingError(payload.error));
-      }
-      if (!payload.reply) {
-        throw new Error(grindBotUserFacingError(''));
-      }
+      addAssistantMessage(payload.reply, { meta: payload.meta || null });
 
-      addAssistantMessage(payload.reply);
-
-      // Only auto-offer a ticket on explicit human-help intent — not every "problem"/"issue".
-      // The Contact header button still starts a ticket anytime.
-      if (userAskedForHumanSupport(trimmed) && !ticketFlow) {
-        addAssistantMessage("Want me to get this in front of a real person? I can start a support ticket.", {
+      if (userAskedForHumanSupport(trimmed) && !ticketFlow && !payload.meta?.awaitingTicketConfirm && !payload.meta?.ticketFiled) {
+        addAssistantMessage('Want me to get this in front of a real person? I can start a support ticket.', {
           kind: 'ticket_offer',
+          meta: {
+            awaitingTicketConfirm: true,
+            ticketDraft: buildTicketDraft(payloadMessages),
+          },
         });
       }
     } catch (error) {
@@ -188,13 +175,45 @@ function Contact() {
     }
   }
 
-  function handleTicketOfferResponse(accepted) {
-    if (accepted) {
-      addUserMessage('Yes, please help me submit a ticket');
-      startTicketFlow();
-    } else {
+  async function handleTicketOfferResponse(accepted) {
+    if (!session?.access_token) {
+      setStatus('Not logged in. Please refresh and try again.');
+      return;
+    }
+
+    if (!accepted) {
       addUserMessage('No thanks');
-      addAssistantMessage("No problem! Feel free to ask me anything else about PhillyGrind.");
+      addAssistantMessage('No problem! Feel free to ask me anything else about PhillyGrind.');
+      return;
+    }
+
+    const confirmText = 'Yes, please file the ticket';
+    addUserMessage(confirmText);
+    setSending(true);
+
+    try {
+      const payloadMessages = toPayloadMessages([...messages, { role: 'user', content: confirmText }]);
+      const clientHint = getPendingTicketHint(messages) || {
+        awaitingTicketConfirm: true,
+        ticketDraft: buildTicketDraft(messages),
+      };
+      const payload = await sendGrindBotMessage({
+        token: session.access_token,
+        messages: payloadMessages,
+        clientHint,
+      });
+
+      if (payload.meta?.ticketConfirmBlocked) {
+        startTicketFlow();
+        return;
+      }
+
+      addAssistantMessage(payload.reply, { meta: payload.meta || null });
+    } catch (error) {
+      addAssistantMessage(grindBotUserFacingError(error.message));
+      startTicketFlow();
+    } finally {
+      setSending(false);
     }
   }
 
@@ -266,10 +285,10 @@ function Contact() {
                 )}
                 {message.kind === 'ticket_offer' && (
                   <div className="contact-ticket-offer">
-                    <button type="button" onClick={() => handleTicketOfferResponse(true)}>
+                    <button type="button" onClick={() => handleTicketOfferResponse(true)} disabled={sending}>
                       Yes, submit a ticket
                     </button>
-                    <button type="button" onClick={() => handleTicketOfferResponse(false)}>
+                    <button type="button" onClick={() => handleTicketOfferResponse(false)} disabled={sending}>
                       No thanks
                     </button>
                   </div>
@@ -310,4 +329,3 @@ function Contact() {
 }
 
 export default Contact;
-

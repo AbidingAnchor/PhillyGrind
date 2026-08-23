@@ -9,6 +9,7 @@ export async function sendContactSubmission({ name, email, category, message, us
       category,
       message: message.trim(),
       user_id,
+      status: 'open',
     })
     .select()
     .single();
@@ -74,7 +75,7 @@ export async function getNewContactCount() {
   const { count, error } = await supabase
     .from('contact_submissions')
     .select('*', { count: 'exact', head: true })
-    .eq('status', 'open');
+    .in('status', ['open', 'new']);
 
   if (error) throw new Error(error.message);
   return count ?? 0;

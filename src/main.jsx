@@ -29,6 +29,7 @@ import AdminOverview from './pages/admin/AdminOverview.jsx';
 import AdminUsers from './pages/admin/AdminUsers.jsx';
 import AdminListings from './pages/admin/AdminListings.jsx';
 import AdminReports from './pages/admin/AdminReports.jsx';
+import AdminCaseView from './pages/admin/AdminCaseView.jsx';
 import AdminVerifications from './pages/admin/AdminVerifications.jsx';
 import AdminHousing from './pages/admin/AdminHousing.jsx';
 import AdminCommunity from './pages/admin/AdminCommunity.jsx';
@@ -86,6 +87,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 <Route path="listings" element={<AdminListings />} />
                 <Route path="disputes" element={<AdminDisputes />} />
                 <Route path="reports" element={<AdminReports />} />
+                <Route path="cases/:caseType/:caseId" element={<AdminCaseView />} />
                 <Route path="verifications" element={<AdminVerifications />} />
                 <Route path="housing" element={<AdminHousing />} />
                 <Route path="community" element={<AdminCommunity />} />
