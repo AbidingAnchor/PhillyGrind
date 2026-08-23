@@ -787,6 +787,102 @@ grant update (
   notifications_enabled, show_available_now
 ) on table profiles to authenticated;
 
+revoke insert on table public.profiles from anon, authenticated, public;
+grant insert (
+  id,
+  name,
+  email,
+  tos_agreed_at,
+  onboarding_complete,
+  is_adult_confirmed
+) on table public.profiles to authenticated;
+
+create or replace function public.complete_own_onboarding(p_neighborhood text default null)
+returns public.profiles
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  result public.profiles;
+begin
+  if uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  update public.profiles
+  set
+    onboarding_complete = true,
+    neighborhood = case
+      when p_neighborhood is null or length(trim(p_neighborhood)) = 0 then neighborhood
+      else trim(p_neighborhood)
+    end
+  where id = uid
+  returning * into result;
+
+  if result.id is null then
+    raise exception 'Profile not found';
+  end if;
+
+  return result;
+end;
+$$;
+
+create or replace function public.touch_own_last_active()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+begin
+  if uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  update public.profiles
+  set last_active_at = now()
+  where id = uid;
+end;
+$$;
+
+create or replace function public.clear_own_resume()
+returns public.profiles
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  result public.profiles;
+begin
+  if uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  update public.profiles
+  set resume_path = null, resume_url = null
+  where id = uid
+  returning * into result;
+
+  if result.id is null then
+    raise exception 'Profile not found';
+  end if;
+
+  return result;
+end;
+$$;
+
+revoke all on function public.complete_own_onboarding(text) from public, anon;
+revoke all on function public.touch_own_last_active() from public, anon;
+revoke all on function public.clear_own_resume() from public, anon;
+
+grant execute on function public.complete_own_onboarding(text) to authenticated;
+grant execute on function public.touch_own_last_active() to authenticated;
+grant execute on function public.clear_own_resume() to authenticated;
+
 drop policy if exists "Users can insert own profile" on profiles;
 create policy "Users can insert own profile"
   on profiles for insert
@@ -2276,3 +2372,39 @@ grant select on public.gigs_public to anon, authenticated;
 revoke update, insert on table public.orders from anon, authenticated, public;
 grant update (before_photo_url, after_photo_url) on table public.orders to authenticated;
 revoke update, insert on table public.marketplace_orders from anon, authenticated, public;
+
+create or replace function public.mark_own_order_complete(p_order_id uuid)
+returns public.orders
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid := auth.uid();
+  result public.orders;
+begin
+  if uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  update public.orders
+  set
+    status = 'completed',
+    worker_marked_complete_at = now()
+  where id = p_order_id
+    and worker_id = uid
+    and status = 'escrowed'
+    and stripe_payment_intent_id is not null
+    and worker_marked_complete_at is null
+  returning * into result;
+
+  if result.id is null then
+    raise exception 'Order cannot be marked complete';
+  end if;
+
+  return result;
+end;
+$$;
+
+revoke all on function public.mark_own_order_complete(uuid) from public, anon;
+grant execute on function public.mark_own_order_complete(uuid) to authenticated;
