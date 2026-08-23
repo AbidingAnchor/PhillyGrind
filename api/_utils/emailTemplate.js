@@ -185,3 +185,42 @@ export function createExistingAccountEmail() {
     `
   });
 }
+
+export function createAccountRecoveryApprovedEmail({ resetUrl }) {
+  return createEmailTemplate({
+    subject: 'Set a new PhillyGrind password',
+    content: `
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; color: #111827;">Set a new password</h2>
+      <p style="margin: 0 0 16px 0; color: #374151; font-size: 15px; line-height: 1.6;">
+        We verified an account recovery request. Use the button below to choose a new password. This also switches your login email to this inbox.
+      </p>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 24px 0;">
+        <tr>
+          <td align="center" style="padding: 16px;">
+            <a href="${encodeURI(resetUrl)}" style="display: inline-block; background: #22c55e; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+              Set new password
+            </a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+        This link works once and expires in 24 hours. If you did not ask to recover a PhillyGrind account, ignore this email.
+      </p>
+    `,
+  });
+}
+
+export function createAccountRecoveryDeniedEmail() {
+  return createEmailTemplate({
+    subject: 'PhillyGrind account recovery update',
+    content: `
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; color: #111827;">We could not verify this request</h2>
+      <p style="margin: 0 0 16px 0; color: #374151; font-size: 15px; line-height: 1.6;">
+        We weren't able to verify ownership of this account with the information provided. If this is your account, you can try again or reach out to our support team directly.
+      </p>
+      <p style="margin: 0; color: #6b7280; font-size: 14px;">
+        Support: support@phillygrind.work
+      </p>
+    `,
+  });
+}

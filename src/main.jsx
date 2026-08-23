@@ -13,6 +13,8 @@ import BrowseHiringEvents from './pages/BrowseHiringEvents.jsx';
 import PostHiringEvent from './pages/PostHiringEvent.jsx';
 import ListingDetail from './pages/ListingDetail.jsx';
 import Login from './pages/Login.jsx';
+import AccountRecovery from './pages/AccountRecovery.jsx';
+import AccountRecoveryReset from './pages/AccountRecoveryReset.jsx';
 import SignUp from './pages/SignUp.jsx';
 import Messages from './pages/Messages.jsx';
 import Contact from './pages/Contact.jsx';
@@ -32,6 +34,7 @@ import AdminHousing from './pages/admin/AdminHousing.jsx';
 import AdminCommunity from './pages/admin/AdminCommunity.jsx';
 import AdminModeration from './pages/admin/AdminModeration.jsx';
 import AdminContact from './pages/admin/AdminContact.jsx';
+import AdminRecovery from './pages/admin/AdminRecovery.jsx';
 import Housing from './pages/Housing.jsx';
 import PostHousing from './pages/PostHousing.jsx';
 import HousingDetail from './pages/HousingDetail.jsx';
@@ -60,6 +63,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/housing/:id" element={<HousingDetail />} />
               <Route path="/post-hiring-event" element={<PostHiringEvent />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/account-recovery/reset" element={<AccountRecoveryReset />} />
+              <Route path="/account-recovery" element={<AccountRecovery />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/terms" element={<Terms />} />
@@ -84,6 +89,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 <Route path="community" element={<AdminCommunity />} />
                 <Route path="moderation" element={<AdminModeration />} />
                 <Route path="contact" element={<AdminContact />} />
+                <Route path="recovery" element={<AdminRecovery />} />
               </Route>
               <Route path="/jobs/:id" element={<ListingDetail type="job" />} />
               <Route path="/gigs/:id" element={<ListingDetail type="gig" />} />

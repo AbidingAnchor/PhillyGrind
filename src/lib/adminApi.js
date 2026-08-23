@@ -505,6 +505,18 @@ export async function createListingWithModeration(listingType, listing, options 
   });
 }
 
+export async function getAdminRecoveryRequests() {
+  return adminRequest('admin-recovery-list', { method: 'GET' });
+}
+
+export async function approveAdminRecovery(requestId) {
+  return adminRequest('admin-recovery-approve', { method: 'POST', body: { request_id: requestId } });
+}
+
+export async function denyAdminRecovery(requestId) {
+  return adminRequest('admin-recovery-deny', { method: 'POST', body: { request_id: requestId } });
+}
+
 export const ADMIN_EMAIL = 'drewnegron95@gmail.com';
 
 export function isAdminUser(user) {

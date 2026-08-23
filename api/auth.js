@@ -2,6 +2,11 @@ import { createClient } from '@supabase/supabase-js';
 import { getUserFromRequest, hasServerSupabaseConfig, supabaseAdmin } from './_utils.js';
 import { sendEmail } from './_utils/email.js';
 import { createExistingAccountEmail } from './_utils/emailTemplate.js';
+import {
+  completeRecoveryReset,
+  startRecoveryChallenge,
+  submitRecoveryRequest,
+} from './_utils/accountRecovery.js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
@@ -43,6 +48,45 @@ export default async function handler(req, res) {
   console.log('[Auth] API request received:', { action, email: !!email, ip: clientIP });
 
   try {
+    if (action === 'start-recovery') {
+      const result = await startRecoveryChallenge({
+        identifier: req.body?.identifier,
+        ip: clientIP,
+      });
+      if (result.error) {
+        return res.status(result.status || 400).json({ error: result.error });
+      }
+      return res.status(200).json({
+        challengeId: result.challengeId,
+        questions: result.questions,
+      });
+    }
+
+    if (action === 'submit-recovery') {
+      const result = await submitRecoveryRequest({
+        challengeId: req.body?.challengeId,
+        answers: req.body?.answers,
+        newEmail: req.body?.newEmail,
+        identifierRaw: req.body?.identifier,
+        ip: clientIP,
+      });
+      if (result.error) {
+        return res.status(result.status || 400).json({ error: result.error });
+      }
+      return res.status(200).json({ message: result.message });
+    }
+
+    if (action === 'complete-recovery-reset') {
+      const result = await completeRecoveryReset({
+        token: req.body?.token,
+        password: req.body?.password,
+      });
+      if (result.error) {
+        return res.status(result.status || 400).json({ error: result.error });
+      }
+      return res.status(200).json({ message: result.message });
+    }
+
     if (action === 'capture-ip') {
       const user = await getUserFromRequest(req);
       if (!user) {

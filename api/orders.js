@@ -10,6 +10,12 @@ import {
   supabaseAdmin,
 } from './_utils.js';
 import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
+import {
+  approveRecoveryRequest,
+  countPendingRecoveryRequests,
+  denyRecoveryRequest,
+  listPendingRecoveryRequests,
+} from './_utils/accountRecovery.js';
 
 const limiter = createRateLimiter(30, '60 s');
 
@@ -786,7 +792,43 @@ async function handleAdminDismissCommunityReport(req, res, admin) {
   sendJson(res, 200, { ok: true });
 }
 
-const adminGetActions = new Set(['admin-overview', 'admin-users', 'admin-listings', 'admin-reports', 'admin-disputes', 'admin-housing', 'admin-community-posts']);
+async function handleAdminRecoveryList(req, res) {
+  const admin = await requireAdmin(req, res);
+  if (!admin) return;
+  const requests = await listPendingRecoveryRequests();
+  const pendingCount = await countPendingRecoveryRequests();
+  sendJson(res, 200, { requests, pendingCount });
+}
+
+async function handleAdminRecoveryApprove(req, res, admin) {
+  const requestId = req.body?.request_id;
+  if (!requestId) {
+    sendJson(res, 400, { error: 'request_id is required.' });
+    return;
+  }
+  const result = await approveRecoveryRequest({ requestId, adminId: admin.id });
+  if (result.error) {
+    sendJson(res, result.status || 400, { error: result.error });
+    return;
+  }
+  sendJson(res, 200, { ok: true });
+}
+
+async function handleAdminRecoveryDeny(req, res, admin) {
+  const requestId = req.body?.request_id;
+  if (!requestId) {
+    sendJson(res, 400, { error: 'request_id is required.' });
+    return;
+  }
+  const result = await denyRecoveryRequest({ requestId, adminId: admin.id });
+  if (result.error) {
+    sendJson(res, result.status || 400, { error: result.error });
+    return;
+  }
+  sendJson(res, 200, { ok: true });
+}
+
+const adminGetActions = new Set(['admin-overview', 'admin-users', 'admin-listings', 'admin-reports', 'admin-disputes', 'admin-housing', 'admin-community-posts', 'admin-recovery-list']);
 const adminPostActions = new Set([
   'admin-suspend-user',
   'admin-lift-suspension',
@@ -795,6 +837,8 @@ const adminPostActions = new Set([
   'admin-verify-landlord',
   'admin-delete-community-post',
   'admin-dismiss-community-report',
+  'admin-recovery-approve',
+  'admin-recovery-deny',
 ]);
 
 export default async function handler(req, res) {
@@ -835,6 +879,9 @@ export default async function handler(req, res) {
         case 'admin-community-posts':
           await handleAdminCommunityPosts(req, res);
           break;
+        case 'admin-recovery-list':
+          await handleAdminRecoveryList(req, res);
+          break;
         default:
           sendJson(res, 400, { error: 'Unknown admin action.' });
       }
@@ -866,6 +913,12 @@ export default async function handler(req, res) {
           break;
         case 'admin-dismiss-community-report':
           await handleAdminDismissCommunityReport(req, res);
+          break;
+        case 'admin-recovery-approve':
+          await handleAdminRecoveryApprove(req, res, admin);
+          break;
+        case 'admin-recovery-deny':
+          await handleAdminRecoveryDeny(req, res, admin);
           break;
         default:
           sendJson(res, 400, { error: 'Unknown admin action.' });

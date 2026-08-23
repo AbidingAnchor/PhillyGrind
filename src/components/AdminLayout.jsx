@@ -12,8 +12,9 @@ import {
   Home,
   MessageSquare,
   Mail,
+  KeyRound,
 } from 'lucide-react';
-import { getUnreviewedModerationCount, getAdminReports, getAdminDisputes } from '../lib/adminApi.js';
+import { getUnreviewedModerationCount, getAdminReports, getAdminDisputes, getAdminRecoveryRequests } from '../lib/adminApi.js';
 import { getNewContactCount } from '../lib/contactApi.js';
 
 const AdminContext = createContext(null);
@@ -37,6 +38,7 @@ const navItems = [
   { to: '/admin/verifications', label: 'Verifications', icon: BadgeCheck },
   { to: '/admin/moderation', label: 'Moderation', icon: ShieldAlert, showBadge: 'moderation' },
   { to: '/admin/contact', label: 'Contact', icon: Mail, showBadge: 'contact' },
+  { to: '/admin/recovery', label: 'Recovery', icon: KeyRound, showBadge: 'recovery' },
 ];
 
 export default function AdminLayout() {
@@ -44,6 +46,7 @@ export default function AdminLayout() {
   const [newContactCount, setNewContactCount] = useState(0);
   const [openDisputesCount, setOpenDisputesCount] = useState(0);
   const [pendingReportsCount, setPendingReportsCount] = useState(0);
+  const [pendingRecoveryCount, setPendingRecoveryCount] = useState(0);
 
   async function loadCounts() {
     try {
@@ -56,12 +59,14 @@ export default function AdminLayout() {
       
       // Load disputes and reports counts
       try {
-        const [disputesData, reportsData] = await Promise.all([
+        const [disputesData, reportsData, recoveryData] = await Promise.all([
           getAdminDisputes(),
           getAdminReports('pending'),
+          getAdminRecoveryRequests(),
         ]);
         setOpenDisputesCount(disputesData.disputes?.filter(d => d.status === 'open').length || 0);
         setPendingReportsCount(reportsData.reports?.length || 0);
+        setPendingRecoveryCount(recoveryData.pendingCount || recoveryData.requests?.length || 0);
       } catch (error) {
         console.error('Failed to load disputes/reports counts:', error);
       }
@@ -79,6 +84,7 @@ export default function AdminLayout() {
     if (badgeType === 'contact') return newContactCount;
     if (badgeType === 'disputes') return openDisputesCount;
     if (badgeType === 'reports') return pendingReportsCount;
+    if (badgeType === 'recovery') return pendingRecoveryCount;
     return 0;
   };
 

@@ -108,6 +108,7 @@ function Login() {
         {status && <p className="form-status error-text">{status}</p>}
       </form>
       <p className="auth-switch-link">New to PhillyGrind? <Link to="/signup">Create an account</Link></p>
+      <p className="auth-switch-link"><Link to="/account-recovery">Recover my account</Link></p>
     </section>
   );
 }
