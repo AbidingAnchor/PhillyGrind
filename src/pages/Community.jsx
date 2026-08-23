@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { MessageCircle, MoreHorizontal, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft, Search, Image, Smile, Briefcase, Hammer, ShoppingBag, Home, MapPin, MessageSquare } from 'lucide-react';
+import { MessageCircle, MoreHorizontal, X, Flag, Forward, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft, Search, Image, Smile, Briefcase, MapPin } from 'lucide-react';
 import FacebookShareIcon from '../components/FacebookShareIcon.jsx';
 import ProfileListbox from '../components/ProfileListbox.jsx';
 import {
@@ -34,6 +34,7 @@ import PostReactionControl from '../components/PostReactionControl.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import Skeleton from '../components/Skeleton.jsx';
 import TrendingPostsWidget from '../components/TrendingPostsWidget.jsx';
+import NeighborhoodWeatherAlert from '../components/NeighborhoodWeatherAlert.jsx';
 
 const COMPOSER_FEELINGS = [
   { emoji: '😊', label: 'Happy' },
@@ -51,18 +52,13 @@ function defaultComposerNeighborhood(profileNeighborhood) {
   return COMMUNITY_NEIGHBORHOODS[0];
 }
 
-const COMMUNITY_QUICK_LINKS = [
-  { to: '/jobs', label: 'Jobs', icon: Briefcase },
-  { to: '/gigs', label: 'Gigs', icon: Hammer },
-  { to: '/marketplace', label: 'Marketplace', icon: ShoppingBag },
-  { to: '/housing', label: 'Housing', icon: Home },
-  { to: '/messages', label: 'Messages', icon: MessageSquare },
-];
-
 function CommunityLeftSidebar({ isLoggedIn, user, profile }) {
   const displayName = profile?.name || user?.name || 'Neighbor';
   const profileTo = isLoggedIn && user?.id ? `/profile/${user.id}` : '/login';
   const profileLinkState = isLoggedIn ? undefined : { from: '/community' };
+  const neighborhoodName = profile?.neighborhood && profile.neighborhood !== 'Any'
+    ? profile.neighborhood
+    : '';
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -74,12 +70,9 @@ function CommunityLeftSidebar({ isLoggedIn, user, profile }) {
       authProfileName: profile?.name ?? null,
     });
   }, [isLoggedIn, profileTo, user?.id, user?.email, profile?.id, profile?.name]);
-  const neighborhoodName = profile?.neighborhood && profile.neighborhood !== 'Any'
-    ? profile.neighborhood
-    : 'Not set yet';
 
   return (
-    <aside className="feed-left-sidebar" aria-label="Your profile and shortcuts">
+    <aside className="feed-left-sidebar" aria-label="Your profile">
       <div className="feed-left-card feed-left-profile-card">
         {profile?.avatar_url ? (
           <img src={profile.avatar_url} alt="" className="feed-left-avatar" draggable={false} />
@@ -103,18 +96,11 @@ function CommunityLeftSidebar({ isLoggedIn, user, profile }) {
         <MapPin size={18} />
         <div className="feed-left-neighborhood-copy">
           <span className="feed-left-neighborhood-label">Your Neighborhood</span>
-          <strong className="feed-left-neighborhood-name">{neighborhoodName}</strong>
+          <strong className="feed-left-neighborhood-name">{neighborhoodName || 'Not set yet'}</strong>
         </div>
       </div>
 
-      <nav className="feed-left-card feed-left-nav-card" aria-label="Quick links">
-        {COMMUNITY_QUICK_LINKS.map(({ to, label, icon: Icon }) => (
-          <Link key={to} to={to} className="feed-left-nav-link">
-            <Icon size={18} />
-            <span>{label}</span>
-          </Link>
-        ))}
-      </nav>
+      {neighborhoodName ? <NeighborhoodWeatherAlert neighborhood={neighborhoodName} /> : null}
     </aside>
   );
 }

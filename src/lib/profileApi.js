@@ -15,7 +15,7 @@ const bannerExtensionFor = (file) => {
   if (file.type === 'image/webp') return 'webp';
   return 'jpg';
 };
-const profileSelect = 'id,name,bio,skills,availability,neighborhoods,resume_path,resume_url,avatar_url,banner_url,profile_tags,created_at,account_reference';
+const profileSelect = 'id,name,bio,skills,availability,neighborhood,neighborhoods,resume_path,resume_url,avatar_url,banner_url,profile_tags,created_at,account_reference';
 
 function displayNameFromUser(user) {
   return user?.user_metadata?.name
