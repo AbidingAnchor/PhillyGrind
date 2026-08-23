@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/listing-actions?action=dispatch-weather-alert-notifications",
-      "schedule": "*/15 * * * *"
+      "schedule": "15 11 * * *"
     }
   ],
   "rewrites": [
