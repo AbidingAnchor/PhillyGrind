@@ -4897,36 +4897,102 @@ body {
   display: block;
 }
 
-.profile-cover-upload {
+.profile-cover-file-input {
   position: absolute;
-  right: 16px;
-  bottom: 16px;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.profile-cover-hit {
+  position: absolute;
+  inset: 0;
   z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
-.profile-cover-upload .profile-editor-file-input {
-  display: none;
+.profile-cover-edit-veil {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 21, 36, 0.48);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  pointer-events: none;
 }
 
-.profile-cover-upload-button {
+.profile-cover-edit-cue {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 10px 16px;
   border-radius: 999px;
-  background: rgba(6, 21, 36, 0.78);
+  background: rgba(6, 21, 36, 0.82);
   color: #fff;
   font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(8px);
+  font-size: 13.5px;
+  letter-spacing: 0.01em;
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  transition: opacity 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
 }
 
-.profile-cover-upload-button:hover {
-  background: rgba(6, 21, 36, 0.92);
-  border-color: rgba(34, 197, 94, 0.55);
+.profile-cover-editable.profile-cover-fallback .profile-cover-edit-veil {
+  opacity: 0.22;
+}
+
+.profile-cover-editable.profile-cover-fallback .profile-cover-edit-cue {
+  opacity: 1;
+  border-color: rgba(74, 222, 128, 0.65);
+}
+
+.profile-cover-editable.has-photo .profile-cover-edit-cue {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.profile-cover-editable.has-photo:hover .profile-cover-edit-veil,
+.profile-cover-editable.has-photo:focus-within .profile-cover-edit-veil {
+  opacity: 1;
+}
+
+.profile-cover-editable.has-photo:hover .profile-cover-edit-cue,
+.profile-cover-editable.has-photo:focus-within .profile-cover-edit-cue {
+  opacity: 1;
+  transform: none;
+}
+
+.profile-cover-editable:hover .profile-cover-edit-cue,
+.profile-cover-editable:focus-within .profile-cover-edit-cue {
+  border-color: #22c55e;
+}
+
+@media (hover: none) {
+  .profile-cover-editable.has-photo .profile-cover-edit-veil {
+    opacity: 0;
+  }
+
+  .profile-cover-editable.has-photo .profile-cover-edit-cue {
+    opacity: 1;
+    transform: none;
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    padding: 8px 12px;
+    font-size: 12.5px;
+  }
 }
 
 .profile-cover.has-photo {

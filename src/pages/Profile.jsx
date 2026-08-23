@@ -704,7 +704,7 @@ function Profile() {
         <>
           <div className="profile-cover-bleed">
             <div
-              className={`profile-cover ${profileData.profile?.banner_url ? 'has-photo' : 'profile-cover-fallback'}`}
+              className={`profile-cover ${profileData.profile?.banner_url ? 'has-photo' : 'profile-cover-fallback'}${isOwnProfile ? ' profile-cover-editable' : ''}`}
             >
               {profileData.profile?.banner_url ? (
                 <img
@@ -717,20 +717,29 @@ function Profile() {
               ) : null}
               <div className="profile-cover-overlay" />
               {isOwnProfile && (
-                <div className="profile-cover-upload">
+                <>
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp,image/jpg,.jpg,.jpeg,.png,.webp"
                     onChange={handleBannerUpload}
-                    className="profile-editor-file-input"
+                    className="profile-cover-file-input"
                     id="banner-upload"
                     disabled={uploadingBanner}
                   />
-                  <label htmlFor="banner-upload" className="profile-cover-upload-button">
-                    <Camera size={16} />
-                    {uploadingBanner ? 'Uploading...' : (profileData.profile?.banner_url ? 'Change banner' : 'Add banner')}
+                  <label
+                    htmlFor="banner-upload"
+                    className="profile-cover-hit"
+                    title={profileData.profile?.banner_url ? 'Change banner photo' : 'Add banner photo'}
+                  >
+                    <span className="profile-cover-edit-veil" aria-hidden="true" />
+                    <span className="profile-cover-edit-cue">
+                      <Camera size={18} />
+                      {uploadingBanner
+                        ? 'Uploading...'
+                        : (profileData.profile?.banner_url ? 'Change banner' : 'Add banner')}
+                    </span>
                   </label>
-                </div>
+                </>
               )}
             </div>
             <div className="profile-cover-content">
