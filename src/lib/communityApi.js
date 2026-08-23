@@ -21,6 +21,54 @@ export const COMMUNITY_NEIGHBORHOODS = [
   'Other',
 ];
 
+function usableNeighborhood(value) {
+  const name = String(value ?? '').trim();
+  if (!name || name === 'Any') return '';
+  return name;
+}
+
+export function resolveHomeNeighborhood(profile) {
+  const home = usableNeighborhood(profile?.neighborhood);
+  if (home) return home;
+
+  const served = Array.isArray(profile?.neighborhoods) ? profile.neighborhoods : [];
+  for (const value of served) {
+    const name = usableNeighborhood(value);
+    if (name) return name;
+  }
+
+  return '';
+}
+
+export async function fetchHomeNeighborhood(userId, profile) {
+  const fromProfile = resolveHomeNeighborhood(profile);
+  if (fromProfile) return fromProfile;
+  if (!hasSupabaseConfig || !userId) return '';
+
+  const { data: publicProfile } = await supabase
+    .from('profiles_public')
+    .select('neighborhood, neighborhoods')
+    .eq('id', userId)
+    .maybeSingle();
+
+  const fromPublic = resolveHomeNeighborhood(publicProfile);
+  if (fromPublic) return fromPublic;
+
+  const { data: posts } = await supabase
+    .from('community_posts')
+    .select('neighborhood')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  for (const post of posts || []) {
+    const name = usableNeighborhood(post?.neighborhood);
+    if (name) return name;
+  }
+
+  return '';
+}
+
 function safeDisplayName(value, fallback = 'PhillyGrind user') {
   const trimmed = String(value || '').trim();
   if (!trimmed || emailPattern.test(trimmed)) return fallback;

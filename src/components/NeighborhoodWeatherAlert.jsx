@@ -1,32 +1,74 @@
 import { useEffect, useState } from 'react';
-import {
-  Cloud,
-  CloudFog,
-  CloudLightning,
-  CloudRain,
-  CloudSnow,
-  CloudSun,
-  Moon,
-  Sun,
-  Wind,
-} from 'lucide-react';
-
-const ICONS = {
-  sun: Sun,
-  moon: Moon,
-  cloud: Cloud,
-  partly: CloudSun,
-  rain: CloudRain,
-  storm: CloudLightning,
-  snow: CloudSnow,
-  fog: CloudFog,
-  wind: Wind,
-};
+import { CloudLightning } from 'lucide-react';
 
 function WeatherGlyph({ name, size = 18 }) {
-  const Icon = ICONS[name] || CloudSun;
-  return <Icon size={size} strokeWidth={1.75} />;
+  const kind = name && GLYPHS[name] ? name : 'partly';
+  return (
+    <svg
+      className={`feed-weather-glyph feed-weather-glyph--${kind}`}
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#94a3b8"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {GLYPHS[kind]}
+    </svg>
+  );
 }
+
+const GLYPHS = {
+  sun: (
+    <>
+      <circle className="wx-sun" cx="12" cy="12" r="4" stroke="#f59e0b" />
+      <path className="wx-sun" stroke="#f59e0b" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </>
+  ),
+  moon: (
+    <path className="wx-moon" stroke="#94a3b8" d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+  ),
+  cloud: (
+    <path className="wx-cloud" stroke="#94a3b8" d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+  ),
+  fog: (
+    <>
+      <path className="wx-cloud" stroke="#94a3b8" d="M4 14.9A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.2" />
+      <path className="wx-fog" stroke="#94a3b8" d="M16 17H7M17 21H9" />
+    </>
+  ),
+  partly: (
+    <>
+      <path className="wx-sun" stroke="#f59e0b" d="M12 2v2M4.93 4.93l1.41 1.41M2 12h2M4.93 19.07l1.41-1.41" />
+      <circle className="wx-sun" cx="12" cy="12" r="4" stroke="#f59e0b" />
+      <path className="wx-cloud" stroke="#94a3b8" d="M20 17.5a4.5 4.5 0 0 0-1.79-8.5h-.21A7 7 0 0 0 9 19h8.5" />
+    </>
+  ),
+  rain: (
+    <>
+      <path className="wx-cloud" stroke="#94a3b8" d="M17.5 18H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+      <path className="wx-rain" stroke="#2563eb" d="M8 22v1M12 21v2M16 22v1" />
+    </>
+  ),
+  storm: (
+    <>
+      <path className="wx-cloud-storm" stroke="#64748b" d="M17.5 16H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+      <path className="wx-bolt" stroke="#fbbf24" fill="#facc15" d="m13 12-3 5h3.2l-1.7 4 5.5-6.2h-3.2l1.7-2.8z" />
+    </>
+  ),
+  snow: (
+    <>
+      <path className="wx-cloud" stroke="#94a3b8" d="M17.5 18H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+      <path className="wx-snow" stroke="#38bdf8" d="M8 21h.01M12 22h.01M16 21h.01" />
+    </>
+  ),
+  wind: (
+    <path className="wx-wind" stroke="#94a3b8" d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 0 14 16H2" />
+  ),
+};
 
 export default function NeighborhoodWeatherAlert({ neighborhood, locationLabel }) {
   const [forecast, setForecast] = useState(null);

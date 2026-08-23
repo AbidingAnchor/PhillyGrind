@@ -154,7 +154,7 @@ export async function getUserReviews(userId) {
   const [profileResult, reviewsResult] = await Promise.all([
     supabase
       .from('profiles_public')
-      .select('id,name,bio,skills,availability,neighborhoods,avatar_url,banner_url,profile_tags,identity_verified,created_at')
+      .select('id,name,bio,skills,availability,neighborhood,neighborhoods,avatar_url,banner_url,profile_tags,identity_verified,created_at')
       .eq('id', userId)
       .maybeSingle(),
     supabase

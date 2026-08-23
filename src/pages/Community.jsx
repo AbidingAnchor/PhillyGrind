@@ -6,6 +6,8 @@ import FacebookShareIcon from '../components/FacebookShareIcon.jsx';
 import ProfileListbox from '../components/ProfileListbox.jsx';
 import {
   getCommunityPosts,
+  fetchHomeNeighborhood,
+  resolveHomeNeighborhood,
   getCommunityComments,
   getUserReaction,
   toggleCommunityPostReaction,
@@ -52,13 +54,11 @@ function defaultComposerNeighborhood(profileNeighborhood) {
   return COMMUNITY_NEIGHBORHOODS[0];
 }
 
-function CommunityLeftSidebar({ isLoggedIn, user, profile }) {
+function CommunityLeftSidebar({ isLoggedIn, user, profile, neighborhoodName }) {
   const displayName = profile?.name || user?.name || 'Neighbor';
   const profileTo = isLoggedIn && user?.id ? `/profile/${user.id}` : '/login';
   const profileLinkState = isLoggedIn ? undefined : { from: '/community' };
-  const neighborhoodName = profile?.neighborhood && profile.neighborhood !== 'Any'
-    ? profile.neighborhood
-    : '';
+  const homeNeighborhood = neighborhoodName || '';
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -96,12 +96,12 @@ function CommunityLeftSidebar({ isLoggedIn, user, profile }) {
         <MapPin size={18} />
         <div className="feed-left-neighborhood-copy">
           <span className="feed-left-neighborhood-label">Your Neighborhood</span>
-          <strong className="feed-left-neighborhood-name">{neighborhoodName || 'Not set yet'}</strong>
+          <strong className="feed-left-neighborhood-name">{homeNeighborhood || 'Not set yet'}</strong>
         </div>
       </div>
 
-      {neighborhoodName ? (
-        <NeighborhoodWeatherAlert neighborhood={neighborhoodName} locationLabel={neighborhoodName} />
+      {homeNeighborhood ? (
+        <NeighborhoodWeatherAlert neighborhood={homeNeighborhood} locationLabel={homeNeighborhood} />
       ) : (
         <NeighborhoodWeatherAlert neighborhood="Center City" locationLabel="Philadelphia" />
       )}
@@ -1466,7 +1466,8 @@ function Community() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isLoggedIn, user, profile } = useAuth();
   const [posts, setPosts] = useState([]);
-  const [neighborhood, setNeighborhood] = useState(profile?.neighborhood || 'Any');
+  const [homeNeighborhood, setHomeNeighborhood] = useState(() => resolveHomeNeighborhood(profile));
+  const [neighborhood, setNeighborhood] = useState(resolveHomeNeighborhood(profile) || 'Any');
   const [filterTab, setFilterTab] = useState('all'); // all, recent, nearby, popular
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -1476,7 +1477,7 @@ function Community() {
   // Post composer state
   const [showComposer, setShowComposer] = useState(false);
   const [composerContent, setComposerContent] = useState('');
-  const [composerNeighborhood, setComposerNeighborhood] = useState(defaultComposerNeighborhood(profile?.neighborhood));
+  const [composerNeighborhood, setComposerNeighborhood] = useState(defaultComposerNeighborhood(resolveHomeNeighborhood(profile)));
   const [composerPhoto, setComposerPhoto] = useState(null);
   const [composerPhotoPreview, setComposerPhotoPreview] = useState(null);
   const [composerFeeling, setComposerFeeling] = useState(null);
@@ -1487,6 +1488,22 @@ function Community() {
   useEffect(() => {
     setSearchInput(searchQuery);
   }, [searchQuery]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadHomeNeighborhood() {
+      const next = await fetchHomeNeighborhood(isLoggedIn ? user?.id : null, profile);
+      if (cancelled) return;
+      setHomeNeighborhood(next);
+      setNeighborhood((current) => (current === 'Any' && next ? next : current));
+    }
+
+    loadHomeNeighborhood();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn, user?.id, profile?.neighborhood, profile?.neighborhoods]);
 
   useEffect(() => {
     if (!showComposer) return undefined;
@@ -1549,7 +1566,7 @@ function Community() {
 
   function resetComposerFields() {
     setComposerContent('');
-    setComposerNeighborhood(defaultComposerNeighborhood(profile?.neighborhood));
+    setComposerNeighborhood(defaultComposerNeighborhood(homeNeighborhood));
     setComposerFeeling(null);
     setShowFeelingPicker(false);
     setComposerPhoto(null);
@@ -1566,7 +1583,7 @@ function Community() {
       navigate('/login', { state: { from: '/community' } });
       return;
     }
-    setComposerNeighborhood(defaultComposerNeighborhood(profile?.neighborhood));
+    setComposerNeighborhood(defaultComposerNeighborhood(homeNeighborhood));
     setShowComposer(true);
   }
 
@@ -1703,7 +1720,7 @@ function Community() {
 
       <section className="page-section browse-content community-content">
         <div className="feed-layout">
-          <CommunityLeftSidebar isLoggedIn={isLoggedIn} user={user} profile={profile} />
+          <CommunityLeftSidebar isLoggedIn={isLoggedIn} user={user} profile={profile} neighborhoodName={homeNeighborhood} />
 
           {/* Main Feed Column */}
           <div className="feed-main-column">
@@ -1725,7 +1742,7 @@ function Community() {
                 className={`feed-filter-tab ${filterTab === 'nearby' ? 'active' : ''}`}
                 onClick={() => {
                   setFilterTab('nearby');
-                  setNeighborhood(profile?.neighborhood || 'Any');
+                  setNeighborhood(homeNeighborhood || 'Any');
                 }}
               >
                 Nearby
