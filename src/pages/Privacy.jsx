@@ -6,7 +6,7 @@ function Privacy() {
       <div className="page-heading">
         <span className="eyebrow">Privacy</span>
         <h1>Privacy Policy</h1>
-        <p>Last Updated: August 20, 2026</p>
+        <p>Last Updated: August 23, 2026</p>
       </div>
 
       <article className="legal-card">
@@ -32,6 +32,9 @@ function Privacy() {
           <li>Cookies and similar technologies (see Section 6)</li>
         </ul>
 
+        <h3>1.3 Weather and Local Alerts</h3>
+        <p>To show you local weather conditions and severe weather alerts relevant to your neighborhood, we use your selected neighborhood (or, where available, your approximate location) to request data from the National Weather Service (NWS), a public U.S. government data source. We do not share your precise location or account information with NWS — only the general area needed to retrieve relevant weather data.</p>
+
         <h2>2. How We Use Information</h2>
         <p>We use collected information to:</p>
         <ul>
@@ -53,6 +56,9 @@ function Privacy() {
           <li>We do not use content submitted for moderation to train third-party AI models, to the extent controllable by our provider agreements.</li>
           <li>Moderation decisions may be reviewed and, where appropriate, appealed by contacting us through our <Link to="/contact">Contact page</Link>.</li>
         </ul>
+
+        <h3>3.1 GrindBot Account Assistance</h3>
+        <p>When you chat with GrindBot, it may access your own account information — including your recent listings, orders, bids, and report or support ticket history — to answer your questions and help troubleshoot issues. GrindBot can only access information tied to your own logged-in account; it cannot view or retrieve another user's information, regardless of how a request is phrased. GrindBot may also file a support ticket on your behalf after confirming with you that you'd like it to do so.</p>
 
         <h2>4. How We Share Information</h2>
         <p>We do not sell your personal information. We share information only as follows:</p>
@@ -79,6 +85,9 @@ function Privacy() {
           <li>Object to or restrict certain processing of your information</li>
         </ul>
         <p>To exercise these rights, contact us through our <Link to="/contact">Contact page</Link>. We will respond within a reasonable time and in accordance with applicable law, including the Pennsylvania and any applicable state privacy frameworks.</p>
+
+        <h3>7.1 Account Recovery</h3>
+        <p>If you lose access to the email address associated with your account, you may request account recovery. To verify your identity, we'll ask you to answer a small number of questions about your account (such as approximately when you joined, your selected neighborhood, or a recent post). Your answers are compared by a human reviewer against information already on file for that account — including a snapshot of your account activity taken at the time of your request. We do not tell you which answers matched or didn't, to protect against attempts to guess your account information. If approved, we will email a one-time secure link to the new email address you provide, allowing you to set a new password. Approving a recovery request also disables two-factor authentication on the account (since it may be tied to the lost inbox) and signs out all active sessions for security. Recovery requests, snapshots, and the IP address they were submitted from are retained to prevent abuse of this process.</p>
 
         <h2>8. Children's Privacy</h2>
         <p>PhillyGrind is intended for use by individuals 18 years of age and older. We do not knowingly collect personal information from children under the age of 13, and our services are not directed to children.</p>
