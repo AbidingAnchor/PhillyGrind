@@ -98,6 +98,12 @@ function NotificationBell() {
   }
 
   function getNotificationPath(notification) {
+    if (notification.type === 'neighborhood_alert') {
+      return notification.alert_id
+        ? `/alerts?id=${encodeURIComponent(notification.alert_id)}`
+        : '/alerts';
+    }
+
     if (notification.listing_type && notification.listing_id) {
       const basePath = notification.listing_type === 'marketplace'
         ? '/marketplace'

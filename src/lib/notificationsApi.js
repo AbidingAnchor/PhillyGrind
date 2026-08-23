@@ -30,7 +30,7 @@ export async function getNotifications(userId) {
 
   const { data, error } = await supabase
     .from('notifications')
-    .select('id,user_id,type,message,listing_id,listing_type,sender_id,read,created_at')
+    .select('id,user_id,type,message,listing_id,listing_type,sender_id,alert_id,read,created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(10);
@@ -41,7 +41,9 @@ export async function getNotifications(userId) {
 
   return (data ?? []).map((notification) => ({
     ...notification,
-    listingPath: notification.listing_type && notification.listing_id
+    listingPath: notification.type === 'neighborhood_alert'
+      ? (notification.alert_id ? `/alerts?id=${encodeURIComponent(notification.alert_id)}` : '/alerts')
+      : notification.listing_type && notification.listing_id
       ? `/${notification.listing_type === 'gig' ? 'gigs' : 'jobs'}/${notification.listing_id}${
           notification.type === 'message' && notification.sender_id
             ? `?openChat=true&senderId=${notification.sender_id}`

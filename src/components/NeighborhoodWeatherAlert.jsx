@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CloudLightning } from 'lucide-react';
 import { loadWeatherAlerts } from '../lib/weatherAlertsClient.js';
 
@@ -74,7 +75,7 @@ const GLYPHS = {
 
 function WeatherAlertBody({ alert, severity }) {
   return (
-    <div className={`feed-weather-alert-banner feed-weather-alert--${severity}`}>
+    <Link to="/alerts" className={`feed-weather-alert-banner feed-weather-alert--${severity}`}>
       <div className="feed-weather-alert-top">
         <span className="feed-weather-alert-icon" aria-hidden="true">
           <CloudLightning size={16} />
@@ -86,7 +87,7 @@ function WeatherAlertBody({ alert, severity }) {
       {alert.description && (
         <p className="feed-weather-alert-copy">{alert.description}</p>
       )}
-    </div>
+    </Link>
   );
 }
 
@@ -98,6 +99,7 @@ export default function NeighborhoodWeatherAlert({
   const [forecast, setForecast] = useState(null);
   const [alert, setAlert] = useState(null);
   const [loaded, setLoaded] = useState(false);
+  const [openDate, setOpenDate] = useState('');
   const place = locationLabel || neighborhood || 'Philadelphia';
 
   useEffect(() => {
@@ -127,7 +129,17 @@ export default function NeighborhoodWeatherAlert({
 
   const current = forecast?.current;
   const days = forecast?.days || [];
+  const hourly = forecast?.hourly || [];
   const severity = (alert?.severity || 'Unknown').toLowerCase();
+  const openHours = useMemo(
+    () => (openDate ? hourly.filter((hour) => hour.date === openDate) : []),
+    [hourly, openDate],
+  );
+
+  function toggleDay(day) {
+    const key = day.date || day.name;
+    setOpenDate((currentDate) => (currentDate === key ? '' : key));
+  }
 
   if (variant === 'feed') {
     if (!loaded || !alert) return null;
@@ -168,18 +180,47 @@ export default function NeighborhoodWeatherAlert({
 
         {days.length > 0 && (
           <ul className="feed-weather-week">
-            {days.map((day, index) => (
-              <li key={`${day.name}-${index}`} className="feed-weather-day">
-                <span className="feed-weather-day-name">{day.name}</span>
-                <span className="feed-weather-day-icon" title={day.condition} aria-label={day.condition}>
-                  <WeatherGlyph name={day.icon} size={15} />
-                </span>
-                <span className="feed-weather-day-temps">
-                  <strong>{day.high ?? '–'}°</strong>
-                  <span>{day.low != null ? `${day.low}°` : ''}</span>
-                </span>
-              </li>
-            ))}
+            {days.map((day, index) => {
+              const key = day.date || day.name;
+              const isOpen = openDate === key;
+              return (
+                <li key={`${day.name}-${index}`}>
+                  <button
+                    type="button"
+                    className={`feed-weather-day${isOpen ? ' is-open' : ''}`}
+                    onClick={() => toggleDay(day)}
+                    aria-expanded={isOpen}
+                  >
+                    <span className="feed-weather-day-name">{day.name}</span>
+                    <span className="feed-weather-day-icon" title={day.condition} aria-label={day.condition}>
+                      <WeatherGlyph name={day.icon} size={15} />
+                    </span>
+                    <span className="feed-weather-day-temps">
+                      <strong>{day.high ?? '–'}°</strong>
+                      <span>{day.low != null ? `${day.low}°` : ''}</span>
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div className="feed-weather-hourly" role="region" aria-label={`${day.name} hourly forecast`}>
+                      {openHours.length ? openHours.map((hour) => (
+                        <div key={hour.start} className="feed-weather-hour">
+                          <span className="feed-weather-hour-time">{hour.hour}</span>
+                          <span className={`feed-weather-hour-icon feed-weather-fx--${hour.icon || 'partly'}`} title={hour.condition}>
+                            <WeatherGlyph name={hour.icon} size={16} />
+                          </span>
+                          <strong className="feed-weather-hour-temp">{hour.temp}°</strong>
+                          <span className="feed-weather-hour-precip">
+                            {hour.precip != null ? `${hour.precip}%` : '—'}
+                          </span>
+                        </div>
+                      )) : (
+                        <p className="feed-weather-hourly-empty">Hourly forecast isn’t available for this day yet.</p>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

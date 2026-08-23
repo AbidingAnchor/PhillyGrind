@@ -1,6 +1,7 @@
 import {
   getUserFromRequest,
   hasServerSupabaseConfig,
+  isCronAuthorized,
   requireAdmin,
   requireMethod,
   sendJson,
@@ -13,6 +14,7 @@ import {
 } from './_utils/moderation.js';
 import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
 import { handleWeatherAlerts } from './_weatherAlerts.js';
+import { handleDispatchWeatherAlertNotifications } from './_weatherAlertNotifications.js';
 
 const limiter = createRateLimiter(30, '60 s');
 
@@ -318,10 +320,27 @@ export default async function handler(req, res) {
     return;
   }
 
+  const action = req.query.action;
+
+  if (action === 'dispatch-weather-alert-notifications') {
+    if (req.method !== 'GET' && req.method !== 'POST') {
+      sendJson(res, 405, { error: `Method ${req.method} not allowed.` });
+      return;
+    }
+    if (!isCronAuthorized(req)) {
+      sendJson(res, 401, { error: 'Unauthorized.' });
+      return;
+    }
+    if (!hasServerSupabaseConfig) {
+      sendJson(res, 500, { error: 'Server Supabase configuration is missing.' });
+      return;
+    }
+    await handleDispatchWeatherAlertNotifications(req, res);
+    return;
+  }
+
   const identifier = req.headers['x-forwarded-for'] || 'anonymous';
   if (!(await checkRateLimit(limiter, identifier, res))) return;
-
-  const action = req.query.action;
 
   if (action === 'weather-alerts') {
     if (req.method !== 'GET') {

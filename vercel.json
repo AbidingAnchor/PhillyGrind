@@ -7,6 +7,10 @@
     {
       "path": "/api/marketplace-orders?action=auto-release",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/listing-actions?action=dispatch-weather-alert-notifications",
+      "schedule": "*/15 * * * *"
     }
   ],
   "rewrites": [

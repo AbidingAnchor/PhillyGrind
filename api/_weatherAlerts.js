@@ -101,6 +101,23 @@ function dayLabel(name) {
   return raw.slice(0, 3);
 }
 
+function etDateKey(iso) {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+}
+
+function formatHour(iso) {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    hour: 'numeric',
+  });
+}
+
 function pickAlert(features) {
   const ranked = (features || [])
     .map((feature) => feature?.properties)
@@ -206,6 +223,7 @@ function buildForecast(periods) {
     const night = list[index + 1] && !list[index + 1].isDaytime ? list[index + 1] : null;
     days.push({
       name: dayLabel(period.name),
+      date: etDateKey(period.startTime),
       high: period.temperature,
       low: night?.temperature ?? null,
       condition: period.shortForecast,
@@ -217,6 +235,7 @@ function buildForecast(periods) {
   if (!days.length && current) {
     days.push({
       name: dayLabel(current.name),
+      date: etDateKey(current.startTime),
       high: current.isDaytime ? current.temperature : null,
       low: current.isDaytime ? null : current.temperature,
       condition: current.shortForecast,
@@ -237,10 +256,47 @@ function buildForecast(periods) {
   };
 }
 
+function buildHourly(periods) {
+  return (periods || []).slice(0, 168).map((period) => ({
+    start: period.startTime,
+    date: etDateKey(period.startTime),
+    hour: formatHour(period.startTime),
+    temp: period.temperature,
+    unit: period.temperatureUnit || 'F',
+    condition: period.shortForecast,
+    icon: weatherIcon(period.shortForecast, period.isDaytime),
+    precip: Number.isFinite(Number(period.probabilityOfPrecipitation?.value))
+      ? Number(period.probabilityOfPrecipitation.value)
+      : null,
+  }));
+}
+
 async function nwsJson(url) {
   const response = await fetch(url, { headers: NWS_HEADERS });
   if (!response.ok) throw new Error(`NWS ${response.status}`);
   return response.json();
+}
+
+export async function getActiveAlertsForNeighborhood(neighborhood) {
+  const name = String(neighborhood || '').trim() || 'Center City';
+  const coords = coordsForNeighborhood(name);
+  const cacheKey = `alerts:${coords.lat.toFixed(3)},${coords.lon.toFixed(3)}`;
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.at < CACHE_MS) {
+    return cached.payload;
+  }
+
+  try {
+    const alertsPayload = await nwsJson(
+      `https://api.weather.gov/alerts/active?point=${coords.lat},${coords.lon}`,
+    );
+    const payload = mapAlerts(alertsPayload?.features, coords, name);
+    cache.set(cacheKey, { at: Date.now(), payload });
+    return payload;
+  } catch (error) {
+    console.warn('[weather-alerts]', name, error.message);
+    return [];
+  }
 }
 
 export async function handleWeatherAlerts(req, res) {
@@ -260,16 +316,24 @@ export async function handleWeatherAlerts(req, res) {
     ]);
 
     const forecastUrl = point?.properties?.forecast;
-    const forecastPayload = forecastUrl
-      ? await nwsJson(forecastUrl)
-      : { properties: { periods: [] } };
+    const hourlyUrl = point?.properties?.forecastHourly;
+    const [forecastPayload, hourlyPayload] = await Promise.all([
+      forecastUrl ? nwsJson(forecastUrl) : Promise.resolve({ properties: { periods: [] } }),
+      hourlyUrl
+        ? nwsJson(hourlyUrl).catch(() => ({ properties: { periods: [] } }))
+        : Promise.resolve({ properties: { periods: [] } }),
+    ]);
 
     const location = { lat: coords.lat, lon: coords.lon };
     const alerts = mapAlerts(alertsPayload?.features, location, neighborhood);
+    const forecast = buildForecast(forecastPayload?.properties?.periods);
+    if (forecast) {
+      forecast.hourly = buildHourly(hourlyPayload?.properties?.periods);
+    }
     const payload = {
       neighborhood,
       coords: location,
-      forecast: buildForecast(forecastPayload?.properties?.periods),
+      forecast,
       alert: pickAlert(alertsPayload?.features),
       alerts,
     };
