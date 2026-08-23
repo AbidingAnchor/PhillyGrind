@@ -145,7 +145,6 @@ function Profile() {
   const [error, setError] = useState('');
   const [housingListings, setHousingListings] = useState([]);
   const [isLandlord, setIsLandlord] = useState(false);
-  const [bannerFile, setBannerFile] = useState(null);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const [communityPosts, setCommunityPosts] = useState([]);
   const [communityPostsPage, setCommunityPostsPage] = useState(1);
@@ -545,24 +544,31 @@ function Profile() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    console.log('[Banner Upload] Starting upload for file:', file.name, file.size, file.type);
     setUploadingBanner(true);
-    setProfileStatus('');
+    setProfileStatus('Uploading...');
 
     try {
-      console.log('[Banner Upload] Calling uploadBanner...');
+      console.log('[Profile] Banner upload selected:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      });
       const nextProfile = await uploadBanner(file);
-      console.log('[Banner Upload] uploadBanner returned:', nextProfile);
-      console.log('[Banner Upload] banner_url in returned profile:', nextProfile.banner_url);
       setProfileData((current) => current ? {
         ...current,
-        profile: nextProfile,
+        profile: {
+          ...(current.profile || {}),
+          ...nextProfile,
+        },
+        profileName: nextProfile.name || current.profileName,
       } : current);
-      console.log('[Banner Upload] Profile data updated');
-      setProfileStatus('Banner uploaded.');
+      if (typeof refreshProfile === 'function') {
+        await refreshProfile();
+      }
+      setProfileStatus('Banner photo uploaded.');
     } catch (err) {
-      console.error('[Banner Upload] Error:', err);
-      setProfileStatus(err.message || 'Could not upload banner.');
+      console.error('[Profile] Banner upload failed:', err);
+      setProfileStatus(err.message || 'Could not upload banner photo.');
     } finally {
       setUploadingBanner(false);
       event.target.value = '';
@@ -699,9 +705,33 @@ function Profile() {
           <div className="profile-cover-bleed">
             <div
               className={`profile-cover ${profileData.profile?.banner_url ? 'has-photo' : 'profile-cover-fallback'}`}
-              style={profileData.profile?.banner_url ? { backgroundImage: `url(${profileData.profile.banner_url})` } : undefined}
             >
+              {profileData.profile?.banner_url ? (
+                <img
+                  key={profileData.profile.banner_url}
+                  className="profile-cover-photo"
+                  src={profileData.profile.banner_url}
+                  alt=""
+                  draggable={false}
+                />
+              ) : null}
               <div className="profile-cover-overlay" />
+              {isOwnProfile && (
+                <div className="profile-cover-upload">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/jpg,.jpg,.jpeg,.png,.webp"
+                    onChange={handleBannerUpload}
+                    className="profile-editor-file-input"
+                    id="banner-upload"
+                    disabled={uploadingBanner}
+                  />
+                  <label htmlFor="banner-upload" className="profile-cover-upload-button">
+                    <Camera size={16} />
+                    {uploadingBanner ? 'Uploading...' : (profileData.profile?.banner_url ? 'Change banner' : 'Add banner')}
+                  </label>
+                </div>
+              )}
             </div>
             <div className="profile-cover-content">
               <span
@@ -1289,6 +1319,34 @@ function Profile() {
             </div>
 
             <form className="profile-edit-form" onSubmit={handleSaveProfile}>
+              <div className="profile-edit-banner-row">
+                <div className={`profile-edit-banner-preview ${profileData.profile?.banner_url ? 'has-photo' : 'profile-cover-fallback'}`}>
+                  {profileData.profile?.banner_url ? (
+                    <img
+                      key={profileData.profile.banner_url}
+                      src={profileData.profile.banner_url}
+                      alt=""
+                      draggable={false}
+                    />
+                  ) : null}
+                </div>
+                <div className="profile-edit-avatar-actions">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/jpg,.jpg,.jpeg,.png,.webp"
+                    onChange={handleBannerUpload}
+                    className="profile-editor-file-input"
+                    id="banner-upload-modal"
+                    disabled={uploadingBanner}
+                  />
+                  <label htmlFor="banner-upload-modal" className="profile-photo-upload-button profile-edit-avatar-button">
+                    <Camera size={16} />
+                    {uploadingBanner ? 'Uploading...' : 'Choose Banner'}
+                  </label>
+                  <span className="detail-note">JPG, PNG, or WebP. Large phone photos are compressed automatically.</span>
+                </div>
+              </div>
+
               <div className="profile-edit-avatar-row">
                 <span
                   className="profile-edit-avatar-preview"

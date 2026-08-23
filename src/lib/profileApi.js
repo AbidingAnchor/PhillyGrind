@@ -1,20 +1,15 @@
 import { hasSupabaseConfig, supabase } from './supabase.js';
 
-const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+const IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 const AVATAR_MAX_EDGE = 1024;
-const AVATAR_ALLOWED_TYPES = new Set([
+const BANNER_MAX_EDGE = 1920;
+const IMAGE_ALLOWED_TYPES = new Set([
   'image/jpeg',
   'image/jpg',
   'image/pjpeg',
   'image/png',
   'image/webp',
 ]);
-
-const bannerExtensionFor = (file) => {
-  if (file.type === 'image/png') return 'png';
-  if (file.type === 'image/webp') return 'webp';
-  return 'jpg';
-};
 const profileSelect = 'id,name,bio,skills,availability,neighborhood,neighborhoods,resume_path,resume_url,avatar_url,banner_url,profile_tags,created_at,account_reference';
 
 function displayNameFromUser(user) {
@@ -84,7 +79,7 @@ const ALLOWED_RESUME_TYPES = [
 
 function inferImageMime(file) {
   const typed = String(file?.type || '').toLowerCase();
-  if (AVATAR_ALLOWED_TYPES.has(typed)) {
+  if (IMAGE_ALLOWED_TYPES.has(typed)) {
     return typed === 'image/jpg' || typed === 'image/pjpeg' ? 'image/jpeg' : typed;
   }
 
@@ -128,10 +123,10 @@ function canvasToJpegBlob(canvas, quality) {
 }
 
 /**
- * Normalize mobile/desktop photo picks into a file under the avatars bucket limit.
- * Phone camera files are often 3–12MB and previously failed the hard 2MB/type checks.
+ * Normalize mobile/desktop photo picks into a JPEG/PNG under the storage size gate.
+ * Phone camera files are often 3–12MB (or empty MIME / HEIC) and previously failed the hard checks.
  */
-async function prepareAvatarFile(file) {
+async function prepareProfileImageFile(file, { maxEdge, outputBase, noun }) {
   const mime = inferImageMime(file);
   const rawType = String(file?.type || '').toLowerCase();
 
@@ -140,20 +135,20 @@ async function prepareAvatarFile(file) {
   }
 
   if (!mime) {
-    throw new Error('Profile photo must be a JPG, PNG, or WebP.');
+    throw new Error(`${noun} must be a JPG, PNG, or WebP.`);
   }
 
   // Small files that are already allowed can skip canvas work (faster on desktop).
-  if (file.size <= AVATAR_MAX_BYTES && (mime === 'image/jpeg' || mime === 'image/png')) {
+  if (file.size <= IMAGE_MAX_BYTES && (mime === 'image/jpeg' || mime === 'image/png')) {
     const extension = mime === 'image/png' ? 'png' : 'jpg';
-    return new File([file], `avatar.${extension}`, {
+    return new File([file], `${outputBase}.${extension}`, {
       type: mime,
       lastModified: Date.now(),
     });
   }
 
   const image = await loadImageFromFile(file);
-  const scale = Math.min(1, AVATAR_MAX_EDGE / Math.max(image.width || 1, image.height || 1));
+  const scale = Math.min(1, maxEdge / Math.max(image.width || 1, image.height || 1));
   const width = Math.max(1, Math.round((image.width || 1) * scale));
   const height = Math.max(1, Math.round((image.height || 1) * scale));
   const canvas = document.createElement('canvas');
@@ -169,18 +164,34 @@ async function prepareAvatarFile(file) {
 
   let quality = 0.85;
   let blob = await canvasToJpegBlob(canvas, quality);
-  while (blob.size > AVATAR_MAX_BYTES && quality > 0.45) {
+  while (blob.size > IMAGE_MAX_BYTES && quality > 0.45) {
     quality -= 0.1;
     blob = await canvasToJpegBlob(canvas, quality);
   }
 
-  if (blob.size > AVATAR_MAX_BYTES) {
+  if (blob.size > IMAGE_MAX_BYTES) {
     throw new Error('That photo is still too large after compression. Try a smaller image.');
   }
 
-  return new File([blob], 'avatar.jpg', {
+  return new File([blob], `${outputBase}.jpg`, {
     type: 'image/jpeg',
     lastModified: Date.now(),
+  });
+}
+
+function prepareAvatarFile(file) {
+  return prepareProfileImageFile(file, {
+    maxEdge: AVATAR_MAX_EDGE,
+    outputBase: 'avatar',
+    noun: 'Profile photo',
+  });
+}
+
+function prepareBannerFile(file) {
+  return prepareProfileImageFile(file, {
+    maxEdge: BANNER_MAX_EDGE,
+    outputBase: 'banner',
+    noun: 'Banner photo',
   });
 }
 
@@ -411,8 +422,6 @@ export async function uploadAvatar(file) {
 }
 
 export async function uploadBanner(file) {
-  console.log('[uploadBanner] Starting banner upload for file:', file.name, file.size, file.type);
-  
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
   }
@@ -421,55 +430,56 @@ export async function uploadBanner(file) {
   if (userError || !userData.user) {
     throw new Error('Please log in before uploading a banner photo.');
   }
-  
-  console.log('[uploadBanner] User authenticated:', userData.user.id);
 
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-    throw new Error('Banner photo must be a JPG, PNG, or WebP.');
-  }
+  console.log('[uploadBanner] Incoming file:', {
+    name: file?.name,
+    type: file?.type,
+    size: file?.size,
+  });
 
-  if (file.size > 5 * 1024 * 1024) {
-    throw new Error('Banner photo must be 5MB or smaller.');
-  }
+  const prepared = await prepareBannerFile(file);
+  console.log('[uploadBanner] Prepared file:', {
+    name: prepared.name,
+    type: prepared.type,
+    size: prepared.size,
+  });
 
-  const path = `${userData.user.id}/banner.${bannerExtensionFor(file)}`;
-  console.log('[uploadBanner] Storage path:', path);
-  
+  const extension = prepared.type === 'image/png' ? 'png' : 'jpg';
+  const path = `${userData.user.id}/banner.${extension}`;
   const { error: uploadError } = await supabase.storage
     .from('profile-banners')
-    .upload(path, file, {
+    .upload(path, prepared, {
       cacheControl: '3600',
-      contentType: file.type,
+      contentType: prepared.type,
       upsert: true,
     });
 
   if (uploadError) {
-    console.error('[uploadBanner] Storage upload error:', uploadError);
+    console.error('[uploadBanner] Storage upload failed:', uploadError);
     throw uploadError;
   }
-  
-  console.log('[uploadBanner] Storage upload successful');
 
   const { data: publicData } = supabase.storage
     .from('profile-banners')
     .getPublicUrl(path);
 
-  console.log('[uploadBanner] Public URL generated:', publicData.publicUrl);
+  // Same storage path on every upload — bust browser/CDN cache or the old photo sticks.
+  const cacheBustedUrl = `${publicData.publicUrl}?v=${Date.now()}`;
+  console.log('[uploadBanner] Updating profile banner_url:', cacheBustedUrl);
 
   const { data, error } = await supabase
     .from('profiles')
-    .update({ banner_url: publicData.publicUrl })
+    .update({ banner_url: cacheBustedUrl })
     .eq('id', userData.user.id)
     .select(profileSelect)
     .single();
 
   if (error) {
-    console.error('[uploadBanner] Database update error:', error);
+    console.error('[uploadBanner] Profile update failed:', error);
     throw error;
   }
-  
-  console.log('[uploadBanner] Database update successful, banner_url:', data.banner_url);
 
+  console.log('[uploadBanner] Profile updated successfully:', data?.banner_url);
   return data;
 }
 
