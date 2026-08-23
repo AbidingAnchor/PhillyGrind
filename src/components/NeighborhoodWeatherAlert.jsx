@@ -101,7 +101,7 @@ export default function NeighborhoodWeatherAlert({ neighborhood, locationLabel }
         <span className="feed-weather-kicker">Weather</span>
         {current ? (
           <div className="feed-weather-now">
-            <span className="feed-weather-now-icon" aria-hidden="true">
+            <span className={`feed-weather-now-icon feed-weather-fx--${current.icon || 'partly'}`} aria-hidden="true">
               <WeatherGlyph name={current.icon} size={28} />
             </span>
             <div className="feed-weather-now-copy">
