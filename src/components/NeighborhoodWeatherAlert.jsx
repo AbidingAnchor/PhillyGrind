@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CloudLightning } from 'lucide-react';
+import { loadWeatherAlerts } from '../lib/weatherAlertsClient.js';
 
 function WeatherGlyph({ name, size = 18 }) {
   const kind = name && GLYPHS[name] ? name : 'partly';
@@ -70,33 +71,6 @@ const GLYPHS = {
   ),
 };
 
-const weatherRequestCache = new Map();
-const WEATHER_CACHE_MS = 60_000;
-
-function loadWeatherAlerts(neighborhood) {
-  const cached = weatherRequestCache.get(neighborhood);
-  if (cached && Date.now() - cached.at < WEATHER_CACHE_MS) {
-    return cached.promise;
-  }
-
-  const query = new URLSearchParams({
-    action: 'weather-alerts',
-    neighborhood,
-  });
-
-  const promise = (async () => {
-    const local = await fetch(`/api/listing-actions?${query}`);
-    if (local.ok) return local.json();
-    if (import.meta.env.DEV) {
-      const live = await fetch(`https://www.phillygrind.work/api/listing-actions?${query}`);
-      if (live.ok) return live.json();
-    }
-    return { forecast: null, alert: null };
-  })();
-
-  weatherRequestCache.set(neighborhood, { at: Date.now(), promise });
-  return promise;
-}
 
 function WeatherAlertBody({ alert, severity }) {
   return (

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
 import TwoFactorVerification from '../components/TwoFactorVerification.jsx';
 import { sendTwoFactorCode } from '../lib/twoFactorApi.js';
@@ -12,6 +12,13 @@ function Login() {
   const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
   const { signIn, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  function nextPath() {
+    const from = location.state?.from;
+    if (typeof from !== 'string' || !from.startsWith('/') || from.startsWith('//')) return '/';
+    return from;
+  }
 
   function updateField(event) {
     const { name, value } = event.target;
@@ -36,7 +43,7 @@ function Login() {
         await sendTwoFactorCode(profile.email);
         setStatus('');
       } else {
-        navigate('/', { replace: true });
+        navigate(nextPath(), { replace: true });
       }
     } catch (error) {
       setStatus(error.message || 'Could not log in.');
@@ -46,7 +53,7 @@ function Login() {
   }
 
   async function handleTwoFactorVerified() {
-    navigate('/', { replace: true });
+    navigate(nextPath(), { replace: true });
   }
 
   function handleTwoFactorCancel() {

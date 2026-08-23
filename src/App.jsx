@@ -10,6 +10,7 @@ import NotificationBell from './components/NotificationBell.jsx';
 
 const navItems = [
   { to: '/', label: 'Community', tour: 'community', id: 'nav-community' },
+  { to: '/alerts', label: 'Alerts', tour: 'alerts', id: 'nav-alerts' },
   { to: '/jobs', label: 'Jobs', tour: 'jobs', id: 'nav-jobs' },
   { to: '/gigs', label: 'Gigs', tour: 'gigs', id: 'nav-gigs' },
   { to: '/marketplace', label: 'Marketplace', tour: 'marketplace', id: 'nav-marketplace' },
@@ -213,6 +214,7 @@ function App() {
         </div>
         <nav className="footer-links" aria-label="Footer navigation">
           <Link to="/">Community</Link>
+          <Link to="/alerts">Alerts</Link>
           <Link to="/jobs">Jobs</Link>
           <Link to="/gigs">Gigs</Link>
           <Link to="/marketplace">Marketplace</Link>

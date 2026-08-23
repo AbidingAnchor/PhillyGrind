@@ -39,6 +39,7 @@ import Housing from './pages/Housing.jsx';
 import PostHousing from './pages/PostHousing.jsx';
 import HousingDetail from './pages/HousingDetail.jsx';
 import Community from './pages/Community.jsx';
+import Alerts from './pages/Alerts.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AuthProvider } from './lib/auth.jsx';
 import { ThemeProvider } from './lib/theme.jsx';
@@ -53,6 +54,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route element={<App />}>
               <Route path="/" element={<Community />} />
               <Route path="/community" element={<Navigate to="/" replace />} />
+              <Route path="/alerts" element={<Alerts />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/gigs" element={<Gigs />} />
               <Route path="/marketplace" element={<BrowseMarketplace />} />

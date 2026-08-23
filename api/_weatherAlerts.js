@@ -124,6 +124,75 @@ function pickAlert(features) {
   };
 }
 
+function milesBetween(from, to) {
+  if (!from || !to) return null;
+  const toRad = (value) => (Number(value) * Math.PI) / 180;
+  const dLat = toRad(to.lat - from.lat);
+  const dLon = toRad(to.lon - from.lon);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(from.lat)) * Math.cos(toRad(to.lat)) * Math.sin(dLon / 2) ** 2;
+  const miles = 3959 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Number.isFinite(miles) ? miles : null;
+}
+
+function pinCoords(point, fallback) {
+  const miles = milesBetween(fallback, point);
+  if (miles == null || miles > 40) return fallback;
+  return point;
+}
+
+function geometryCentroid(geometry) {
+  const points = [];
+
+  function walk(node, depth) {
+    if (!Array.isArray(node) || !node.length) return;
+    if (typeof node[0] === 'number' && typeof node[1] === 'number') {
+      points.push([node[0], node[1]]);
+      return;
+    }
+    if (depth > 6) return;
+    node.forEach((child) => walk(child, depth + 1));
+  }
+
+  walk(geometry?.coordinates, 0);
+  if (!points.length) return null;
+
+  const sum = points.reduce(
+    (acc, [lon, lat]) => ({ lon: acc.lon + lon, lat: acc.lat + lat }),
+    { lon: 0, lat: 0 },
+  );
+  return { lon: sum.lon / points.length, lat: sum.lat / points.length };
+}
+
+function mapAlerts(features, fallbackCoords, neighborhood) {
+  return (features || [])
+    .map((feature) => {
+      const props = feature?.properties;
+      if (!props) return null;
+      const point = pinCoords(geometryCentroid(feature.geometry) || fallbackCoords, fallbackCoords);
+      const until = formatUntil(props.ends || props.expires);
+      const event = props.event || 'Weather Alert';
+      const severity = SEVERITY_RANK[props.severity] ? props.severity : 'Unknown';
+      const issuedAt = props.onset || props.effective || props.sent || null;
+      return {
+        id: String(props.id || feature.id || `${event}-${issuedAt || until}`),
+        category: 'weather',
+        event,
+        title: until ? `${event} until ${until}` : event,
+        headline: props.headline || event,
+        description: clipDescription(props.description || props.instruction),
+        severity,
+        status: 'Live',
+        issuedAt,
+        until,
+        lat: point.lat,
+        lon: point.lon,
+        neighborhood,
+      };
+    })
+    .filter(Boolean);
+}
+
 function buildForecast(periods) {
   const list = periods || [];
   if (!list.length) return null;
@@ -195,16 +264,20 @@ export async function handleWeatherAlerts(req, res) {
       ? await nwsJson(forecastUrl)
       : { properties: { periods: [] } };
 
+    const location = { lat: coords.lat, lon: coords.lon };
+    const alerts = mapAlerts(alertsPayload?.features, location, neighborhood);
     const payload = {
       neighborhood,
+      coords: location,
       forecast: buildForecast(forecastPayload?.properties?.periods),
       alert: pickAlert(alertsPayload?.features),
+      alerts,
     };
 
     cache.set(cacheKey, { at: Date.now(), payload });
     sendJson(res, 200, payload);
   } catch (error) {
     console.warn('[weather-alerts]', error.message);
-    sendJson(res, 200, { neighborhood, forecast: null, alert: null });
+    sendJson(res, 200, { neighborhood, forecast: null, alert: null, alerts: [], coords: coordsForNeighborhood(neighborhood) });
   }
 }

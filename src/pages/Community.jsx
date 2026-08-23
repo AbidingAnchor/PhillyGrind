@@ -1490,6 +1490,22 @@ function Community() {
   }, [searchQuery]);
 
   useEffect(() => {
+    if (searchParams.get('compose') !== 'alert') return;
+    const title = searchParams.get('title') || 'this alert';
+    if (!isLoggedIn) {
+      navigate('/login', { state: { from: `/?compose=alert&title=${encodeURIComponent(title)}` } });
+      return;
+    }
+    setComposerContent(`Neighbors — weather alert: ${title}\n\n`);
+    setComposerNeighborhood(defaultComposerNeighborhood(homeNeighborhood));
+    setShowComposer(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('compose');
+    next.delete('title');
+    setSearchParams(next, { replace: true });
+  }, [homeNeighborhood, isLoggedIn, navigate, searchParams, setSearchParams]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function loadHomeNeighborhood() {
