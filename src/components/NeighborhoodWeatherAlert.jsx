@@ -14,8 +14,8 @@ export default function NeighborhoodWeatherAlert({ neighborhood }) {
 
     async function loadAlert() {
       try {
-        const params = new URLSearchParams({ neighborhood });
-        const response = await fetch(`/api/weather-alerts?${params}`);
+        const params = new URLSearchParams({ action: 'weather-alerts', neighborhood });
+        const response = await fetch(`/api/listing-actions?${params}`);
         if (!response.ok) {
           if (!cancelled) setAlert(null);
           return;

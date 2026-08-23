@@ -12,6 +12,7 @@ import {
   MODERATION_REJECT_MESSAGE,
 } from './_utils/moderation.js';
 import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
+import { handleWeatherAlerts } from './_weatherAlerts.js';
 
 const limiter = createRateLimiter(30, '60 s');
 
@@ -320,12 +321,21 @@ export default async function handler(req, res) {
   const identifier = req.headers['x-forwarded-for'] || 'anonymous';
   if (!(await checkRateLimit(limiter, identifier, res))) return;
 
+  const action = req.query.action;
+
+  if (action === 'weather-alerts') {
+    if (req.method !== 'GET') {
+      sendJson(res, 405, { error: `Method ${req.method} not allowed.` });
+      return;
+    }
+    await handleWeatherAlerts(req, res);
+    return;
+  }
+
   if (!hasServerSupabaseConfig) {
     sendJson(res, 500, { error: 'Server Supabase configuration is missing.' });
     return;
   }
-
-  const action = req.query.action;
 
   // Update bid status
   if (action === 'update-bid-status') {

@@ -1,7 +1,5 @@
 import { sendJson } from './_utils.js';
-import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
 
-const limiter = createRateLimiter(30, '60 s');
 const cache = new Map();
 const CACHE_MS = 5 * 60 * 1000;
 const SEVERITY_RANK = {
@@ -101,15 +99,7 @@ function pickAlert(features) {
   };
 }
 
-export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    sendJson(res, 405, { error: 'Method not allowed.' });
-    return;
-  }
-
-  const identifier = req.headers['x-forwarded-for'] || 'anonymous';
-  if (!(await checkRateLimit(limiter, identifier, res))) return;
-
+export async function handleWeatherAlerts(req, res) {
   const neighborhood = String(req.query.neighborhood || '').trim();
   const coords = coordsForNeighborhood(neighborhood);
   if (!coords) {
