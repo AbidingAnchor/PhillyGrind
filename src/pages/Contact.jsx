@@ -18,6 +18,31 @@ const categoryOptions = [
   { label: 'Other', value: 'other' },
 ];
 
+function userAskedForHumanSupport(text) {
+  const value = String(text || '').toLowerCase();
+  const phrases = [
+    'submit a ticket',
+    'support ticket',
+    'file a ticket',
+    'open a ticket',
+    'start a ticket',
+    'talk to a human',
+    'speak to a human',
+    'real person',
+    'actual person',
+    'human support',
+    'speak to someone',
+    'talk to someone',
+    'contact support',
+    'get a human',
+    'file a complaint',
+    'i want a ticket',
+    'talk to support',
+    'speak to support',
+  ];
+  return phrases.some((phrase) => value.includes(phrase));
+}
+
 function Contact() {
   const { user, profile, session } = useAuth();
   const [messages, setMessages] = useState([welcomeMessage]);
@@ -145,19 +170,10 @@ function Contact() {
 
       addAssistantMessage(payload.reply);
 
-      // Check if user wants to submit a ticket (comprehensive keyword matching)
-      const userMessageLower = trimmed.toLowerCase();
-      const ticketKeywords = [
-        'ticket', 'support', 'report', 'complaint', 'human', 'help me',
-        'scam', 'fraud', 'issue', 'problem', 'dispute', 'harassment',
-        'threatening', 'illegal', 'no-show', 'didn\'t show', 'ghosted',
-        'payment issue', 'money', 'stolen', 'cheated', 'lied',
-        'unsafe', 'dangerous', 'file a complaint'
-      ];
-      const wantsTicket = ticketKeywords.some((keyword) => userMessageLower.includes(keyword));
-
-      if (wantsTicket && !ticketFlow) {
-        addAssistantMessage("It sounds like you might need to submit a support ticket. Would you like me to help you with that?", {
+      // Only auto-offer a ticket on explicit human-help intent — not every "problem"/"issue".
+      // The Contact header button still starts a ticket anytime.
+      if (userAskedForHumanSupport(trimmed) && !ticketFlow) {
+        addAssistantMessage("Want me to get this in front of a real person? I can start a support ticket.", {
           kind: 'ticket_offer',
         });
       }

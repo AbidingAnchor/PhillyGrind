@@ -2,19 +2,27 @@ import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
 import { createClient } from '@supabase/supabase-js';
 
 const limiter = createRateLimiter(20, '60 s');
+const MAX_TOOL_ROUNDS = 5;
+const ACTIVITY_LIMIT = 8;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const TICKET_CATEGORIES = new Set([
+  'general',
+  'data_deletion',
+  'fair_housing_complaint',
+  'dispute_report',
+  'other',
+]);
 
 const GROQ_CHAT_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 const supabase = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+  { auth: { persistSession: false, autoRefreshToken: false } },
 );
 
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.error('[GrindBot] Missing Supabase configuration:', {
-    hasUrl: !!process.env.SUPABASE_URL,
-    hasKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-  });
+if (!process.env.SUPABASE_URL && !process.env.VITE_SUPABASE_URL) {
+  console.error('[GrindBot] Missing Supabase URL');
 }
 
 function sendJson(res, status, body) {
@@ -29,8 +37,12 @@ function requireMethod(req, res, method = 'POST') {
   return true;
 }
 
+function getBearerToken(req) {
+  return req.headers.authorization?.replace(/^Bearer\s+/i, '') || '';
+}
+
 async function getUserFromRequest(req) {
-  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
+  const token = getBearerToken(req);
   if (!token) return null;
 
   const { data, error } = await supabase.auth.getUser(token);
@@ -39,72 +51,459 @@ async function getUserFromRequest(req) {
   return data.user;
 }
 
-const tools = [
-  {
-    type: "function",
-    function: {
-      name: "search_content",
-      description: "Search Community posts and comments by keyword to find specific content a user wants to report or ask about.",
-      parameters: {
-        type: "object",
-        properties: {
-          query: { type: "string", description: "Keywords describing the post/comment content" }
-        },
-        required: ["query"]
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "create_report",
-      description: "File a report on a specific post or comment. Only call this after the user has explicitly confirmed the correct content was found. This ALWAYS files a report when called — never skip filing based on your own read of whether it's a violation.",
-      parameters: {
-        type: "object",
-        properties: {
-          post_id: { type: "string", description: "UUID of the post being reported, if applicable" },
-          comment_id: { type: "string", description: "UUID of the comment being reported, if applicable" },
-          reason: { type: "string", description: "Category, e.g. 'Harassment', 'Spam', 'Fake account'" },
-          subreason: { type: "string", description: "Specific detail about why" }
-        },
-        required: ["reason", "subreason"]
-      }
-    }
-  }
-];
-
-async function searchContent(query) {
+function parseToolArgs(raw) {
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw;
   try {
-    const { data, error } = await supabase
-      .from('community_posts')
-      .select('id, content, created_at, user_id')
-      .ilike('content', `%${query}%`)
-      .limit(5);
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('[searchContent] Error:', error.message);
-    throw error;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
   }
 }
 
+function sanitizeSearch(query) {
+  return String(query || '')
+    .replace(/[%_,()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 80);
+}
+
+function isUuid(value) {
+  return UUID_RE.test(String(value || ''));
+}
+
+function dollars(cents) {
+  if (cents == null || Number.isNaN(Number(cents))) return null;
+  return (Number(cents) / 100).toFixed(2);
+}
+
+function clip(value, max = 180) {
+  const text = String(value || '').trim();
+  if (text.length <= max) return text;
+  return `${text.slice(0, max).trimEnd()}…`;
+}
+
+function notFound() {
+  return { error: 'not_found' };
+}
+
+const tools = [
+  {
+    type: 'function',
+    function: {
+      name: 'search_content',
+      description: 'Search Community posts and comments by keyword to find specific content a user wants to report or ask about.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Keywords describing the post/comment content' },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_report',
+      description: 'File a report on a specific post or comment. Only call this after the user has explicitly confirmed the correct content was found. This ALWAYS files a report when called — never skip filing based on your own read of whether it is a violation.',
+      parameters: {
+        type: 'object',
+        properties: {
+          post_id: { type: 'string', description: 'UUID of the post being reported, if applicable' },
+          comment_id: { type: 'string', description: 'UUID of the comment being reported, if applicable' },
+          reason: { type: 'string', description: "Category, e.g. 'Harassment', 'Spam', 'Fake account'" },
+          subreason: { type: 'string', description: 'Specific detail about why' },
+        },
+        required: ['reason', 'subreason'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_user_activity',
+      description: "Load the logged-in user's own recent jobs, gigs, marketplace listings, housing listings, bids, job applications, gig escrow orders, and marketplace orders with statuses. Use this when they ask about their posts, payouts, bids, or what is going on with their account. Has no parameters; always returns ONLY the authenticated user's data.",
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_report_history',
+      description: "Load the logged-in user's own community reports, listing/user reports, marketplace disputes they are a party to, and support tickets, with current status. Use when they ask if a report was filed or what happened to their complaint.",
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_order_status',
+      description: 'Look up one gig escrow order or marketplace order by UUID. Returns the order only if the authenticated user is the buyer, seller, hirer, or worker. If the ID is missing, invalid, or belongs to someone else, returns not_found with no extra detail.',
+      parameters: {
+        type: 'object',
+        properties: {
+          order_id: { type: 'string', description: 'UUID of the gig order or marketplace order' },
+        },
+        required: ['order_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_listings',
+      description: 'Search currently live, approved jobs, gigs, marketplace items, and housing rentals by keyword, optional category, and optional neighborhood. This is NOT Community posts — use search_content for the feed. Public catalog data only; does not return other users private account data.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Keywords to match against title/description' },
+          category: { type: 'string', description: 'Optional category filter' },
+          neighborhood: { type: 'string', description: 'Optional neighborhood filter, e.g. Fishtown' },
+          type: {
+            type: 'string',
+            enum: ['all', 'job', 'gig', 'marketplace', 'housing'],
+            description: 'Which catalog to search. Default all.',
+          },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_support_ticket',
+      description: 'File a general support ticket into the existing contact/admin queue (not a Community content report). ONLY call after you already tried to troubleshoot with tools and the user explicitly confirmed they want a human to look at it. Never invent the user identity — the server attaches the logged-in user.',
+      parameters: {
+        type: 'object',
+        properties: {
+          category: {
+            type: 'string',
+            enum: ['general', 'data_deletion', 'fair_housing_complaint', 'dispute_report', 'other'],
+            description: 'Must match contact_submissions categories',
+          },
+          message: { type: 'string', description: 'The issue in the user\'s own words, after they confirmed filing' },
+        },
+        required: ['category', 'message'],
+      },
+    },
+  },
+];
+
+async function searchContent(query) {
+  const needle = sanitizeSearch(query);
+  if (!needle) return [];
+
+  const { data, error } = await supabase
+    .from('community_posts')
+    .select('id, content, created_at')
+    .ilike('content', `%${needle}%`)
+    .limit(5);
+
+  if (error) throw error;
+  return (data || []).map((post) => ({
+    id: post.id,
+    content: clip(post.content),
+    created_at: post.created_at,
+  }));
+}
+
 async function createReport({ post_id, comment_id, reason, subreason }, reporterId) {
-  try {
-    const { error } = await supabase
-      .from('community_reports')
-      .insert({
-        post_id: post_id || null,
-        comment_id: comment_id || null,
-        reporter_id: reporterId,
-        reason,
-        subreason,
-        status: 'pending',
-      });
-    if (error) throw error;
-    return { success: true };
-  } catch (error) {
-    console.error('[createReport] Error:', error.message);
-    throw error;
+  const { error } = await supabase
+    .from('community_reports')
+    .insert({
+      post_id: isUuid(post_id) ? post_id : null,
+      comment_id: isUuid(comment_id) ? comment_id : null,
+      reporter_id: reporterId,
+      reason: String(reason || '').slice(0, 200),
+      subreason: String(subreason || '').slice(0, 500),
+      status: 'pending',
+    });
+  if (error) throw error;
+  return { success: true };
+}
+
+async function getUserActivity(uid) {
+  const [
+    jobs,
+    gigs,
+    marketplace,
+    housing,
+    bids,
+    applications,
+    gigOrdersAsHirer,
+    gigOrdersAsWorker,
+    marketAsBuyer,
+    marketAsSeller,
+  ] = await Promise.all([
+    supabase.from('jobs').select('id,title,category,neighborhood,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(ACTIVITY_LIMIT),
+    supabase.from('gigs').select('id,title,category,neighborhood,status,post_type,pay,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(ACTIVITY_LIMIT),
+    supabase.from('marketplace_listings').select('id,title,category,neighborhood,status,price,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(ACTIVITY_LIMIT),
+    supabase.from('housing_listings').select('id,title,neighborhood,status,monthly_rent,bedrooms,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(ACTIVITY_LIMIT),
+    supabase.from('bids').select('id,listing_id,status,proposed_rate,created_at').eq('worker_id', uid).order('created_at', { ascending: false }).limit(ACTIVITY_LIMIT),
+    supabase.from('applications').select('id,job_id,status,created_at').eq('applicant_id', uid).order('created_at', { ascending: false }).limit(ACTIVITY_LIMIT),
+    supabase.from('orders').select('id,listing_id,status,amount,created_at,hirer_id,worker_id').eq('hirer_id', uid).order('created_at', { ascending: false }).limit(ACTIVITY_LIMIT),
+    supabase.from('orders').select('id,listing_id,status,amount,created_at,hirer_id,worker_id').eq('worker_id', uid).order('created_at', { ascending: false }).limit(ACTIVITY_LIMIT),
+    supabase.from('marketplace_orders').select('id,listing_id,status,amount,created_at,buyer_id,seller_id').eq('buyer_id', uid).order('created_at', { ascending: false }).limit(ACTIVITY_LIMIT),
+    supabase.from('marketplace_orders').select('id,listing_id,status,amount,created_at,buyer_id,seller_id').eq('seller_id', uid).order('created_at', { ascending: false }).limit(ACTIVITY_LIMIT),
+  ]);
+
+  const gigOrders = [...(gigOrdersAsHirer.data || []), ...(gigOrdersAsWorker.data || [])]
+    .filter((order, index, list) => list.findIndex((item) => item.id === order.id) === index)
+    .slice(0, ACTIVITY_LIMIT)
+    .map((order) => ({
+      id: order.id,
+      type: 'gig_order',
+      listing_id: order.listing_id,
+      status: order.status,
+      amount: dollars(order.amount),
+      role: order.hirer_id === uid ? 'hirer' : 'worker',
+      created_at: order.created_at,
+    }));
+
+  const marketplaceOrders = [...(marketAsBuyer.data || []), ...(marketAsSeller.data || [])]
+    .filter((order, index, list) => list.findIndex((item) => item.id === order.id) === index)
+    .slice(0, ACTIVITY_LIMIT)
+    .map((order) => ({
+      id: order.id,
+      type: 'marketplace_order',
+      listing_id: order.listing_id,
+      status: order.status,
+      amount: dollars(order.amount),
+      role: order.buyer_id === uid ? 'buyer' : 'seller',
+      created_at: order.created_at,
+    }));
+
+  return {
+    jobs: jobs.data || [],
+    gigs: gigs.data || [],
+    marketplace_listings: marketplace.data || [],
+    housing_listings: housing.data || [],
+    bids: bids.data || [],
+    applications: applications.data || [],
+    gig_orders: gigOrders,
+    marketplace_orders: marketplaceOrders,
+  };
+}
+
+async function getReportHistory(uid) {
+  const [community, listingReports, tickets, ownMarketOrders] = await Promise.all([
+    supabase.from('community_reports').select('id,post_id,comment_id,reason,subreason,status,created_at').eq('reporter_id', uid).order('created_at', { ascending: false }).limit(ACTIVITY_LIMIT),
+    supabase.from('reports').select('id,reported_type,reported_id,listing_type,reason,status,created_at').eq('reporter_id', uid).order('created_at', { ascending: false }).limit(ACTIVITY_LIMIT),
+    supabase.from('contact_submissions').select('id,category,status,created_at,message').eq('user_id', uid).order('created_at', { ascending: false }).limit(ACTIVITY_LIMIT),
+    supabase.from('marketplace_orders').select('id').or(`buyer_id.eq.${uid},seller_id.eq.${uid}`),
+  ]);
+
+  let disputes = [];
+  const orderIds = (ownMarketOrders.data || []).map((row) => row.id);
+  if (orderIds.length) {
+    const { data } = await supabase
+      .from('disputes')
+      .select('id,order_id,status,created_at,seller_evidence_deadline')
+      .in('order_id', orderIds)
+      .order('created_at', { ascending: false })
+      .limit(ACTIVITY_LIMIT);
+    disputes = data || [];
+  }
+
+  return {
+    community_reports: community.data || [],
+    listing_reports: listingReports.error ? [] : (listingReports.data || []),
+    support_tickets: (tickets.data || []).map((ticket) => ({
+      id: ticket.id,
+      category: ticket.category,
+      status: ticket.status,
+      created_at: ticket.created_at,
+      message: clip(ticket.message, 140),
+    })),
+    disputes,
+  };
+}
+
+async function getOrderStatus(orderId, uid) {
+  if (!isUuid(orderId)) return notFound();
+
+  const { data: gigOrder } = await supabase
+    .from('orders')
+    .select('id,listing_id,status,amount,created_at,completed_at,released_at,hirer_id,worker_id')
+    .eq('id', orderId)
+    .or(`hirer_id.eq.${uid},worker_id.eq.${uid}`)
+    .maybeSingle();
+
+  if (gigOrder?.id) {
+    return {
+      type: 'gig_order',
+      id: gigOrder.id,
+      listing_id: gigOrder.listing_id,
+      status: gigOrder.status,
+      amount: dollars(gigOrder.amount),
+      role: gigOrder.hirer_id === uid ? 'hirer' : 'worker',
+      created_at: gigOrder.created_at,
+      completed_at: gigOrder.completed_at,
+      released_at: gigOrder.released_at,
+    };
+  }
+
+  const { data: marketOrder } = await supabase
+    .from('marketplace_orders')
+    .select('id,listing_id,status,amount,created_at,buyer_id,seller_id')
+    .eq('id', orderId)
+    .or(`buyer_id.eq.${uid},seller_id.eq.${uid}`)
+    .maybeSingle();
+
+  if (marketOrder?.id) {
+    return {
+      type: 'marketplace_order',
+      id: marketOrder.id,
+      listing_id: marketOrder.listing_id,
+      status: marketOrder.status,
+      amount: dollars(marketOrder.amount),
+      role: marketOrder.buyer_id === uid ? 'buyer' : 'seller',
+      created_at: marketOrder.created_at,
+    };
+  }
+
+  return notFound();
+}
+
+async function searchTable({ table, columns, query, category, neighborhood, extraEq, extraNeq }) {
+  let request = supabase
+    .from(table)
+    .select(columns)
+    .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+    .limit(8);
+
+  if (category) request = request.ilike('category', category);
+  if (neighborhood) request = request.ilike('neighborhood', neighborhood);
+  if (extraEq) {
+    Object.entries(extraEq).forEach(([key, value]) => {
+      request = request.eq(key, value);
+    });
+  }
+  if (extraNeq) {
+    Object.entries(extraNeq).forEach(([key, value]) => {
+      request = request.neq(key, value);
+    });
+  }
+
+  const { data, error } = await request;
+  if (error) {
+    console.warn(`[search_listings] ${table}:`, error.message);
+    return [];
+  }
+  return data || [];
+}
+
+async function searchListings({ query, category, neighborhood, type = 'all' }) {
+  const needle = sanitizeSearch(query);
+  if (!needle) return { listings: [] };
+
+  const cat = sanitizeSearch(category);
+  const hood = sanitizeSearch(neighborhood);
+  const scope = ['job', 'gig', 'marketplace', 'housing'].includes(type) ? type : 'all';
+
+  const searches = [];
+  if (scope === 'all' || scope === 'job') {
+    searches.push(
+      searchTable({
+        table: 'jobs_public',
+        columns: 'id,title,category,neighborhood,pay,created_at',
+        query: needle,
+        category: cat,
+        neighborhood: hood,
+      }).then((rows) => rows.map((row) => ({ ...row, type: 'job', path: `/jobs/${row.id}` }))),
+    );
+  }
+  if (scope === 'all' || scope === 'gig') {
+    searches.push(
+      searchTable({
+        table: 'gigs_public',
+        columns: 'id,title,category,neighborhood,pay,status,post_type,created_at',
+        query: needle,
+        category: cat,
+        neighborhood: hood,
+        extraEq: { status: 'open' },
+      }).then((rows) => rows.map((row) => ({ ...row, type: 'gig', path: `/gigs/${row.id}` }))),
+    );
+  }
+  if (scope === 'all' || scope === 'marketplace') {
+    searches.push(
+      searchTable({
+        table: 'marketplace_listings',
+        columns: 'id,title,category,neighborhood,price,status,created_at',
+        query: needle,
+        category: cat,
+        neighborhood: hood,
+        extraEq: { status: 'active' },
+      }).then((rows) => rows.map((row) => ({ ...row, type: 'marketplace', path: `/marketplace/${row.id}` }))),
+    );
+  }
+  if (scope === 'all' || scope === 'housing') {
+    searches.push(
+      searchTable({
+        table: 'housing_listings_public',
+        columns: 'id,title,neighborhood,monthly_rent,bedrooms,created_at',
+        query: needle,
+        neighborhood: hood,
+      }).then((rows) => rows.map((row) => ({ ...row, type: 'housing', path: `/housing/${row.id}` }))),
+    );
+  }
+
+  const groups = await Promise.all(searches);
+  return { listings: groups.flat().slice(0, 16) };
+}
+
+async function createSupportTicket({ category, message }, uid) {
+  const safeCategory = TICKET_CATEGORIES.has(category) ? category : 'general';
+  const body = String(message || '').trim().slice(0, 4000);
+  if (!body) throw new Error('A ticket message is required.');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('name,email')
+    .eq('id', uid)
+    .maybeSingle();
+
+  const { data, error } = await supabase
+    .from('contact_submissions')
+    .insert({
+      name: profile?.name || 'Neighbor',
+      email: profile?.email || '',
+      category: safeCategory,
+      message: body,
+      user_id: uid,
+      status: 'open',
+    })
+    .select('id,category,status,created_at')
+    .single();
+
+  if (error) throw error;
+  return { success: true, ticket: data };
+}
+
+async function runTool(name, rawArgs, uid) {
+  const args = parseToolArgs(rawArgs);
+
+  switch (name) {
+    case 'search_content':
+      return searchContent(args.query);
+    case 'create_report':
+      return createReport(args, uid);
+    case 'get_user_activity':
+      return getUserActivity(uid);
+    case 'get_report_history':
+      return getReportHistory(uid);
+    case 'get_order_status':
+      return getOrderStatus(args.order_id, uid);
+    case 'search_listings':
+      return searchListings(args);
+    case 'create_support_ticket':
+      return createSupportTicket(args, uid);
+    default:
+      return { error: `Unknown tool: ${name}` };
   }
 }
 
@@ -125,7 +524,7 @@ ESCROW PAYMENTS (Gigs only): PhillyGrind uses Stripe to hold payments securely i
 
 SETTING UP PAYOUTS: Workers need to connect a bank account or debit card via Stripe Express before they can receive payments. This is done by clicking Set Up Payouts when posting a gig as a service provider. Personal financial information goes directly to Stripe — PhillyGrind never sees it.
 
-MARKETPLACE SECTION: Users can buy and sell items locally. Listings include photos, price, condition (New, Like New, Good, Fair, Poor), category, and neighborhood. No escrow is used — buyers and sellers arrange payment and pickup directly through messaging.
+MARKETPLACE SECTION: Users can buy and sell items locally. Listings include photos, price, condition (New, Like New, Good, Fair, Poor), category, and neighborhood. Secure Checkout holds payment in escrow until the buyer confirms receipt or auto-release. Cash-only listings are arranged directly through messaging.
 
 HOUSING SECTION: Landlords can post rental listings with photos, rent amount, bedrooms, neighborhood, and amenities. Tenants can message landlords directly. No escrow is used — rental arrangements are made directly between parties.
 
@@ -135,11 +534,9 @@ NEIGHBORHOOD FILTERING: Jobs, Gigs, Marketplace, Housing, and Community posts ca
 
 MESSAGING: Users can message each other directly through the platform on any listing (Jobs, Gigs, Marketplace, Housing) and on Community posts. Messages are private between the two parties.
 
-DISPUTES: Users have 48 hours after job completion to raise a dispute through the platform. PhillyGrind has final authority to resolve disputes and determine how escrow funds are released. To file a dispute, users should submit a support ticket through the Contact page.
+DISPUTES: Users have 48 hours after job completion to raise a dispute through the platform. PhillyGrind has final authority to resolve disputes and determine how escrow funds are released.
 
-REPORTING ISSUES: If a user is having problems with another user (harassment, scams, no-show, payment issues, etc.), they should first try to resolve it through messaging. If that doesn't work, they should submit a support ticket with details. For serious issues like threats or illegal activity, they should submit a ticket immediately.
-
-REVIEWS: After every completed gig, both the hirer and worker can rate each other. Ratings build reputation over time. Higher ratings mean more work and more hires. Reviews help build trust in the community.
+REVIEWS: After every completed gig, both the hirer and worker can rate each other. Ratings build reputation over time.
 
 SAFETY AND TRUST: PhillyGrind does not verify users but has reviews, escrow protection (for gigs), and dispute resolution to protect both sides. Never move payment off platform for gigs — always use the built-in escrow. For marketplace and housing, meet in safe public places and trust your instincts.
 
@@ -147,11 +544,9 @@ ACCOUNT AND PRIVACY: User emails are never shown publicly. Only display names an
 
 BOOSTING: Users can boost their listings to make them more visible. Boosted listings appear higher in search results and get more views. Boosts are paid features.
 
-ADMIN DASHBOARD: Admin users can manage all aspects of the platform including reviewing contact submissions, managing listings, and handling disputes.
+CONTACT AND SUPPORT: Users can reach support through the Contact page chat with you (GrindBot). For issues that still need a human after troubleshooting, you can file a support ticket into the admin queue. Support email is support@phillygrind.work. There is also a "Submit a Ticket Instead" button on the Contact page.
 
-CONTACT AND SUPPORT: Users can reach support through the Contact page, which has a chat interface with GrindBot. For issues that need human attention, GrindBot can help submit a support ticket. Support email is support@phillygrind.work.
-
-HOW TO POST: To post a job, go to Jobs → Post a Job. To post a gig, go to Gigs → Post a Gig (as worker offering service) or Post a Gig (as hirer needing help). To post marketplace item, go to Marketplace → Post Listing. To post housing, go to Housing → Post a Rental.
+HOW TO POST: To post a job, go to Jobs → Post a Job. To post a gig, go to Gigs → Post a Gig. To post marketplace item, go to Marketplace → Post Listing. To post housing, go to Housing → Post a Rental.
 
 HOW TO APPLY: For jobs, click the listing and message the poster directly. For gigs, click Submit a Bid and write your pitch. For marketplace/housing, message the seller/landlord directly.
 
@@ -165,14 +560,18 @@ RESPONSE FORMAT:
 - Sound like you're texting back, not writing documentation
 - Offer to go deeper only if the user asks for more detail ("Want me to break that down further?")
 
-COMPLAINT/PROBLEM HANDLING (CRITICAL):
-When a user describes a problem, complaint, or issue (keywords to watch for: scam, fraud, issue, problem, complaint, dispute, harassment, threatening, illegal, no-show, didn't show up, ghosted, payment issue, money, stolen, cheated, lied, unsafe, dangerous, report, file a complaint):
-1. IMMEDIATELY acknowledge their frustration with empathy ("I'm sorry to hear you're dealing with this", "That sounds really frustrating", "I understand this is concerning")
-2. Provide specific guidance relevant to their situation
-3. Explain the proper resolution process (messaging first, then dispute/ticket if needed)
-4. Offer to help submit a support ticket if the issue requires human intervention
-5. Be clear about timelines (48-hour dispute window, 72-hour escrow release, etc.)
-6. DO NOT respond with generic feature information or menu options
+SUPPORT STYLE:
+When someone is frustrated or stuck, lead with a real acknowledgment in one short sentence — not scripted CS language. Then troubleshoot. Do not dump a feature FAQ.
+
+TROUBLESHOOT FIRST (CRITICAL):
+1. Acknowledge the situation.
+2. Ask one clarifying question if you don't have enough to look anything up (which listing, gig vs marketplace, about when).
+3. Use tools on THEIR data: get_user_activity, get_order_status, get_report_history, search_listings, search_content as relevant. Do not guess their order/listing IDs if the tools can find them.
+4. Tell them what you actually found and the next concrete step (e.g. confirm receipt on the order page, wait for the 72-hour escrow release, message the other party, check Stripe payouts).
+5. Only AFTER that attempt, if they still need a human, offer a ticket as: "Here's what I'd try — if that doesn't fix it, I can get this in front of a real person." Do not open with a ticket. Do not call create_support_ticket or create_report until they clearly confirm.
+
+EXCEPTIONS (still not a moderation verdict):
+Threats, ongoing danger, or clear illegal activity: skip the long troubleshoot loop, take it seriously, and offer to file a ticket/report immediately after a brief confirm of what to file. Ordinary "this feels scammy" or payment confusion should still check their actual order/listing first.
 
 REPORT HANDLING:
 When a user wants to report a post or comment:
@@ -181,7 +580,15 @@ When a user wants to report a post or comment:
 3. Once confirmed, ALWAYS call create_report — this is not optional and does not depend on your own opinion of whether it's a violation. Every confirmed report gets filed, no exceptions.
 4. When discussing what the content might involve, you can reference our Terms of Service / Community Guidelines informationally (e.g. "this looks like it could relate to our harassment policy"), but never state a final verdict like "this does/doesn't violate our rules." You are not the one who decides — a human moderator reviews every report and makes that call. Frame it as "I've filed this for our support team to look into" every time, not conditionally.
 
-If a user mentions scamming, fraud, threats, or illegal activity, treat this as HIGH PRIORITY and immediately offer to help submit a support ticket with the appropriate category (dispute_report or fair_housing_complaint if applicable).
+TOOLS:
+- search_content: Community posts/comments only.
+- search_listings: live Jobs/Gigs/Marketplace/Housing.
+- get_user_activity: their listings/orders/bids.
+- get_order_status: one order they belong to.
+- get_report_history: their reports/tickets/disputes.
+- create_report: community post/comment, confirm first.
+- create_support_ticket: non-content human queue, confirm first, last resort.
+Never claim you looked something up unless you called the tool. If a tool returns not_found or empty, say you couldn't find anything on their account — do not invent records.
 
 Never use generic fallback responses. If the AI call fails, that's a technical error — but for normal user input, always provide a real, helpful answer based on your knowledge of PhillyGrind.
 
@@ -275,7 +682,6 @@ export default async function handler(req, res) {
         messages,
         ...(includeTools ? { tools } : {}),
       };
-      console.log('[GrindBot API] Sending to Groq:', JSON.stringify(requestBody, null, 2));
 
       const response = await fetch(GROQ_CHAT_URL, {
         method: 'POST',
@@ -287,7 +693,6 @@ export default async function handler(req, res) {
       });
 
       const payload = await response.json();
-      console.log('[GrindBot API] Received from Groq:', JSON.stringify(payload, null, 2));
       if (!response.ok) {
         console.error('[GrindBot API] Groq API error:', payload);
         throw new Error(payload.error?.message || 'GrindBot could not answer right now.');
@@ -296,40 +701,36 @@ export default async function handler(req, res) {
       return payload;
     }
 
-    let payload = await callGroq(currentMessages);
+    let payload = await callGroq(currentMessages, true);
     let toolCalls = payload.choices?.[0]?.message?.tool_calls;
+    let rounds = 0;
 
-    while (toolCalls && toolCalls.length > 0) {
+    while (toolCalls?.length && rounds < MAX_TOOL_ROUNDS) {
+      rounds += 1;
       const toolMessages = [];
 
       for (const toolCall of toolCalls) {
-        const { name, arguments: args } = toolCall.function;
+        const name = toolCall.function?.name;
         let result;
-
         try {
-          if (name === 'search_content') {
-            const parsedArgs = JSON.parse(args);
-            result = await searchContent(parsedArgs.query);
-          } else if (name === 'create_report') {
-            const parsedArgs = JSON.parse(args);
-            result = await createReport(parsedArgs, user.id);
-          } else {
-            result = { error: `Unknown tool: ${name}` };
-          }
+          console.log('[GrindBot] tool', name, 'uid', user.id);
+          result = await runTool(name, toolCall.function?.arguments, user.id);
         } catch (error) {
-          result = { error: error.message };
+          result = { error: error.message || 'Tool failed.' };
         }
 
         toolMessages.push({
           role: 'tool',
           tool_call_id: toolCall.id,
-          content: JSON.stringify(result),
+          content: JSON.stringify(result).slice(0, 8000),
         });
       }
 
       currentMessages.push(payload.choices[0].message);
       currentMessages.push(...toolMessages);
-      payload = await callGroq(currentMessages, false);
+
+      const keepTools = rounds < MAX_TOOL_ROUNDS;
+      payload = await callGroq(currentMessages, keepTools);
       toolCalls = payload.choices?.[0]?.message?.tool_calls;
     }
 
