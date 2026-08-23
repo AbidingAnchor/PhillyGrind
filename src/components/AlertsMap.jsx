@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
-import { useTheme } from '../lib/theme.jsx';
 
 const TILE_SIZE = 256;
 const MIN_ZOOM = 10;
@@ -33,9 +32,8 @@ function unproject(x, y, zoom) {
   return { lat, lon };
 }
 
-function tileUrl(x, y, z, dark) {
-  const style = dark ? 'dark_all' : 'rastertiles/voyager';
-  return `https://basemaps.cartocdn.com/${style}/${z}/${x}/${y}@2x.png`;
+function tileUrl(x, y, z) {
+  return `https://basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}@2x.png`;
 }
 
 export default function AlertsMap({
@@ -44,8 +42,6 @@ export default function AlertsMap({
   selectedId,
   onSelect,
 }) {
-  const themeContext = useTheme();
-  const dark = themeContext?.theme === 'dark';
   const wrapRef = useRef(null);
   const dragRef = useRef(null);
   const [size, setSize] = useState({ width: 640, height: 520 });
@@ -171,7 +167,7 @@ export default function AlertsMap({
           key: `${zoom}-${x}-${y}`,
           left: x * TILE_SIZE - origin.x + width / 2,
           top: y * TILE_SIZE - origin.y + height / 2,
-          url: tileUrl(wrapTile(x, maxTile), y, zoom, dark),
+          url: tileUrl(wrapTile(x, maxTile), y, zoom),
         });
       }
     }
@@ -188,7 +184,7 @@ export default function AlertsMap({
       });
 
     return { tiles, pins };
-  }, [alerts, dark, size, view.lat, view.lon, zoom]);
+  }, [alerts, size, view.lat, view.lon, zoom]);
 
   return (
     <div
