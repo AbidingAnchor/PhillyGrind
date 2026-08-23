@@ -1,61 +1,140 @@
 import { useEffect, useState } from 'react';
-import { CloudLightning } from 'lucide-react';
+import {
+  Cloud,
+  CloudFog,
+  CloudLightning,
+  CloudRain,
+  CloudSnow,
+  CloudSun,
+  Moon,
+  Sun,
+  Wind,
+} from 'lucide-react';
 
-export default function NeighborhoodWeatherAlert({ neighborhood }) {
+const ICONS = {
+  sun: Sun,
+  moon: Moon,
+  cloud: Cloud,
+  partly: CloudSun,
+  rain: CloudRain,
+  storm: CloudLightning,
+  snow: CloudSnow,
+  fog: CloudFog,
+  wind: Wind,
+};
+
+function WeatherGlyph({ name, size = 18 }) {
+  const Icon = ICONS[name] || CloudSun;
+  return <Icon size={size} strokeWidth={1.75} />;
+}
+
+export default function NeighborhoodWeatherAlert({ neighborhood, locationLabel }) {
+  const [forecast, setForecast] = useState(null);
   const [alert, setAlert] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  const place = locationLabel || neighborhood || 'Philadelphia';
 
   useEffect(() => {
-    if (!neighborhood || neighborhood === 'Any') {
-      setAlert(null);
-      return undefined;
-    }
-
     let cancelled = false;
+    const queryNeighborhood = neighborhood && neighborhood !== 'Any'
+      ? neighborhood
+      : 'Center City';
 
-    async function loadAlert() {
+    async function loadWeather() {
       try {
-        const params = new URLSearchParams({ action: 'weather-alerts', neighborhood });
+        const params = new URLSearchParams({
+          action: 'weather-alerts',
+          neighborhood: queryNeighborhood,
+        });
         const response = await fetch(`/api/listing-actions?${params}`);
         if (!response.ok) {
-          if (!cancelled) setAlert(null);
+          if (!cancelled) {
+            setForecast(null);
+            setAlert(null);
+            setLoaded(true);
+          }
           return;
         }
         const payload = await response.json();
-        if (!cancelled) setAlert(payload.alert || null);
+        if (cancelled) return;
+        setForecast(payload.forecast || null);
+        setAlert(payload.alert || null);
+        setLoaded(true);
       } catch {
-        if (!cancelled) setAlert(null);
+        if (!cancelled) {
+          setForecast(null);
+          setAlert(null);
+          setLoaded(true);
+        }
       }
     }
 
-    loadAlert();
+    loadWeather();
     return () => {
       cancelled = true;
     };
   }, [neighborhood]);
 
-  if (!alert) return null;
-
-  const severity = (alert.severity || 'Unknown').toLowerCase();
+  const current = forecast?.current;
+  const days = forecast?.days || [];
+  const severity = (alert?.severity || 'Unknown').toLowerCase();
 
   return (
-    <article
-      className={`feed-left-card feed-weather-alert feed-weather-alert--${severity}`}
-      aria-live="polite"
-    >
-      <div className="feed-weather-alert-top">
-        <span className="feed-weather-alert-icon" aria-hidden="true">
-          <CloudLightning size={16} />
-        </span>
-        <span className="feed-weather-alert-kicker">Weather alert</span>
-        <span className="feed-weather-alert-severity">{alert.severity}</span>
+    <article className="feed-left-card feed-weather-card" aria-label={`${place} weather`}>
+      {alert && (
+        <div className={`feed-weather-alert-banner feed-weather-alert--${severity}`}>
+          <div className="feed-weather-alert-top">
+            <span className="feed-weather-alert-icon" aria-hidden="true">
+              <CloudLightning size={16} />
+            </span>
+            <span className="feed-weather-alert-kicker">Weather alert</span>
+            <span className="feed-weather-alert-severity">{alert.severity}</span>
+          </div>
+          <strong className="feed-weather-alert-title">{alert.title || alert.event}</strong>
+          {alert.description && (
+            <p className="feed-weather-alert-copy">{alert.description}</p>
+          )}
+        </div>
+      )}
+
+      <div className="feed-weather-forecast">
+        <span className="feed-weather-kicker">Weather</span>
+        {current ? (
+          <div className="feed-weather-now">
+            <span className="feed-weather-now-icon" aria-hidden="true">
+              <WeatherGlyph name={current.icon} size={28} />
+            </span>
+            <div className="feed-weather-now-copy">
+              <strong className="feed-weather-now-temp">
+                {current.temp}°{current.unit === 'F' ? '' : current.unit}
+              </strong>
+              <span className="feed-weather-now-condition">{current.condition}</span>
+              <span className="feed-weather-now-place">{place}</span>
+            </div>
+          </div>
+        ) : (
+          <p className="feed-weather-empty">
+            {loaded ? 'Forecast unavailable right now.' : 'Checking the forecast…'}
+          </p>
+        )}
+
+        {days.length > 0 && (
+          <ul className="feed-weather-week">
+            {days.map((day, index) => (
+              <li key={`${day.name}-${index}`} className="feed-weather-day">
+                <span className="feed-weather-day-name">{day.name}</span>
+                <span className="feed-weather-day-icon" title={day.condition} aria-label={day.condition}>
+                  <WeatherGlyph name={day.icon} size={15} />
+                </span>
+                <span className="feed-weather-day-temps">
+                  <strong>{day.high ?? '–'}°</strong>
+                  <span>{day.low != null ? `${day.low}°` : ''}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
-      <strong className="feed-weather-alert-title">{alert.title || alert.event}</strong>
-      {alert.headline && alert.headline !== alert.event && (
-        <p className="feed-weather-alert-headline">{alert.headline}</p>
-      )}
-      {alert.description && (
-        <p className="feed-weather-alert-copy">{alert.description}</p>
-      )}
     </article>
   );
 }

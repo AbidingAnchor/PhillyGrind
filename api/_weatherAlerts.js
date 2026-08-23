@@ -1,7 +1,11 @@
 import { sendJson } from './_utils.js';
 
 const cache = new Map();
-const CACHE_MS = 5 * 60 * 1000;
+const CACHE_MS = 15 * 60 * 1000;
+const NWS_HEADERS = {
+  Accept: 'application/geo+json',
+  'User-Agent': 'PhillyGrind/1.0 (https://phillygrind.work; drewnegron95@gmail.com)',
+};
 const SEVERITY_RANK = {
   Extreme: 4,
   Severe: 3,
@@ -42,7 +46,8 @@ const NEIGHBORHOOD_COORDS = {
 };
 
 function coordsForNeighborhood(name) {
-  return NEIGHBORHOOD_COORDS[String(name || '').trim()] || null;
+  const key = String(name || '').trim();
+  return NEIGHBORHOOD_COORDS[key] || NEIGHBORHOOD_COORDS['Center City'];
 }
 
 function clipDescription(text) {
@@ -76,6 +81,26 @@ function formatUntil(iso) {
   return `${weekday} ${time}`;
 }
 
+function weatherIcon(shortForecast, isDaytime) {
+  const text = String(shortForecast || '').toLowerCase();
+  if (/(thunder|t-storm|lightning)/.test(text)) return 'storm';
+  if (/(snow|sleet|ice|blizzard|flurries)/.test(text)) return 'snow';
+  if (/(rain|shower|drizzle)/.test(text)) return 'rain';
+  if (/(fog|haze|mist)/.test(text)) return 'fog';
+  if (/(wind)/.test(text)) return 'wind';
+  if (/(overcast|cloudy)/.test(text) && !/(partly|mostly sunny|mostly clear)/.test(text)) return 'cloud';
+  if (/(partly|mostly cloudy|mostly sunny|mostly clear)/.test(text)) return isDaytime ? 'partly' : 'cloud';
+  if (/(sunny|clear)/.test(text)) return isDaytime ? 'sun' : 'moon';
+  return isDaytime ? 'partly' : 'cloud';
+}
+
+function dayLabel(name) {
+  const raw = String(name || '').replace(/\s+Night$/i, '').trim();
+  if (/^(today|this afternoon|this morning)$/i.test(raw)) return 'Today';
+  if (/^tonight$/i.test(raw)) return 'Tonight';
+  return raw.slice(0, 3);
+}
+
 function pickAlert(features) {
   const ranked = (features || [])
     .map((feature) => feature?.properties)
@@ -99,41 +124,87 @@ function pickAlert(features) {
   };
 }
 
-export async function handleWeatherAlerts(req, res) {
-  const neighborhood = String(req.query.neighborhood || '').trim();
-  const coords = coordsForNeighborhood(neighborhood);
-  if (!coords) {
-    sendJson(res, 200, { alert: null });
-    return;
+function buildForecast(periods) {
+  const list = periods || [];
+  if (!list.length) return null;
+
+  const current = list[0];
+  const days = [];
+
+  for (let index = 0; index < list.length; index += 1) {
+    const period = list[index];
+    if (!period?.isDaytime) continue;
+    const night = list[index + 1] && !list[index + 1].isDaytime ? list[index + 1] : null;
+    days.push({
+      name: dayLabel(period.name),
+      high: period.temperature,
+      low: night?.temperature ?? null,
+      condition: period.shortForecast,
+      icon: weatherIcon(period.shortForecast, true),
+    });
+    if (days.length >= 7) break;
   }
 
+  if (!days.length && current) {
+    days.push({
+      name: dayLabel(current.name),
+      high: current.isDaytime ? current.temperature : null,
+      low: current.isDaytime ? null : current.temperature,
+      condition: current.shortForecast,
+      icon: weatherIcon(current.shortForecast, current.isDaytime),
+    });
+  }
+
+  return {
+    current: {
+      temp: current.temperature,
+      unit: current.temperatureUnit || 'F',
+      condition: current.shortForecast,
+      isDaytime: Boolean(current.isDaytime),
+      icon: weatherIcon(current.shortForecast, current.isDaytime),
+      name: current.name,
+    },
+    days,
+  };
+}
+
+async function nwsJson(url) {
+  const response = await fetch(url, { headers: NWS_HEADERS });
+  if (!response.ok) throw new Error(`NWS ${response.status}`);
+  return response.json();
+}
+
+export async function handleWeatherAlerts(req, res) {
+  const neighborhood = String(req.query.neighborhood || '').trim() || 'Center City';
+  const coords = coordsForNeighborhood(neighborhood);
   const cacheKey = `${coords.lat.toFixed(3)},${coords.lon.toFixed(3)}`;
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.at < CACHE_MS) {
-    sendJson(res, 200, { alert: cached.alert });
+    sendJson(res, 200, cached.payload);
     return;
   }
 
   try {
-    const url = `https://api.weather.gov/alerts/active?point=${coords.lat},${coords.lon}`;
-    const response = await fetch(url, {
-      headers: {
-        Accept: 'application/geo+json',
-        'User-Agent': 'PhillyGrind/1.0 (https://phillygrind.work; drewnegron95@gmail.com)',
-      },
-    });
+    const [point, alertsPayload] = await Promise.all([
+      nwsJson(`https://api.weather.gov/points/${coords.lat},${coords.lon}`),
+      nwsJson(`https://api.weather.gov/alerts/active?point=${coords.lat},${coords.lon}`).catch(() => ({ features: [] })),
+    ]);
 
-    if (!response.ok) {
-      sendJson(res, 200, { alert: null });
-      return;
-    }
+    const forecastUrl = point?.properties?.forecast;
+    const forecastPayload = forecastUrl
+      ? await nwsJson(forecastUrl)
+      : { properties: { periods: [] } };
 
-    const payload = await response.json();
-    const alert = pickAlert(payload.features);
-    cache.set(cacheKey, { at: Date.now(), alert });
-    sendJson(res, 200, { alert });
+    const payload = {
+      neighborhood,
+      forecast: buildForecast(forecastPayload?.properties?.periods),
+      alert: pickAlert(alertsPayload?.features),
+    };
+
+    cache.set(cacheKey, { at: Date.now(), payload });
+    sendJson(res, 200, payload);
   } catch (error) {
     console.warn('[weather-alerts]', error.message);
-    sendJson(res, 200, { alert: null });
+    sendJson(res, 200, { neighborhood, forecast: null, alert: null });
   }
 }

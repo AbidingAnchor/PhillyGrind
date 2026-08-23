@@ -12633,17 +12633,158 @@ input[type="datetime-local"]:focus {
   color: #f5f5f5;
 }
 
-.feed-weather-alert {
-  position: relative;
+.feed-weather-card {
+  padding: 0;
   overflow: hidden;
-  padding: 15px 14px 15px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  isolation: isolate;
 }
 
-.feed-weather-alert::before {
+.feed-weather-forecast {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feed-weather-kicker {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.feed-weather-now {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.feed-weather-now-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .feed-weather-now-icon {
+  background: rgba(34, 197, 94, 0.14);
+  color: #4ade80;
+}
+
+.feed-weather-now-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.feed-weather-now-temp {
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+[data-theme="dark"] .feed-weather-now-temp {
+  color: #f8fafc;
+}
+
+.feed-weather-now-condition,
+.feed-weather-now-place,
+.feed-weather-empty {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.feed-weather-now-condition {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feed-weather-week {
+  list-style: none;
+  margin: 0;
+  padding: 2px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid rgba(17, 24, 39, 0.06);
+}
+
+[data-theme="dark"] .feed-weather-week {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.feed-weather-day {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 0.78rem;
+}
+
+.feed-weather-day-name {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+[data-theme="dark"] .feed-weather-day-name {
+  color: #e5e7eb;
+}
+
+.feed-weather-day-icon {
+  display: inline-flex;
+  color: #16a34a;
+}
+
+[data-theme="dark"] .feed-weather-day-icon {
+  color: #4ade80;
+}
+
+.feed-weather-day-temps {
+  display: flex;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.feed-weather-day-temps strong {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.feed-weather-day-temps span {
+  color: var(--muted);
+  min-width: 1.6rem;
+  text-align: right;
+}
+
+[data-theme="dark"] .feed-weather-day-temps strong {
+  color: #f8fafc;
+}
+
+.feed-weather-alert-banner {
+  position: relative;
+  padding: 12px 14px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.06);
+}
+
+[data-theme="dark"] .feed-weather-alert-banner {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.feed-weather-alert-banner::before {
   content: '';
   position: absolute;
   left: 0;
@@ -12660,16 +12801,16 @@ input[type="datetime-local"]:focus {
 .feed-weather-alert--unknown::before { background: #64748b; }
 
 .feed-weather-alert--minor {
-  background: linear-gradient(180deg, rgba(101, 163, 13, 0.08), var(--card) 72%);
+  background: rgba(101, 163, 13, 0.08);
 }
 .feed-weather-alert--moderate {
-  background: linear-gradient(180deg, rgba(217, 119, 6, 0.1), var(--card) 72%);
+  background: rgba(217, 119, 6, 0.1);
 }
 .feed-weather-alert--severe {
-  background: linear-gradient(180deg, rgba(234, 88, 12, 0.12), var(--card) 72%);
+  background: rgba(234, 88, 12, 0.12);
 }
 .feed-weather-alert--extreme {
-  background: linear-gradient(180deg, rgba(220, 38, 38, 0.14), var(--card) 78%);
+  background: rgba(220, 38, 38, 0.14);
 }
 
 .feed-weather-alert-top {
@@ -12736,29 +12877,18 @@ input[type="datetime-local"]:focus {
 }
 
 .feed-weather-alert-title {
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.3;
   color: var(--ink);
 }
 
-.feed-weather-alert-headline,
 .feed-weather-alert-copy {
   margin: 0;
-  font-size: 0.78rem;
-  line-height: 1.45;
+  font-size: 0.75rem;
+  line-height: 1.4;
   color: var(--muted);
-}
-
-.feed-weather-alert-headline {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.feed-weather-alert-copy {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;

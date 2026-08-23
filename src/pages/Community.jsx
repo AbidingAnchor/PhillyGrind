@@ -100,7 +100,11 @@ function CommunityLeftSidebar({ isLoggedIn, user, profile }) {
         </div>
       </div>
 
-      {neighborhoodName ? <NeighborhoodWeatherAlert neighborhood={neighborhoodName} /> : null}
+      {neighborhoodName ? (
+        <NeighborhoodWeatherAlert neighborhood={neighborhoodName} locationLabel={neighborhoodName} />
+      ) : (
+        <NeighborhoodWeatherAlert neighborhood="Center City" locationLabel="Philadelphia" />
+      )}
     </aside>
   );
 }
