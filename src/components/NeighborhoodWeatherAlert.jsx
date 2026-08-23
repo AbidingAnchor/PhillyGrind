@@ -70,7 +70,57 @@ const GLYPHS = {
   ),
 };
 
-export default function NeighborhoodWeatherAlert({ neighborhood, locationLabel }) {
+const weatherRequestCache = new Map();
+const WEATHER_CACHE_MS = 60_000;
+
+function loadWeatherAlerts(neighborhood) {
+  const cached = weatherRequestCache.get(neighborhood);
+  if (cached && Date.now() - cached.at < WEATHER_CACHE_MS) {
+    return cached.promise;
+  }
+
+  const query = new URLSearchParams({
+    action: 'weather-alerts',
+    neighborhood,
+  });
+
+  const promise = (async () => {
+    const local = await fetch(`/api/listing-actions?${query}`);
+    if (local.ok) return local.json();
+    if (import.meta.env.DEV) {
+      const live = await fetch(`https://www.phillygrind.work/api/listing-actions?${query}`);
+      if (live.ok) return live.json();
+    }
+    return { forecast: null, alert: null };
+  })();
+
+  weatherRequestCache.set(neighborhood, { at: Date.now(), promise });
+  return promise;
+}
+
+function WeatherAlertBody({ alert, severity }) {
+  return (
+    <div className={`feed-weather-alert-banner feed-weather-alert--${severity}`}>
+      <div className="feed-weather-alert-top">
+        <span className="feed-weather-alert-icon" aria-hidden="true">
+          <CloudLightning size={16} />
+        </span>
+        <span className="feed-weather-alert-kicker">Weather alert</span>
+        <span className="feed-weather-alert-severity">{alert.severity}</span>
+      </div>
+      <strong className="feed-weather-alert-title">{alert.title || alert.event}</strong>
+      {alert.description && (
+        <p className="feed-weather-alert-copy">{alert.description}</p>
+      )}
+    </div>
+  );
+}
+
+export default function NeighborhoodWeatherAlert({
+  neighborhood,
+  locationLabel,
+  variant = 'sidebar',
+}) {
   const [forecast, setForecast] = useState(null);
   const [alert, setAlert] = useState(null);
   const [loaded, setLoaded] = useState(false);
@@ -82,36 +132,20 @@ export default function NeighborhoodWeatherAlert({ neighborhood, locationLabel }
       ? neighborhood
       : 'Center City';
 
-    async function loadWeather() {
-      try {
-        const params = new URLSearchParams({
-          action: 'weather-alerts',
-          neighborhood: queryNeighborhood,
-        });
-        const response = await fetch(`/api/listing-actions?${params}`);
-        if (!response.ok) {
-          if (!cancelled) {
-            setForecast(null);
-            setAlert(null);
-            setLoaded(true);
-          }
-          return;
-        }
-        const payload = await response.json();
+    loadWeatherAlerts(queryNeighborhood)
+      .then((payload) => {
         if (cancelled) return;
         setForecast(payload.forecast || null);
         setAlert(payload.alert || null);
         setLoaded(true);
-      } catch {
-        if (!cancelled) {
-          setForecast(null);
-          setAlert(null);
-          setLoaded(true);
-        }
-      }
-    }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setForecast(null);
+        setAlert(null);
+        setLoaded(true);
+      });
 
-    loadWeather();
     return () => {
       cancelled = true;
     };
@@ -121,23 +155,21 @@ export default function NeighborhoodWeatherAlert({ neighborhood, locationLabel }
   const days = forecast?.days || [];
   const severity = (alert?.severity || 'Unknown').toLowerCase();
 
+  if (variant === 'feed') {
+    if (!loaded || !alert) return null;
+    return (
+      <article
+        className="feed-post-card feed-weather-inline-card"
+        aria-label={`${place} weather alert`}
+      >
+        <WeatherAlertBody alert={alert} severity={severity} />
+      </article>
+    );
+  }
+
   return (
     <article className="feed-left-card feed-weather-card" aria-label={`${place} weather`}>
-      {alert && (
-        <div className={`feed-weather-alert-banner feed-weather-alert--${severity}`}>
-          <div className="feed-weather-alert-top">
-            <span className="feed-weather-alert-icon" aria-hidden="true">
-              <CloudLightning size={16} />
-            </span>
-            <span className="feed-weather-alert-kicker">Weather alert</span>
-            <span className="feed-weather-alert-severity">{alert.severity}</span>
-          </div>
-          <strong className="feed-weather-alert-title">{alert.title || alert.event}</strong>
-          {alert.description && (
-            <p className="feed-weather-alert-copy">{alert.description}</p>
-          )}
-        </div>
-      )}
+      {alert && <WeatherAlertBody alert={alert} severity={severity} />}
 
       <div className="feed-weather-forecast">
         <span className="feed-weather-kicker">Weather</span>

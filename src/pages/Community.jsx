@@ -1802,6 +1802,12 @@ function Community() {
               </button>
             </div>
 
+            <NeighborhoodWeatherAlert
+              variant="feed"
+              neighborhood={homeNeighborhood || 'Center City'}
+              locationLabel={homeNeighborhood || 'Philadelphia'}
+            />
+
             {showComposer && createPortal(
               <div
                 className="community-compose-modal-overlay"

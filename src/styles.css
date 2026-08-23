@@ -13357,6 +13357,34 @@ input[type="datetime-local"]:focus {
   color: #fdba74;
 }
 
+.feed-weather-inline-card {
+  display: none;
+  padding: 0;
+  overflow: hidden;
+}
+
+.feed-weather-inline-card .feed-weather-alert-banner {
+  border-bottom: 0;
+  border-radius: 12px;
+  padding: 14px 16px 14px 18px;
+}
+
+.feed-weather-inline-card .feed-weather-alert-title {
+  font-size: 1rem;
+}
+
+.feed-weather-inline-card .feed-weather-alert-copy {
+  font-size: 0.86rem;
+  -webkit-line-clamp: 4;
+}
+
+@media (max-width: 1279px) {
+  .feed-weather-inline-card {
+    display: block;
+    margin: 0 0 14px;
+  }
+}
+
 [data-theme="dark"] .feed-weather-alert--extreme .feed-weather-alert-severity {
   color: #fca5a5;
 }
