@@ -3,6 +3,7 @@ import { Bot, Send, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../lib/auth.jsx';
 import { hasSupabaseConfig, supabase } from '../lib/supabase.js';
+import { grindBotUserFacingError } from '../lib/grindbotErrors.js';
 
 const welcomeMessage = {
   role: 'assistant',
@@ -278,15 +279,18 @@ function GrindBot() {
         }),
       });
 
-      const payload = await response.json();
+      const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(payload.error || 'GrindBot could not answer right now.');
+        throw new Error(grindBotUserFacingError(payload.error));
+      }
+      if (!payload.reply) {
+        throw new Error(grindBotUserFacingError(''));
       }
 
       setMessages((current) => [...current, { role: 'assistant', content: payload.reply }]);
       scrollThread();
     } catch (error) {
-      setStatus(error.message || 'GrindBot is taking five. Try again in a minute.');
+      setStatus(grindBotUserFacingError(error.message));
     } finally {
       setSending(false);
     }

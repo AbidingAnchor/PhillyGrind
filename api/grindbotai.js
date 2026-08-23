@@ -2,8 +2,10 @@ import { createRateLimiter, checkRateLimit } from './_utils/rateLimit.js';
 import { createClient } from '@supabase/supabase-js';
 
 const limiter = createRateLimiter(20, '60 s');
-const MAX_TOOL_ROUNDS = 5;
-const ACTIVITY_LIMIT = 8;
+const MAX_TOOL_ROUNDS = 3;
+const ACTIVITY_LIMIT = 6;
+const USER_BUSY_MESSAGE = "I'm handling a lot right now — give me a second and try again.";
+const USER_DOWN_MESSAGE = 'GrindBot is taking five. Try again in a minute.';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TICKET_CATEGORIES = new Set([
   'general',
@@ -27,6 +29,25 @@ if (!process.env.SUPABASE_URL && !process.env.VITE_SUPABASE_URL) {
 
 function sendJson(res, status, body) {
   res.status(status).json(body);
+}
+
+function looksLikeProviderLeak(text) {
+  return /rate limit|tokens per|token.?limit|tpm\b|upgrade to|dev tier|groq|openai\/gpt-oss|billing|try again in \d|please reduce/i.test(String(text || ''));
+}
+
+function isRateLimitPayload(status, payload) {
+  if (status === 429) return true;
+  const message = payload?.error?.message || payload?.message || '';
+  const code = payload?.error?.code || payload?.error?.type || '';
+  return /rate_limit|too_many_requests/i.test(String(code)) || looksLikeProviderLeak(message);
+}
+
+function publicGrindBotError(error, status) {
+  const message = error?.message || error;
+  if (status === 429 || looksLikeProviderLeak(message)) {
+    return USER_BUSY_MESSAGE;
+  }
+  return USER_DOWN_MESSAGE;
 }
 
 function requireMethod(req, res, method = 'POST') {
@@ -94,12 +115,10 @@ const tools = [
     type: 'function',
     function: {
       name: 'search_content',
-      description: 'Search Community posts and comments by keyword to find specific content a user wants to report or ask about.',
+      description: 'Search Community posts/comments by keyword.',
       parameters: {
         type: 'object',
-        properties: {
-          query: { type: 'string', description: 'Keywords describing the post/comment content' },
-        },
+        properties: { query: { type: 'string' } },
         required: ['query'],
       },
     },
@@ -108,14 +127,14 @@ const tools = [
     type: 'function',
     function: {
       name: 'create_report',
-      description: 'File a report on a specific post or comment. Only call this after the user has explicitly confirmed the correct content was found. This ALWAYS files a report when called — never skip filing based on your own read of whether it is a violation.',
+      description: 'File a community post/comment report after the user confirms the match. Always files; never skip based on your own judgment.',
       parameters: {
         type: 'object',
         properties: {
-          post_id: { type: 'string', description: 'UUID of the post being reported, if applicable' },
-          comment_id: { type: 'string', description: 'UUID of the comment being reported, if applicable' },
-          reason: { type: 'string', description: "Category, e.g. 'Harassment', 'Spam', 'Fake account'" },
-          subreason: { type: 'string', description: 'Specific detail about why' },
+          post_id: { type: 'string' },
+          comment_id: { type: 'string' },
+          reason: { type: 'string' },
+          subreason: { type: 'string' },
         },
         required: ['reason', 'subreason'],
       },
@@ -125,7 +144,7 @@ const tools = [
     type: 'function',
     function: {
       name: 'get_user_activity',
-      description: "Load the logged-in user's own recent jobs, gigs, marketplace listings, housing listings, bids, job applications, gig escrow orders, and marketplace orders with statuses. Use this when they ask about their posts, payouts, bids, or what is going on with their account. Has no parameters; always returns ONLY the authenticated user's data.",
+      description: "Logged-in user's recent listings, bids, applications, and orders. No args.",
       parameters: { type: 'object', properties: {} },
     },
   },
@@ -133,7 +152,7 @@ const tools = [
     type: 'function',
     function: {
       name: 'get_report_history',
-      description: "Load the logged-in user's own community reports, listing/user reports, marketplace disputes they are a party to, and support tickets, with current status. Use when they ask if a report was filed or what happened to their complaint.",
+      description: "Logged-in user's reports, tickets, and disputes. No args.",
       parameters: { type: 'object', properties: {} },
     },
   },
@@ -141,12 +160,10 @@ const tools = [
     type: 'function',
     function: {
       name: 'get_order_status',
-      description: 'Look up one gig escrow order or marketplace order by UUID. Returns the order only if the authenticated user is the buyer, seller, hirer, or worker. If the ID is missing, invalid, or belongs to someone else, returns not_found with no extra detail.',
+      description: 'One gig or marketplace order by UUID if the user is a party. Else not_found.',
       parameters: {
         type: 'object',
-        properties: {
-          order_id: { type: 'string', description: 'UUID of the gig order or marketplace order' },
-        },
+        properties: { order_id: { type: 'string' } },
         required: ['order_id'],
       },
     },
@@ -155,18 +172,14 @@ const tools = [
     type: 'function',
     function: {
       name: 'search_listings',
-      description: 'Search currently live, approved jobs, gigs, marketplace items, and housing rentals by keyword, optional category, and optional neighborhood. This is NOT Community posts — use search_content for the feed. Public catalog data only; does not return other users private account data.',
+      description: 'Search live Jobs/Gigs/Marketplace/Housing. Not Community.',
       parameters: {
         type: 'object',
         properties: {
-          query: { type: 'string', description: 'Keywords to match against title/description' },
-          category: { type: 'string', description: 'Optional category filter' },
-          neighborhood: { type: 'string', description: 'Optional neighborhood filter, e.g. Fishtown' },
-          type: {
-            type: 'string',
-            enum: ['all', 'job', 'gig', 'marketplace', 'housing'],
-            description: 'Which catalog to search. Default all.',
-          },
+          query: { type: 'string' },
+          category: { type: 'string' },
+          neighborhood: { type: 'string' },
+          type: { type: 'string', enum: ['all', 'job', 'gig', 'marketplace', 'housing'] },
         },
         required: ['query'],
       },
@@ -176,16 +189,15 @@ const tools = [
     type: 'function',
     function: {
       name: 'create_support_ticket',
-      description: 'File a general support ticket into the existing contact/admin queue (not a Community content report). ONLY call after you already tried to troubleshoot with tools and the user explicitly confirmed they want a human to look at it. Never invent the user identity — the server attaches the logged-in user.',
+      description: 'Queue a human support ticket after troubleshooting and explicit user confirm.',
       parameters: {
         type: 'object',
         properties: {
           category: {
             type: 'string',
             enum: ['general', 'data_deletion', 'fair_housing_complaint', 'dispute_report', 'other'],
-            description: 'Must match contact_submissions categories',
           },
-          message: { type: 'string', description: 'The issue in the user\'s own words, after they confirmed filing' },
+          message: { type: 'string' },
         },
         required: ['category', 'message'],
       },
@@ -590,51 +602,8 @@ TOOLS:
 - create_support_ticket: non-content human queue, confirm first, last resort.
 Never claim you looked something up unless you called the tool. If a tool returns not_found or empty, say you couldn't find anything on their account — do not invent records.
 
-Never use generic fallback responses. If the AI call fails, that's a technical error — but for normal user input, always provide a real, helpful answer based on your knowledge of PhillyGrind.
-
-TERMS OF SERVICE (Last Updated: August 13, 2026):
-ELIGIBILITY: Must be at least 18 years old. Account credentials must be kept confidential. No false information, multiple accounts to evade bans, or impersonation.
-
-PLATFORM ROLE: PhillyGrind is a platform that connects users — not a party to transactions. We don't employ workers, act as landlords, own marketplace items, or guarantee listing accuracy.
-
-COMMUNITY FEED PROHIBITIONS: No discriminatory/harassing/threatening content, no doxxing (private info disclosure), no misinformation, no IP infringement, no spam/unauthorized advertising, no illegal content. Automated moderation + human review used.
-
-JOBS/GIGS PROHIBITIONS: No discriminatory hiring (race, color, religion, sex, age, disability, national origin, sexual orientation, gender identity), no payment requests from workers, no MLM/pyramid schemes, no unpaid labor misrepresented as paid.
-
-MARKETPLACE: Secure Checkout holds payment in escrow until buyer confirms receipt or auto-release. 8% platform fee. Prohibited items: weapons, illegal drugs, stolen/counterfeit/recalled goods, anything illegal under PA/Philly law. Disputes handled by PhillyGrind with final determination on fund release. Cash transactions are user-arranged with no PhillyGrind responsibility.
-
-HOUSING: Must comply with Fair Housing Act and PA/Philadelphia law. No discrimination based on race, color, religion, sex, national origin, familial status, disability (federal), or sexual orientation, gender identity, source of income including Section 8 (local). AI screening detects discriminatory language but is not a legal guarantee — landlords remain fully responsible for compliance. Landlord verification badge indicates documentation submitted only, not conduct guarantee. Multiple reports trigger review and warning.
-
-CONTENT MODERATION: Uses third-party APIs (OpenAI) for unsafe categories, custom AI for platform-specific rules (Fair Housing, scams, harassment, doxxing), and human review. High-confidence violations auto-rejected; lower-confidence logged for review. Not a guarantee — users can appeal.
-
-PROHIBITED CONDUCT: Unlawful use, harassment/threats/abuse, circumventing Secure Checkout to defraud, scraping/reverse-engineering, bypassing moderation systems.
-
-ACCOUNT SUSPENSION: Can suspend/terminate for Terms violations. Users can request deletion.
-
-DISCLAIMERS: Platform provided "as is" without warranties. No guarantee of accuracy, legality, or safety. Use at your own risk.
-
-LIMITATION OF LIABILITY: Not liable for indirect/incidental/special/consequential damages.
-
-PRIVACY POLICY (Last Updated: August 13, 2026):
-INFORMATION COLLECTED: Account info (name, email, password, photo), listing content (posts, comments, reactions), verification documents, payment info (processed by Stripe, not stored by PhillyGrind), messages, communications with support. Automatic: device/browser info, IP address, usage data, cookies.
-
-INFORMATION USE: Operate platform, process payments, screen content for moderation, verify identity, resolve disputes, communicate, improve security, comply with law.
-
-AI-ASSISTED MODERATION: Content sent to AI providers (OpenAI/Groq) for analysis. Flagged content logged for admin review. Content not used to train third-party models (to extent controllable). Users can appeal decisions.
-
-INFORMATION SHARING: Display name, photo, and posted content visible to users. Shared with service providers (Stripe, Supabase, Vercel, OpenAI/Groq, Resend) under confidentiality. Shared if required by law or in business transfer. Email addresses never displayed publicly. No selling of personal information.
-
-DATA RETENTION: Account/listing info retained while account active. Moderation logs retained for dispute resolution, legal compliance, pattern detection even after listing/account removal.
-
-COOKIES: Used for login, preferences, usage understanding. Can control via browser settings.
-
-USER RIGHTS: Access, correction, deletion, objection/restriction of personal information. Contact via Contact page. Response in reasonable time per PA law.
-
-CHILDREN'S PRIVACY: Not for under 18. No knowingly collected info from under 18; deleted if learned.
-
-DATA SECURITY: Reasonable safeguards including encryption and role-based access. No absolute security guarantee.
-
-DATA LOCATION: Processed/stored by providers (Supabase, Vercel, Stripe) that may store data outside user's state/country.
+KEY RULES (use these instead of quoting a full legal dump):
+Must be 18+. PhillyGrind connects people — it does not employ workers, own listings, or guarantee outcomes. Community: no harassment, doxxing, spam, illegal content. Jobs/gigs: no discriminatory hiring, MLM, or unpaid labor dressed up as paid. Marketplace: no weapons/drugs/stolen goods; Secure Checkout is 8% with escrow. Housing must follow Fair Housing / Philly source-of-income rules. You never decide violations; humans review reports. Emails stay private. Support: support@phillygrind.work.
 `;
 
 export default async function handler(req, res) {
@@ -651,14 +620,14 @@ export default async function handler(req, res) {
     }
 
     if (!process.env.GROQ_API_KEY) {
-      sendJson(res, 500, { error: 'GROQ_API_KEY is not configured.' });
+      sendJson(res, 500, { error: USER_DOWN_MESSAGE });
       return;
     }
 
     const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
     const safeMessages = messages
       .filter((message) => ['user', 'assistant'].includes(message.role) && String(message.content || '').trim())
-      .slice(-20)
+      .slice(-8)
       .map((message) => ({
         role: message.role,
         content: String(message.content).slice(0, 3200),
@@ -674,11 +643,11 @@ export default async function handler(req, res) {
       ...safeMessages,
     ];
 
-    async function callGroq(messages, includeTools = true) {
+    async function callGroq(messages, includeTools = true, attempt = 0) {
       const requestBody = {
         model: 'openai/gpt-oss-120b',
         temperature: 0.5,
-        max_tokens: 1000,
+        max_tokens: 700,
         messages,
         ...(includeTools ? { tools } : {}),
       };
@@ -692,10 +661,26 @@ export default async function handler(req, res) {
         body: JSON.stringify(requestBody),
       });
 
-      const payload = await response.json();
+      const payload = await response.json().catch(() => ({}));
+      if (payload?.usage) {
+        console.log('[GrindBot] groq usage', payload.usage);
+      }
+
       if (!response.ok) {
-        console.error('[GrindBot API] Groq API error:', payload);
-        throw new Error(payload.error?.message || 'GrindBot could not answer right now.');
+        const rateLimited = isRateLimitPayload(response.status, payload);
+        const retryAfter = Number(response.headers.get('retry-after'));
+        if (rateLimited && attempt === 0 && retryAfter > 0 && retryAfter <= 3) {
+          await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000 + 150));
+          return callGroq(messages, includeTools, 1);
+        }
+        console.error('[GrindBot API] Groq API error', {
+          status: response.status,
+          remainingTokens: response.headers.get('x-ratelimit-remaining-tokens'),
+          resetTokens: response.headers.get('x-ratelimit-reset-tokens'),
+        });
+        const err = new Error(rateLimited ? USER_BUSY_MESSAGE : USER_DOWN_MESSAGE);
+        err.status = rateLimited ? 429 : 503;
+        throw err;
       }
 
       return payload;
@@ -722,7 +707,7 @@ export default async function handler(req, res) {
         toolMessages.push({
           role: 'tool',
           tool_call_id: toolCall.id,
-          content: JSON.stringify(result).slice(0, 8000),
+          content: JSON.stringify(result).slice(0, 4000),
         });
       }
 
@@ -734,15 +719,22 @@ export default async function handler(req, res) {
       toolCalls = payload.choices?.[0]?.message?.tool_calls;
     }
 
-    const reply = payload.choices?.[0]?.message?.content;
-    if (!reply) {
-      console.error('[GrindBot API] No reply in Groq response:', payload);
-      sendJson(res, 500, { error: 'GrindBot could not generate a response.' });
+    const reply = String(payload.choices?.[0]?.message?.content || '').trim();
+    if (!reply || looksLikeProviderLeak(reply)) {
+      if (looksLikeProviderLeak(reply)) {
+        console.error('[GrindBot API] Sanitized leaked provider text from model reply');
+      } else {
+        console.error('[GrindBot API] No reply in Groq response');
+      }
+      sendJson(res, looksLikeProviderLeak(reply) ? 429 : 500, {
+        error: looksLikeProviderLeak(reply) ? USER_BUSY_MESSAGE : USER_DOWN_MESSAGE,
+      });
       return;
     }
 
     sendJson(res, 200, { reply });
   } catch (error) {
-    sendJson(res, 500, { error: error.message || 'GrindBot is unavailable right now.' });
+    const status = error.status === 429 ? 429 : 500;
+    sendJson(res, status, { error: publicGrindBotError(error, error.status) });
   }
 }

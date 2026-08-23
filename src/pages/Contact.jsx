@@ -4,6 +4,7 @@ import { Send, Bot } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../lib/auth.jsx';
 import { sendContactSubmission } from '../lib/contactApi.js';
+import { grindBotUserFacingError } from '../lib/grindbotErrors.js';
 
 const welcomeMessage = {
   role: 'assistant',
@@ -163,9 +164,12 @@ function Contact() {
         }),
       });
 
-      const payload = await response.json();
+      const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(payload.error || 'GrindBot could not answer right now.');
+        throw new Error(grindBotUserFacingError(payload.error));
+      }
+      if (!payload.reply) {
+        throw new Error(grindBotUserFacingError(''));
       }
 
       addAssistantMessage(payload.reply);
@@ -178,7 +182,7 @@ function Contact() {
         });
       }
     } catch (error) {
-      addAssistantMessage(error.message || 'GrindBot is taking five. Try again in a minute.');
+      addAssistantMessage(grindBotUserFacingError(error.message));
     } finally {
       setSending(false);
     }
