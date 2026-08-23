@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+      const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
       const { data: dueOrders, error } = await supabaseAdmin
         .from('orders')
         .select('id,stripe_payment_intent_id')
