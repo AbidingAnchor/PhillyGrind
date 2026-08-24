@@ -16517,3 +16517,77 @@ input[type="datetime-local"]:focus {
   color: inherit;
   display: block;
 }
+
+/* Groups (Phase 2) */
+.group-create-page .group-create-form {
+  max-width: 640px;
+}
+
+.group-page {
+  max-width: 720px;
+}
+
+.group-page-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.group-page-back:hover {
+  color: var(--green);
+}
+
+.group-page-header h1 {
+  margin-bottom: 8px;
+}
+
+.group-page-category {
+  margin: 0;
+  color: var(--green);
+  font-weight: 600;
+}
+
+.group-page-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.group-page-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.group-page-neighborhood {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--muted-bg);
+  font-size: 0.82rem;
+}
+
+.group-page-description {
+  margin: 0 0 20px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.group-page-role-note {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.group-page-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}

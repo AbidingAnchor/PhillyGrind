@@ -40,6 +40,8 @@ import Housing from './pages/Housing.jsx';
 import PostHousing from './pages/PostHousing.jsx';
 import HousingDetail from './pages/HousingDetail.jsx';
 import Community from './pages/Community.jsx';
+import CreateGroup from './pages/CreateGroup.jsx';
+import GroupPage from './pages/GroupPage.jsx';
 import Alerts from './pages/Alerts.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AuthProvider } from './lib/auth.jsx';
@@ -70,6 +72,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/account-recovery" element={<AccountRecovery />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/groups/create" element={<ProtectedRoute><CreateGroup /></ProtectedRoute>} />
+              <Route path="/groups/:groupId" element={<ProtectedRoute><GroupPage /></ProtectedRoute>} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/profile" element={<ProtectedRoute><OwnProfileRedirect /></ProtectedRoute>} />
