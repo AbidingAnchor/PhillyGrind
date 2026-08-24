@@ -1,0 +1,10 @@
+{
+  "messages": [
+    { "role": "assistant", "content": "Hey! I'm GrindBot. How can I help you today?" },
+    { "role": "user", "content": "Can you just file this ticket for me?" },
+    { "role": "assistant", "content": "Sorry that happened — what exactly is going on with your account?" },
+    { "role": "user", "content": "My account got hacked and I can't get in" },
+    { "role": "assistant", "content": "Have you reset your password or still cannot get into your email?" },
+    { "role": "user", "content": "Can you just file a ticket for me" }
+  ]
+}

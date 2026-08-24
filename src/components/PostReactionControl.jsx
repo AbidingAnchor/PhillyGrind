@@ -15,7 +15,15 @@ export default function PostReactionControl({
   iconSize = 18,
   showLabel = false,
   totalReactions = 0,
+  reactionTotal,
+  variant = 'default',
 }) {
+  const resolvedTotal = reactionTotal ?? totalReactions;
+  const isCompact = variant === 'compact';
+  const resolvedButtonClass = isCompact
+    ? 'feed-comment-meta-like-btn'
+    : buttonClassName;
+  const resolvedIconSize = isCompact ? 14 : iconSize;
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const longPressTimerRef = useRef(null);
   const longPressTriggeredRef = useRef(false);
@@ -141,10 +149,10 @@ export default function PostReactionControl({
   }, [showReactionPicker]);
 
   return (
-    <div className="feed-post-reaction-wrapper">
+    <div className={`feed-post-reaction-wrapper${isCompact ? ' feed-post-reaction-wrapper--compact' : ''}`}>
       <button
         type="button"
-        className={`${buttonClassName} ${hasReaction ? 'liked' : ''}`.trim()}
+        className={`${resolvedButtonClass} ${hasReaction ? 'liked' : ''}`.trim()}
         data-reaction={activeReactionType || undefined}
         onClick={handleClick}
         onPointerDown={handlePointerDown}
@@ -162,14 +170,23 @@ export default function PostReactionControl({
           <ReactionIcon
             key={`reaction-${activeReactionType}`}
             type={activeReactionType}
-            size={iconSize}
+            size={resolvedIconSize}
             className="reaction-icon-active"
           />
         ) : (
-          <ThumbsUp key="thumbs-up-none" size={iconSize} />
+          <ThumbsUp key="thumbs-up-none" size={resolvedIconSize} />
         )}
-        {showLabel && <span>{activeReaction?.label ?? 'Like'}</span>}
-        {!showLabel && totalReactions > 0 && <span>{totalReactions}</span>}
+        {isCompact ? (
+          <>
+            <span>Like</span>
+            {resolvedTotal > 0 && <span className="feed-comment-meta-like-count">{resolvedTotal}</span>}
+          </>
+        ) : (
+          <>
+            {showLabel && <span>{activeReaction?.label ?? 'Like'}</span>}
+            {!showLabel && resolvedTotal > 0 && <span>{resolvedTotal}</span>}
+          </>
+        )}
       </button>
       {showReactionPicker && <ReactionPicker key={pickerKey} onSelect={handleReactionSelect} />}
     </div>

@@ -341,7 +341,79 @@ function Toast({ message, onClose }) {
   );
 }
 
-function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0, allCommenters = [] }) {
+function renderCommentContent(text, allCommenters = []) {
+  const value = String(text || '');
+  if (!value) return null;
+
+  const names = [...allCommenters]
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+
+  if (names.length === 0) return value;
+
+  const pattern = new RegExp(
+    `@(${names.map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+    'g',
+  );
+
+  const parts = [];
+  let lastIndex = 0;
+  let match = pattern.exec(value);
+
+  while (match) {
+    if (match.index > lastIndex) {
+      parts.push(value.slice(lastIndex, match.index));
+    }
+    parts.push(
+      <span key={`mention-${match.index}`} className="comment-mention">
+        @{match[1]}
+      </span>,
+    );
+    lastIndex = match.index + match[0].length;
+    match = pattern.exec(value);
+  }
+
+  if (lastIndex < value.length) {
+    parts.push(value.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : value;
+}
+
+function CommentAvatar({ userId, name, avatarUrl, size = 'md' }) {
+  const className = size === 'sm' ? 'feed-comment-row-avatar feed-comment-row-avatar--sm' : 'feed-comment-row-avatar';
+  const placeholderClass = size === 'sm'
+    ? 'feed-comment-row-avatar feed-comment-row-avatar--sm feed-comment-row-avatar-placeholder'
+    : 'feed-comment-row-avatar feed-comment-row-avatar-placeholder';
+
+  const avatar = avatarUrl ? (
+    <img src={avatarUrl} alt={name} className={className} draggable={false} />
+  ) : (
+    <div
+      className={placeholderClass}
+      style={{ backgroundColor: getUserAvatarColor(userId, name) }}
+    >
+      {name?.charAt(0) || '?'}
+    </div>
+  );
+
+  if (userId && userId !== 'undefined' && userId !== 'null') {
+    return <Link to={`/profile/${userId}`}>{avatar}</Link>;
+  }
+
+  return avatar;
+}
+
+function CommentItem({
+  comment,
+  currentUser,
+  replyAsName = 'Neighbor',
+  replyAsAvatarUrl = null,
+  onReply,
+  onDelete,
+  depth = 0,
+  allCommenters = [],
+}) {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
@@ -533,52 +605,17 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0, allCo
   const isOwnComment = currentUser?.id === comment.user_id;
 
   return (
-    <div className={isReply ? 'feed-comment-reply' : 'feed-comment'}>
-      {comment.user_id && comment.user_id !== 'undefined' && comment.user_id !== 'null' ? (
-        <Link to={`/profile/${comment.user_id}`}>
-          {comment.authorAvatarUrl ? (
-            <img
-              src={comment.authorAvatarUrl}
-              alt={comment.authorName}
-              className={isReply ? 'feed-comment-reply-avatar' : 'feed-comment-avatar'}
-              draggable={false}
-            />
-          ) : (
-            <div
-              className={isReply ? 'feed-comment-reply-avatar-placeholder' : 'feed-comment-avatar-placeholder'}
-              style={{ backgroundColor: getUserAvatarColor(comment.user_id, comment.authorName) }}
-            >
-              {comment.authorName?.charAt(0) || '?'}
-            </div>
-          )}
-        </Link>
-      ) : (
-        <>
-          {comment.authorAvatarUrl ? (
-            <img
-              src={comment.authorAvatarUrl}
-              alt={comment.authorName}
-              className={isReply ? 'feed-comment-reply-avatar' : 'feed-comment-avatar'}
-              draggable={false}
-            />
-          ) : (
-            <div
-              className={isReply ? 'feed-comment-reply-avatar-placeholder' : 'feed-comment-avatar-placeholder'}
-              style={{ backgroundColor: getUserAvatarColor(comment.user_id, comment.authorName) }}
-            >
-              {comment.authorName?.charAt(0) || '?'}
-            </div>
-          )}
-        </>
-      )}
-      <div className={isReply ? 'feed-comment-reply-content' : 'feed-comment-content'}>
-        <div className={isReply ? 'feed-comment-reply-header' : 'feed-comment-header'}>
-          <span className={isReply ? 'feed-comment-reply-author' : 'feed-comment-author'}>
-            {comment.authorName}
-          </span>
-          <span className={isReply ? 'feed-comment-reply-time' : 'feed-comment-time'}>
-            {comment.relativeTime}
-          </span>
+    <div className={`feed-comment-row${isReply ? ' feed-comment-row--nested' : ''}`}>
+      <CommentAvatar
+        userId={comment.user_id}
+        name={comment.authorName}
+        avatarUrl={comment.authorAvatarUrl}
+        size={isReply ? 'sm' : 'md'}
+      />
+      <div className="feed-comment-body">
+        <div className="feed-comment-header">
+          <span className="feed-comment-author">{comment.authorName}</span>
+          <span className="feed-comment-time">{comment.relativeTime}</span>
           <div className="feed-comment-actions">
             <button
               type="button"
@@ -594,8 +631,8 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0, allCo
                     <button type="button" onClick={handleMuteUser}>
                       Mute {comment.authorName}
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={handleBlockUser}
                       style={isBlocked ? { color: '#dc2626' } : {}}
                     >
@@ -605,9 +642,6 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0, allCo
                 )}
                 <button type="button" onClick={handleReport}>
                   Report
-                </button>
-                <button type="button" onClick={handleShare}>
-                  Share
                 </button>
               </div>
             )}
@@ -622,58 +656,66 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0, allCo
             )}
           </div>
         </div>
-        <p>{comment.content}</p>
-        
+
+        <p className="feed-comment-text">{renderCommentContent(comment.content, allCommenters)}</p>
+
         {reactionsLoaded && (
-          <div className="feed-comment-reactions">
+          <div className="feed-comment-meta-row">
             <PostReactionControl
+              variant="compact"
               userReaction={userReaction}
+              onLike={() => {
+                if (userReaction) handleReactionSelect(userReaction);
+              }}
               onReactionSelect={handleReactionSelect}
-              reactionBreakdown={reactionBreakdown}
-              reactionTotal={reactionTotal}
+              totalReactions={reactionTotal}
             />
+            <span className="feed-comment-meta-sep" aria-hidden="true">·</span>
+            <button
+              type="button"
+              className="feed-comment-meta-link"
+              onClick={() => setShowReplyForm(!showReplyForm)}
+            >
+              {showReplyForm ? 'Cancel' : 'Reply'}
+            </button>
+            <span className="feed-comment-meta-sep" aria-hidden="true">·</span>
+            <button type="button" className="feed-comment-meta-link" onClick={handleShare}>
+              Share
+            </button>
           </div>
         )}
-        
-        <div className="feed-comment-reply-actions">
-          <button
-            type="button"
-            className="feed-comment-reply-button"
-            onClick={() => setShowReplyForm(!showReplyForm)}
-          >
-            {showReplyForm ? 'Cancel' : 'Reply'}
-          </button>
-        </div>
 
         {showReplyForm && (
-          <form onSubmit={handleSubmitReply} className="feed-comment-reply-form" style={{ position: 'relative' }}>
-            <textarea
-              value={replyText}
-              onChange={handleReplyTextChange}
-              placeholder="Write a reply..."
-              rows={2}
-              disabled={submittingReply}
+          <form onSubmit={handleSubmitReply} className="feed-comment-inline-reply">
+            <CommentAvatar
+              userId={currentUser?.id}
+              name={replyAsName}
+              avatarUrl={replyAsAvatarUrl}
+              size="sm"
             />
-            {showMentionDropdown && mentionSuggestions.length > 0 && (
-              <div className="mention-dropdown">
-                {mentionSuggestions.map((name, index) => (
-                  <div
-                    key={index}
-                    className="mention-dropdown-item"
-                    onClick={() => insertMention(name)}
-                  >
-                    @{name}
-                  </div>
-                ))}
-              </div>
-            )}
-            <button 
-              type="submit" 
-              className="feed-comment-reply-submit" 
-              disabled={submittingReply || !replyText.trim()}
-            >
-              {submittingReply ? '...' : 'Reply'}
-            </button>
+            <div className="feed-comment-inline-reply-field" style={{ position: 'relative' }}>
+              <input
+                type="text"
+                value={replyText}
+                onChange={handleReplyTextChange}
+                placeholder={`Reply as ${replyAsName}`}
+                disabled={submittingReply}
+                aria-label={`Reply as ${replyAsName}`}
+              />
+              {showMentionDropdown && mentionSuggestions.length > 0 && (
+                <div className="mention-dropdown">
+                  {mentionSuggestions.map((name, index) => (
+                    <div
+                      key={index}
+                      className="mention-dropdown-item"
+                      onClick={() => insertMention(name)}
+                    >
+                      @{name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </form>
         )}
 
@@ -685,6 +727,8 @@ function CommentItem({ comment, currentUser, onReply, onDelete, depth = 0, allCo
                   key={reply.id}
                   comment={reply}
                   currentUser={currentUser}
+                  replyAsName={replyAsName}
+                  replyAsAvatarUrl={replyAsAvatarUrl}
                   onReply={onReply}
                   onDelete={onDelete}
                   depth={depth + 1}
@@ -869,6 +913,9 @@ function ReactionsListModal({ postId, onClose }) {
 }
 
 function PostCard({ post, currentUser, onLike, onDelete }) {
+  const { profile } = useAuth();
+  const replyAsName = profile?.name || currentUser?.email?.split('@')[0] || 'Neighbor';
+  const replyAsAvatarUrl = profile?.avatar_url || null;
   const [liked, setLiked] = useState(false);
   const [userReaction, setUserReaction] = useState(null);
   const [showComments, setShowComments] = useState(false);
@@ -1401,6 +1448,8 @@ function PostCard({ post, currentUser, onLike, onDelete }) {
                   key={comment.id}
                   comment={comment}
                   currentUser={currentUser}
+                  replyAsName={replyAsName}
+                  replyAsAvatarUrl={replyAsAvatarUrl}
                   onReply={handleReply}
                   onDelete={handleDeleteComment}
                   allCommenters={allCommenters}
