@@ -88,22 +88,32 @@ export async function getGroup(groupId) {
 export async function joinGroup(groupId) {
   const user = await requireAuthUser();
 
-  const { data, error } = await supabase
+  const { error: insertError } = await supabase
     .from('group_members')
     .insert({
       group_id: groupId,
       user_id: user.id,
       role: 'member',
-    })
-    .select('id, group_id, user_id, role, joined_at')
-    .single();
+    });
 
-  if (error) {
-    console.error('[groupsApi] joinGroup failed', error);
-    if (error.code === '23505') {
+  if (insertError) {
+    console.error('[groupsApi] joinGroup failed', insertError);
+    if (insertError.code === '23505') {
       throw new Error("You're already a member of this group.");
     }
-    throw new Error(error.message);
+    throw new Error(insertError.message);
+  }
+
+  const { data, error: selectError } = await supabase
+    .from('group_members')
+    .select('id, group_id, user_id, role, joined_at')
+    .eq('group_id', groupId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (selectError) {
+    console.error('[groupsApi] joinGroup select failed', selectError);
+    throw new Error(selectError.message);
   }
 
   return data;

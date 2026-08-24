@@ -1,9 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Users, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Users, X } from 'lucide-react';
 import Skeleton from '../components/Skeleton.jsx';
+import EmptyState from '../components/EmptyState.jsx';
+import PostCard from '../components/community/PostCard.jsx';
+import CommunityComposer from '../components/community/CommunityComposer.jsx';
 import { getGroup, isGroupMember, joinGroup, leaveGroup } from '../lib/groupsApi.js';
+import { getGroupPosts, deleteCommunityPost } from '../lib/communityApi.js';
+import { useAuth } from '../lib/auth.jsx';
+
+function withTimeout(promise, milliseconds, message) {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => reject(new Error(message)), milliseconds);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    window.clearTimeout(timeoutId);
+  });
+}
 
 function LeaveGroupModal({ isOpen, groupName, busy, onClose, onConfirm }) {
   if (!isOpen) return null;
@@ -38,6 +54,7 @@ function LeaveGroupModal({ isOpen, groupName, busy, onClose, onConfirm }) {
 
 function GroupPage() {
   const { groupId } = useParams();
+  const { isLoggedIn, user, profile } = useAuth();
   const [group, setGroup] = useState(null);
   const [membership, setMembership] = useState({ isMember: false, role: null });
   const [loading, setLoading] = useState(true);
@@ -45,6 +62,9 @@ function GroupPage() {
   const [loadError, setLoadError] = useState('');
   const [actionBusy, setActionBusy] = useState('');
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [postsError, setPostsError] = useState('');
 
   const refreshGroup = useCallback(async () => {
     const [nextGroup, nextMembership] = await Promise.all([
@@ -83,6 +103,33 @@ function GroupPage() {
       cancelled = true;
     };
   }, [refreshGroup]);
+
+  useEffect(() => {
+    if (!groupId) return undefined;
+    let cancelled = false;
+
+    async function loadPosts() {
+      setPostsLoading(true);
+      setPostsError('');
+      try {
+        const nextPosts = await withTimeout(
+          getGroupPosts(groupId),
+          5000,
+          'Supabase took too long to load posts. Please try again.',
+        );
+        if (!cancelled) setPosts(nextPosts);
+      } catch (error) {
+        if (!cancelled) setPostsError(error.message || 'Could not load group posts.');
+      } finally {
+        if (!cancelled) setPostsLoading(false);
+      }
+    }
+
+    loadPosts();
+    return () => {
+      cancelled = true;
+    };
+  }, [groupId]);
 
   async function handleJoin() {
     setActionBusy('join');
@@ -134,6 +181,8 @@ function GroupPage() {
     );
   }
 
+  const memberLabel = `${group.member_count ?? 0} ${(group.member_count === 1) ? 'member' : 'members'}`;
+
   return (
     <section className="page-section group-page">
       <Link to="/" className="group-page-back">
@@ -141,56 +190,139 @@ function GroupPage() {
         Back
       </Link>
 
-      <header className="group-page-header">
-        <span className="eyebrow">Group</span>
+      <header className="group-page-hero">
+        <span className="group-create-kicker">Groups</span>
         <h1>{group.name}</h1>
-        {group.category && <p className="group-page-category">{group.category}</p>}
+        <div className="group-page-hero-meta">
+          {group.category && <span className="group-create-category">{group.category}</span>}
+          <span className="group-page-stat">
+            <Users size={15} />
+            {memberLabel}
+          </span>
+          {group.neighborhood && (
+            <span className="group-page-stat">
+              <MapPin size={15} />
+              {group.neighborhood}
+            </span>
+          )}
+        </div>
+        <p className="group-page-description">
+          {group.description?.trim() || 'No description yet — add one so neighbors know what this space is for.'}
+        </p>
       </header>
 
-      <div className="group-page-meta">
-        <span className="group-page-stat">
-          <Users size={16} />
-          {group.member_count ?? 0} {group.member_count === 1 ? 'member' : 'members'}
-        </span>
-        {group.neighborhood && (
-          <span className="group-page-neighborhood">{group.neighborhood}</span>
+      <div className="group-page-toolbar">
+        {membership.isMember && membership.role === 'admin' && (
+          <span className="group-page-role-chip">Admin</span>
         )}
-      </div>
-
-      <p className="group-page-description">
-        {group.description?.trim() || 'No description yet.'}
-      </p>
-
-      {membership.isMember && membership.role === 'admin' && (
-        <p className="group-page-role-note">You&apos;re an admin of this group.</p>
-      )}
-
-      <div className="group-page-actions">
-        {membership.isMember ? (
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={!!actionBusy}
-            onClick={() => {
-              setActionError('');
-              setShowLeaveModal(true);
-            }}
-          >
-            Leave Group
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="primary-button"
-            disabled={actionBusy === 'join'}
-            onClick={handleJoin}
-          >
-            {actionBusy === 'join' ? 'Joining…' : 'Join Group'}
-          </button>
+        {membership.isMember && membership.role !== 'admin' && (
+          <span className="group-page-role-chip is-member">Member</span>
         )}
+        <div className="group-page-actions">
+          {membership.isMember ? (
+            <button
+              type="button"
+              className="filter group-page-leave"
+              disabled={!!actionBusy}
+              onClick={() => {
+                setActionError('');
+                setShowLeaveModal(true);
+              }}
+            >
+              Leave Group
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="filter active"
+              disabled={actionBusy === 'join'}
+              onClick={handleJoin}
+            >
+              {actionBusy === 'join' ? 'Joining…' : 'Join Group'}
+            </button>
+          )}
+        </div>
       </div>
 
       {actionError && <p className="form-status error-text">{actionError}</p>}
+
+      <div className="group-page-feed">
+        <div className="group-page-feed-label">Posts</div>
+
+        {membership.isMember && (
+          <CommunityComposer
+            isLoggedIn={isLoggedIn}
+            user={user}
+            profile={profile}
+            homeNeighborhood={group.neighborhood}
+            defaultNeighborhood={group.neighborhood}
+            groupId={group.id}
+            eyebrow="Groups"
+            title={`Post in ${group.name}`}
+            prompt={`Share something with ${group.name}…`}
+            showJobShortcut={false}
+            loginFrom={`/groups/${group.id}`}
+            onOptimisticAdd={(tempPost) => setPosts((current) => [tempPost, ...current])}
+            onCommit={(tempPostId, newPost) => {
+              setPosts((current) => current.map((post) => (post.id === tempPostId ? newPost : post)));
+            }}
+            onFail={(tempPostId) => {
+              setPosts((current) => current.filter((post) => post.id !== tempPostId));
+            }}
+          />
+        )}
+
+        {postsLoading && <Skeleton variant="feed" count={4} />}
+        {postsError && <p className="empty-state error-state">{postsError}</p>}
+
+        {!postsLoading && !postsError && (
+          <>
+            <div className="feed-posts">
+              {posts.map((post) => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  currentUser={user}
+                  onLike={(postId, countDelta) => {
+                    if (!countDelta) return;
+                    setPosts((current) =>
+                      current.map((item) =>
+                        item.id === postId
+                          ? { ...item, like_count: Math.max(0, (item.like_count || 0) + countDelta) }
+                          : item,
+                      ),
+                    );
+                  }}
+                  onDelete={async (postId) => {
+                    if (!window.confirm('Delete this post?')) return;
+                    try {
+                      await deleteCommunityPost(postId);
+                      setPosts((current) => current.filter((item) => item.id !== postId));
+                    } catch (error) {
+                      alert(error.message);
+                    }
+                  }}
+                  readOnly={!membership.isMember}
+                  allowShare={false}
+                />
+              ))}
+            </div>
+            {!posts.length && (
+              <div className="group-page-empty">
+                <EmptyState
+                  icon="community"
+                  title={`Nothing in ${group.name} yet`}
+                  message={
+                    membership.isMember
+                      ? `Be the first to post — neighbors in ${group.name} are waiting to hear from you.`
+                      : `Join ${group.name} to start the conversation. You can still read posts once they’re here.`
+                  }
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       <LeaveGroupModal
         isOpen={showLeaveModal}

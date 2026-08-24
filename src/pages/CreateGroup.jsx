@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MapPin, Users } from 'lucide-react';
 import { COMMUNITY_NEIGHBORHOODS } from '../lib/communityApi.js';
 import { createGroup, GROUP_CATEGORIES } from '../lib/groupsApi.js';
 
@@ -39,61 +40,94 @@ function CreateGroup() {
     }
   }
 
+  const previewName = name.trim() || 'Your group name';
+  const previewDescription = description.trim() || 'Tell neighbors what this group is about.';
+  const previewPlace = neighborhood || 'Philadelphia';
+  const previewInitial = (name.trim() || 'G').charAt(0).toUpperCase();
+
   return (
     <section className="form-page group-create-page">
-      <div className="page-heading">
-        <span className="eyebrow">Groups</span>
-        <h1>Create a Group</h1>
-        <p>Start a public group for neighbors with shared interests.</p>
+      <header className="group-create-hero">
+        <span className="group-create-kicker">Groups</span>
+        <h1>
+          Create a <span>Group</span>
+        </h1>
+        <p>A public space for neighbors with the same hobby, block, or hustle.</p>
+      </header>
+
+      <div className="group-create-layout">
+        <form className="listing-form group-create-form" onSubmit={handleSubmit}>
+          <label className="full-span">
+            Group name
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Fishtown Run Club"
+              required
+              maxLength={120}
+            />
+          </label>
+
+          <label className="full-span">
+            Description
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="What is this group about?"
+              rows={4}
+            />
+          </label>
+
+          <label>
+            Category
+            <select value={category} onChange={(event) => setCategory(event.target.value)}>
+              {GROUP_CATEGORIES.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Neighborhood (optional)
+            <select value={neighborhood} onChange={(event) => setNeighborhood(event.target.value)}>
+              <option value="">None</option>
+              {COMMUNITY_NEIGHBORHOODS.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+
+          {error && <p className="form-status error-text full-span">{error}</p>}
+
+          <button type="submit" className="filter active group-create-submit" disabled={submitting}>
+            {submitting ? 'Creating…' : 'Create Group'}
+          </button>
+        </form>
+
+        <aside className="group-create-postcard" aria-live="polite">
+          <div className="group-create-postcard-cover" aria-hidden="true">
+            <span>{previewPlace}</span>
+          </div>
+          <div className="group-create-postcard-avatar" aria-hidden="true">
+            {previewInitial}
+          </div>
+          <div className="group-create-postcard-body">
+            <span className="group-create-category">{category}</span>
+            <h3>{previewName}</h3>
+            <p>{previewDescription}</p>
+            <div className="listing-meta">
+              <span>
+                <MapPin size={16} />
+                {previewPlace}
+              </span>
+              <span>
+                <Users size={16} />
+                Public · 0 members
+              </span>
+            </div>
+          </div>
+        </aside>
       </div>
-
-      <form className="listing-form group-create-form" onSubmit={handleSubmit}>
-        <label>
-          Group name
-          <input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Fishtown Run Club"
-            required
-            maxLength={120}
-          />
-        </label>
-
-        <label>
-          Description
-          <textarea
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="What is this group about?"
-            rows={4}
-          />
-        </label>
-
-        <label>
-          Category
-          <select value={category} onChange={(event) => setCategory(event.target.value)}>
-            {GROUP_CATEGORIES.map((option) => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          Neighborhood (optional)
-          <select value={neighborhood} onChange={(event) => setNeighborhood(event.target.value)}>
-            <option value="">None</option>
-            {COMMUNITY_NEIGHBORHOODS.map((option) => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </select>
-        </label>
-
-        {error && <p className="form-status error-text">{error}</p>}
-
-        <button type="submit" className="primary-button" disabled={submitting}>
-          {submitting ? 'Creating…' : 'Create Group'}
-        </button>
-      </form>
     </section>
   );
 }

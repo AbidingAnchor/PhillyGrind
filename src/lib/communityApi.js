@@ -153,14 +153,22 @@ export function getCommunityPhotoPublicUrl(path) {
   return data.publicUrl;
 }
 
+function applyGroupScope(query, groupId) {
+  if (groupId) {
+    return query.eq('group_id', groupId);
+  }
+  return query.is('group_id', null);
+}
+
 export async function getCommunityPosts(filters = {}) {
   if (!hasSupabaseConfig) return [];
 
-  const { neighborhood = 'Any' } = filters;
+  const { neighborhood = 'Any', groupId = null } = filters;
 
   // Use RPC to get posts with comment counts
   let query = supabase.rpc('get_community_posts_with_counts', {
-    p_neighborhood: neighborhood === 'Any' ? null : neighborhood
+    p_neighborhood: neighborhood === 'Any' ? null : neighborhood,
+    p_group_id: groupId || null,
   });
 
   const { data, error } = await query;
@@ -171,6 +179,8 @@ export async function getCommunityPosts(filters = {}) {
       .from('community_posts')
       .select('*')
       .order('created_at', { ascending: false });
+
+    basicQuery = applyGroupScope(basicQuery, groupId);
 
     if (neighborhood && neighborhood !== 'Any') {
       basicQuery = basicQuery.eq('neighborhood', neighborhood);
@@ -261,6 +271,11 @@ export async function getCommunityPosts(filters = {}) {
   return postsWithAuthors;
 }
 
+export async function getGroupPosts(groupId, filters = {}) {
+  if (!groupId) return [];
+  return getCommunityPosts({ ...filters, groupId });
+}
+
 export async function getCommunityPost(id) {
   if (!hasSupabaseConfig || !uuidPattern.test(id)) return undefined;
 
@@ -292,6 +307,7 @@ export async function getUserCommunityPosts(userId, page = 1, limit = 10) {
     .from('community_posts')
     .select('*', { count: 'exact' })
     .eq('user_id', userId)
+    .is('group_id', null)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -507,7 +523,9 @@ export async function createCommunityPost(post, photoFile = null) {
     throw new Error('You must be logged in to post to the community.');
   }
 
-  console.log('[createCommunityPost] Starting post creation:', { content: post.content, neighborhood: post.neighborhood, hasPhoto: !!photoFile });
+  const groupId = post.groupId || post.group_id || null;
+
+  console.log('[createCommunityPost] Starting post creation:', { content: post.content, neighborhood: post.neighborhood, hasPhoto: !!photoFile, groupId });
 
   try {
     // Run custom community safety check
@@ -521,12 +539,29 @@ export async function createCommunityPost(post, photoFile = null) {
     const { listing: moderatedPost, moderationStatus } = await createListingWithModeration('community', {
       content: post.content,
       neighborhood: post.neighborhood,
+      group_id: groupId,
     });
 
     console.log('[createCommunityPost] Moderation API response:', { moderationStatus, postId: moderatedPost?.id });
 
     if (!moderatedPost || !moderatedPost.id) {
       throw new Error('Failed to create post: Invalid response from moderation API');
+    }
+
+    if (groupId && moderatedPost.group_id !== groupId) {
+      const { data: scoped, error: scopeError } = await supabase
+        .from('community_posts')
+        .update({ group_id: groupId })
+        .eq('id', moderatedPost.id)
+        .select('*')
+        .single();
+
+      if (scopeError) {
+        console.error('[createCommunityPost] Failed to set group_id:', scopeError);
+        throw scopeError;
+      }
+
+      Object.assign(moderatedPost, scoped);
     }
 
     // Handle photo upload if provided
@@ -566,6 +601,7 @@ export async function createCommunityPost(post, photoFile = null) {
         neighborhood: post.neighborhood,
         photo_url: null,
         like_count: 0,
+        group_id: groupId,
       };
 
       const { data, error: directError } = await supabase
@@ -1072,6 +1108,7 @@ export async function searchCommunityPosts(query) {
   const { data, error } = await supabase
     .from('community_posts')
     .select('*')
+    .is('group_id', null)
     .ilike('content', `%${query}%`)
     .order('created_at', { ascending: false })
     .limit(50);
@@ -1086,6 +1123,7 @@ export async function getTrendingPosts(limit = 5) {
   const { data: posts, error } = await supabase
     .from('community_posts')
     .select('id, content, created_at, user_id')
+    .is('group_id', null)
     .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
     .order('created_at', { ascending: false })
     .limit(50);

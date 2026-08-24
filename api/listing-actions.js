@@ -133,6 +133,7 @@ async function handleCreateListing(req, res, user) {
       photo_url: null,
       like_count: 0,
       user_id: user.id,
+      group_id: listing.group_id || null,
     };
 
     const { data, error } = await supabaseAdmin
