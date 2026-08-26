@@ -40,6 +40,7 @@ import Housing from './pages/Housing.jsx';
 import PostHousing from './pages/PostHousing.jsx';
 import HousingDetail from './pages/HousingDetail.jsx';
 import Community from './pages/Community.jsx';
+import BrowseGroups from './pages/BrowseGroups.jsx';
 import CreateGroup from './pages/CreateGroup.jsx';
 import GroupPage from './pages/GroupPage.jsx';
 import Alerts from './pages/Alerts.jsx';
@@ -72,6 +73,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/account-recovery" element={<AccountRecovery />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/groups" element={<BrowseGroups />} />
               <Route path="/groups/create" element={<ProtectedRoute><CreateGroup /></ProtectedRoute>} />
               <Route path="/groups/:groupId" element={<ProtectedRoute><GroupPage /></ProtectedRoute>} />
               <Route path="/terms" element={<Terms />} />

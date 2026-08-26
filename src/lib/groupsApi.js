@@ -4,6 +4,10 @@ export const GROUP_CATEGORIES = ['Gaming', 'Hobby', 'Sports', 'Parenting', 'Neig
 
 const SOLE_ADMIN_LEAVE_MESSAGE = 'You need to assign another admin before leaving this group.';
 
+function escapeIlikeExact(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
+
 async function requireAuthUser() {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
@@ -83,6 +87,40 @@ export async function getGroup(groupId) {
   }
 
   return data;
+}
+
+export async function listPublicGroups({ keyword, category, neighborhood } = {}) {
+  await requireAuthUser();
+
+  let query = supabase
+    .from('groups')
+    .select('*')
+    .eq('privacy', 'public')
+    .order('created_at', { ascending: false });
+
+  const trimmedKeyword = String(keyword || '').trim();
+  if (trimmedKeyword) {
+    query = query.ilike('name', `%${trimmedKeyword}%`);
+  }
+
+  const trimmedCategory = String(category || '').trim();
+  if (trimmedCategory && trimmedCategory !== 'All') {
+    query = query.ilike('category', escapeIlikeExact(trimmedCategory));
+  }
+
+  const trimmedNeighborhood = String(neighborhood || '').trim();
+  if (trimmedNeighborhood) {
+    query = query.eq('neighborhood', trimmedNeighborhood);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('[groupsApi] listPublicGroups failed', error);
+    throw new Error(error.message);
+  }
+
+  return data ?? [];
 }
 
 export async function joinGroup(groupId) {
