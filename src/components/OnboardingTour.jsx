@@ -1,11 +1,59 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ArrowRight, MessageSquare, Briefcase, Hammer, ShoppingBag, Home, Sparkles } from 'lucide-react';
+import { X, ArrowRight, MessageSquare, Briefcase, Hammer, ShoppingBag, Home, Sparkles, Smartphone } from 'lucide-react';
 import { completeOwnOnboarding } from '../lib/profileApi.js';
+
+function getPwaInstallContext() {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return 'desktop';
+  }
+
+  const ua = navigator.userAgent || '';
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+
+  if (isStandalone) return 'installed';
+
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (isIOS) return 'ios';
+
+  if (/Android/i.test(ua)) return 'android';
+
+  return 'desktop';
+}
+
+function getInstallCopy(context) {
+  switch (context) {
+    case 'installed':
+      return {
+        description: "You're already running PhillyGrind like an app — nice.",
+        hint: null,
+      };
+    case 'ios':
+      return {
+        description: 'Faster access, feels like a real app — no App Store needed.',
+        hint: "Tap the Share button, then 'Add to Home Screen'.",
+      };
+    case 'android':
+      return {
+        description: 'Faster access, feels like a real app — no App Store needed.',
+        hint: "Tap the menu (⋮), then 'Add to Home Screen' or 'Install app'.",
+      };
+    default:
+      return {
+        description: 'Faster access, feels like a real app — no App Store needed.',
+        hint: "Look for the install icon in your browser's address bar.",
+      };
+  }
+}
 
 export default function OnboardingTour({ onComplete, onSkip }) {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
+  const [installContext] = useState(() => getPwaInstallContext());
   const spotlightRef = useRef(null);
 
   const tourSteps = [
@@ -63,6 +111,11 @@ export default function OnboardingTour({ onComplete, onSkip }) {
       position: 'bottom',
     },
     {
+      type: 'install',
+      icon: <Smartphone size={24} />,
+      title: 'Get PhillyGrind on your home screen',
+    },
+    {
       type: 'complete',
       title: "You're all set",
       subtitle: "Let's get started",
@@ -70,6 +123,8 @@ export default function OnboardingTour({ onComplete, onSkip }) {
   ];
 
   const currentStep = tourSteps[step];
+  const installCopy = currentStep?.type === 'install' ? getInstallCopy(installContext) : null;
+  const isCardStep = currentStep?.type === 'spotlight' || currentStep?.type === 'install';
 
   const nextStep = () => {
     if (step < tourSteps.length - 1) {
@@ -157,13 +212,18 @@ export default function OnboardingTour({ onComplete, onSkip }) {
         </div>
       )}
 
-      {currentStep.type === 'spotlight' && (
+      {isCardStep && (
         <>
           <div className="onboarding-backdrop" />
           <div className="onboarding-spotlight-card" style={{ animationDirection: direction > 0 ? 'normal' : 'reverse' }}>
             <div className="onboarding-spotlight-icon">{currentStep.icon}</div>
             <h3 className="onboarding-spotlight-title">{currentStep.title}</h3>
-            <p className="onboarding-spotlight-description">{currentStep.description}</p>
+            <p className="onboarding-spotlight-description">
+              {currentStep.type === 'install' ? installCopy.description : currentStep.description}
+            </p>
+            {currentStep.type === 'install' && installCopy.hint && (
+              <p className="onboarding-spotlight-hint">{installCopy.hint}</p>
+            )}
             <div className="onboarding-spotlight-progress">
               {step} / {tourSteps.length - 2}
             </div>

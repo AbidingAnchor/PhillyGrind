@@ -73,7 +73,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/account-recovery" element={<AccountRecovery />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/contact" element={<Contact />} />
-              <Route path="/groups" element={<BrowseGroups />} />
+              <Route path="/groups" element={<ProtectedRoute><BrowseGroups /></ProtectedRoute>} />
               <Route path="/groups/create" element={<ProtectedRoute><CreateGroup /></ProtectedRoute>} />
               <Route path="/groups/:groupId" element={<ProtectedRoute><GroupPage /></ProtectedRoute>} />
               <Route path="/terms" element={<Terms />} />
