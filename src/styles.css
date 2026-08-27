@@ -16210,6 +16210,11 @@ input[type="datetime-local"]:focus {
   z-index: 3;
 }
 
+.alerts-map-credit a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 [data-theme="dark"] .alerts-map-credit {
   color: #cbd5e1;
   background: rgba(15, 23, 42, 0.78);

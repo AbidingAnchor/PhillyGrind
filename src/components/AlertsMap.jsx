@@ -33,7 +33,7 @@ function unproject(x, y, zoom) {
 }
 
 function tileUrl(x, y, z) {
-  return `https://basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}@2x.png`;
+  return `https://tiles.stadiamaps.com/tiles/alidade_smooth/${z}/${x}/${y}@2x.png`;
 }
 
 export default function AlertsMap({
@@ -228,7 +228,14 @@ export default function AlertsMap({
           <Minus size={16} />
         </button>
       </div>
-      <div className="alerts-map-credit">Map data © OpenStreetMap, © CARTO</div>
+      <div className="alerts-map-credit">
+        ©{' '}
+        <a href="https://stadiamaps.com/" target="_blank" rel="noreferrer">Stadia Maps</a>
+        {' '}©{' '}
+        <a href="https://openmaptiles.org/" target="_blank" rel="noreferrer">OpenMapTiles</a>
+        {' '}©{' '}
+        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>
+      </div>
     </div>
   );
 }
