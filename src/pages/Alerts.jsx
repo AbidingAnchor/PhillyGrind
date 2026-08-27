@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  ChevronDown,
+  ChevronUp,
   CloudLightning,
   MessageSquarePlus,
   Radio,
@@ -64,6 +66,37 @@ function AlertGlyph({ category }) {
   return <ShieldAlert size={18} />;
 }
 
+function formatAlertTime(iso) {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function previewText(alert) {
+  return String(alert?.summary || alert?.description || '').trim();
+}
+
+function fullAlertText(alert) {
+  return String(alert?.description || alert?.summary || '').trim();
+}
+
+function canExpandAlert(alert) {
+  if (!alert) return false;
+  if (alert.instruction || alert.areaDesc) return true;
+  const full = fullAlertText(alert);
+  if (full.length > 160) return true;
+  const preview = previewText(alert).replace(/…$/, '').trim();
+  return full.length > preview.length + 8;
+}
+
 function fallbackFromSingular(payload) {
   const alert = payload?.alert;
   if (!alert) return [];
@@ -74,6 +107,11 @@ function fallbackFromSingular(payload) {
     title: alert.title || alert.event,
     headline: alert.headline || alert.event,
     description: alert.description,
+    summary: alert.summary || alert.description,
+    instruction: alert.instruction || '',
+    areaDesc: alert.areaDesc || '',
+    effective: alert.effective || null,
+    expires: alert.expires || null,
     severity: alert.severity,
     status: 'Live',
     issuedAt: null,
@@ -93,6 +131,7 @@ export default function Alerts() {
   const [alerts, setAlerts] = useState([]);
   const [coords, setCoords] = useState(PHILLY_CENTER);
   const [selectedId, setSelectedId] = useState(params.get('id') || '');
+  const [expandedId, setExpandedId] = useState(params.get('id') || '');
   const [loading, setLoading] = useState(true);
   const [shareNote, setShareNote] = useState('');
 
@@ -146,6 +185,16 @@ export default function Alerts() {
 
   function selectAlert(id) {
     setSelectedId(id);
+    setExpandedId(id);
+    const next = new URLSearchParams(params);
+    next.set('id', id);
+    setParams(next, { replace: true });
+  }
+
+  function toggleExpanded(event, id) {
+    event.stopPropagation();
+    setExpandedId((current) => (current === id ? '' : id));
+    setSelectedId(id);
     const next = new URLSearchParams(params);
     next.set('id', id);
     setParams(next, { replace: true });
@@ -165,7 +214,7 @@ export default function Alerts() {
     const url = `${window.location.origin}/alerts?id=${encodeURIComponent(alert.id)}`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: alert.title, text: alert.description, url });
+        await navigator.share({ title: alert.title, text: fullAlertText(alert) || alert.summary, url });
         return;
       }
       await navigator.clipboard.writeText(url);
@@ -219,41 +268,90 @@ export default function Alerts() {
             </div>
           )}
 
-          {visibleAlerts.map((alert) => (
-            <article
-              key={alert.id}
-              className={`alerts-card${selected?.id === alert.id ? ' is-selected' : ''}`}
-              onClick={() => selectAlert(alert.id)}
-            >
-              <div className={`alerts-card-icon alerts-card-icon--${alert.category}`}>
-                <AlertGlyph category={alert.category} />
-              </div>
-              <div className="alerts-card-body">
-                <div className="alerts-card-top">
-                  <h2>{alert.title}</h2>
-                  <span className={`alerts-status alerts-status--${String(alert.status || 'Live').toLowerCase()}`}>
-                    {alert.status || 'Live'}
-                  </span>
+          {visibleAlerts.map((alert) => {
+            const expanded = expandedId === alert.id;
+            const preview = previewText(alert);
+            const fullText = fullAlertText(alert);
+            const expandable = canExpandAlert(alert);
+            const effectiveLabel = formatAlertTime(alert.effective);
+            const expiresLabel = formatAlertTime(alert.expires) || alert.until;
+
+            return (
+              <article
+                key={alert.id}
+                className={`alerts-card${selected?.id === alert.id ? ' is-selected' : ''}${expanded ? ' is-expanded' : ''}`}
+                onClick={() => selectAlert(alert.id)}
+                aria-expanded={expandable ? expanded : undefined}
+              >
+                <div className={`alerts-card-icon alerts-card-icon--${alert.category}`}>
+                  <AlertGlyph category={alert.category} />
                 </div>
-                <p className="alerts-card-meta">
-                  {formatDistance(alert.distanceMiles) || alert.neighborhood || neighborhood}
-                  <span aria-hidden="true"> · </span>
-                  {formatTimeAgo(alert.issuedAt)}
-                </p>
-                {alert.description && <p className="alerts-card-copy">{alert.description}</p>}
-                <div className="alerts-card-actions">
-                  <button type="button" onClick={(event) => { event.stopPropagation(); writeAbout(alert); }}>
-                    <MessageSquarePlus size={15} />
-                    Write about this alert
-                  </button>
-                  <button type="button" onClick={(event) => { event.stopPropagation(); shareAlert(alert); }}>
-                    <Share2 size={15} />
-                    Share
-                  </button>
+                <div className="alerts-card-body">
+                  <div className="alerts-card-top">
+                    <h2>{alert.title}</h2>
+                    <span className={`alerts-status alerts-status--${String(alert.status || 'Live').toLowerCase()}`}>
+                      {alert.status || 'Live'}
+                    </span>
+                  </div>
+                  <p className="alerts-card-meta">
+                    {formatDistance(alert.distanceMiles) || alert.neighborhood || neighborhood}
+                    <span aria-hidden="true"> · </span>
+                    {formatTimeAgo(alert.issuedAt)}
+                  </p>
+                  {!expanded && preview && <p className="alerts-card-copy">{preview}</p>}
+                  {expanded && (
+                    <div className="alerts-card-details">
+                      {fullText && <p className="alerts-card-full">{fullText}</p>}
+                      {alert.instruction && (
+                        <div className="alerts-card-detail-block">
+                          <strong>What to do</strong>
+                          <p>{alert.instruction}</p>
+                        </div>
+                      )}
+                      {alert.areaDesc && (
+                        <div className="alerts-card-detail-block">
+                          <strong>Affected areas</strong>
+                          <p>{alert.areaDesc}</p>
+                        </div>
+                      )}
+                      {(effectiveLabel || expiresLabel) && (
+                        <dl className="alerts-card-times">
+                          {effectiveLabel && (
+                            <>
+                              <dt>Effective</dt>
+                              <dd>{effectiveLabel}</dd>
+                            </>
+                          )}
+                          {expiresLabel && (
+                            <>
+                              <dt>Until</dt>
+                              <dd>{expiresLabel}</dd>
+                            </>
+                          )}
+                        </dl>
+                      )}
+                    </div>
+                  )}
+                  <div className="alerts-card-actions">
+                    {expandable && (
+                      <button type="button" onClick={(event) => toggleExpanded(event, alert.id)}>
+                        {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                        {expanded ? 'Show less' : 'Read full alert'}
+                      </button>
+                    )}
+                    <button type="button" onClick={(event) => { event.stopPropagation(); writeAbout(alert); }}>
+                      <MessageSquarePlus size={15} />
+                      Write about this alert
+                    </button>
+                    <button type="button" onClick={(event) => { event.stopPropagation(); shareAlert(alert); }}>
+                      <Share2 size={15} />
+                      Share
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
           {shareNote && <p className="alerts-share-note">{shareNote}</p>}
           <p className="alerts-footnote">
             Weather alerts come from the National Weather Service. <Link to="/">Back to Community</Link>

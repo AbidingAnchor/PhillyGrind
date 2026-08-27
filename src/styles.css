@@ -16054,6 +16054,48 @@ input[type="datetime-local"]:focus {
   overflow: hidden;
 }
 
+.alerts-card-details {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+
+.alerts-card-full,
+.alerts-card-detail-block p {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+
+.alerts-card-detail-block strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.alerts-card-times {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.alerts-card-times dt {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.alerts-card-times dd {
+  margin: 0;
+}
+
 .alerts-card-actions {
   display: flex;
   flex-wrap: wrap;

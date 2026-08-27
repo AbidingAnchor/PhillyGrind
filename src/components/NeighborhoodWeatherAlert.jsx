@@ -84,9 +84,9 @@ function WeatherAlertBody({ alert, severity }) {
         <span className="feed-weather-alert-severity">{alert.severity}</span>
       </div>
       <strong className="feed-weather-alert-title">{alert.title || alert.event}</strong>
-      {alert.description && (
-        <p className="feed-weather-alert-copy">{alert.description}</p>
-      )}
+      {alert.summary || alert.description ? (
+        <p className="feed-weather-alert-copy">{alert.summary || alert.description}</p>
+      ) : null}
     </Link>
   );
 }

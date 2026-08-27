@@ -57,6 +57,28 @@ function clipDescription(text) {
   return `${cleaned.slice(0, 157).trim()}…`;
 }
 
+function normalizeAlertText(text) {
+  return String(text || '')
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function alertContent(props) {
+  const description = normalizeAlertText(props?.description);
+  const instruction = normalizeAlertText(props?.instruction);
+  const body = description || instruction;
+  return {
+    description: body,
+    summary: clipDescription(body),
+    instruction: description ? instruction : '',
+    areaDesc: String(props?.areaDesc || '').replace(/\s+/g, ' ').trim(),
+    effective: props?.effective || props?.onset || props?.sent || null,
+    expires: props?.ends || props?.expires || null,
+  };
+}
+
 function formatUntil(iso) {
   if (!iso) return '';
   const date = new Date(iso);
@@ -130,11 +152,13 @@ function pickAlert(features) {
   const until = formatUntil(props.ends || props.expires);
   const event = props.event || 'Weather Alert';
   const severity = SEVERITY_RANK[props.severity] ? props.severity : 'Unknown';
+  const content = alertContent(props);
 
   return {
     event,
     headline: props.headline || event,
-    description: clipDescription(props.description || props.instruction),
+    description: content.summary,
+    summary: content.summary,
     severity,
     until,
     title: until ? `${event} until ${until}` : event,
@@ -191,13 +215,19 @@ function mapAlerts(features, fallbackCoords, neighborhood) {
       const event = props.event || 'Weather Alert';
       const severity = SEVERITY_RANK[props.severity] ? props.severity : 'Unknown';
       const issuedAt = props.onset || props.effective || props.sent || null;
+      const content = alertContent(props);
       return {
         id: String(props.id || feature.id || `${event}-${issuedAt || until}`),
         category: 'weather',
         event,
         title: until ? `${event} until ${until}` : event,
         headline: props.headline || event,
-        description: clipDescription(props.description || props.instruction),
+        description: content.description,
+        summary: content.summary,
+        instruction: content.instruction,
+        areaDesc: content.areaDesc,
+        effective: content.effective,
+        expires: content.expires,
         severity,
         status: 'Live',
         issuedAt,
