@@ -817,13 +817,13 @@ function ReactionsListModal({ postId, onClose }) {
   );
 }
 
-function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allowShare = true }) {
+function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allowShare = true, highlighted = false, autoOpenComments = false }) {
   const { profile } = useAuth();
   const replyAsName = profile?.name || currentUser?.email?.split('@')[0] || 'Neighbor';
   const replyAsAvatarUrl = profile?.avatar_url || null;
   const [liked, setLiked] = useState(false);
   const [userReaction, setUserReaction] = useState(null);
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(Boolean(autoOpenComments));
   const [comments, setComments] = useState([]);
   const [allCommenters, setAllCommenters] = useState([]);
   const [newComment, setNewComment] = useState('');
@@ -832,7 +832,7 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showShareComposer, setShowShareComposer] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [loadingComments, setLoadingComments] = useState(false);
+  const [loadingComments, setLoadingComments] = useState(Boolean(autoOpenComments));
   const [toastMessage, setToastMessage] = useState(null);
   const [reactionBreakdown, setReactionBreakdown] = useState([]);
   const [reactionsLoaded, setReactionsLoaded] = useState(false);
@@ -890,6 +890,41 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
       loadBlockStatus();
     }
   }, [post.authorId, currentUser?.id]);
+
+  useEffect(() => {
+    if (!autoOpenComments || !post.id) return;
+
+    let cancelled = false;
+
+    async function loadHighlightedComments() {
+      setLoadingComments(true);
+      try {
+        const loadedComments = await getCommunityComments(post.id);
+        if (cancelled) return;
+        setComments(loadedComments);
+
+        const commenterNames = new Set();
+        const extractCommenters = (commentList) => {
+          commentList.forEach((comment) => {
+            if (comment.authorName) commenterNames.add(comment.authorName);
+            if (comment.replies?.length) extractCommenters(comment.replies);
+          });
+        };
+        extractCommenters(loadedComments);
+        setAllCommenters(Array.from(commenterNames));
+        setShowComments(true);
+      } catch (error) {
+        console.error('Failed to load comments:', error);
+      } finally {
+        if (!cancelled) setLoadingComments(false);
+      }
+    }
+
+    loadHighlightedComments();
+    return () => {
+      cancelled = true;
+    };
+  }, [autoOpenComments, post.id]);
 
   async function handleLike() {
     if (readOnly) return;
@@ -1120,7 +1155,10 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
   });
 
   return (
-    <article className="feed-post-card">
+    <article
+      id={`community-post-${post.id}`}
+      className={`feed-post-card${highlighted ? ' is-highlighted' : ''}`}
+    >
       <div className="feed-post-header">
         {post.authorId && post.authorId !== 'undefined' && post.authorId !== 'null' ? (
           <Link to={`/profile/${post.authorId}`} className="feed-post-author">

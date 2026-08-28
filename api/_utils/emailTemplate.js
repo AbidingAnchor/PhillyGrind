@@ -210,6 +210,49 @@ export function createAccountRecoveryApprovedEmail({ resetUrl }) {
   });
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+export function createCommentOnPostEmail({ commenterName, commentPreview, postUrl, settingsUrl }) {
+  const safeName = escapeHtml(commenterName);
+  const safePreview = escapeHtml(commentPreview);
+  const subject = `${String(commenterName || 'Someone').replace(/\s+/g, ' ').trim()} commented on your post`;
+
+  return {
+    subject,
+    html: createEmailTemplate({
+      subject: escapeHtml(subject),
+      content: `
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; color: #111827;">New comment on your post</h2>
+      <p style="margin: 0 0 16px 0; color: #374151; font-size: 15px; line-height: 1.6;">
+        <strong>${safeName}</strong> commented on your Community post:
+      </p>
+      <div style="background: #f9fafb; border-left: 4px solid #22c55e; border-radius: 8px; padding: 16px; margin: 16px 0;">
+        <p style="margin: 0; color: #374151; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">${safePreview}</p>
+      </div>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 24px 0;">
+        <tr>
+          <td align="center" style="padding: 8px 0;">
+            <a href="${postUrl}" style="display: inline-block; background: #22c55e; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+              View post
+            </a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin: 0; color: #6b7280; font-size: 13px; line-height: 1.6;">
+        You can turn off comment emails in
+        <a href="${settingsUrl}" style="color: #22c55e; text-decoration: none;">Settings</a>.
+      </p>
+    `,
+    }),
+  };
+}
+
 export function createAccountRecoveryDeniedEmail() {
   return createEmailTemplate({
     subject: 'PhillyGrind account recovery update',

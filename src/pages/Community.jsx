@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, MapPin } from 'lucide-react';
 import {
   getCommunityPosts,
+  getCommunityPost,
   fetchHomeNeighborhood,
   resolveHomeNeighborhood,
   deleteCommunityPost,
@@ -111,9 +112,11 @@ function Community() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const searchQuery = searchParams.get('search') || '';
+  const highlightedPostId = searchParams.get('post') || '';
   const [searchInput, setSearchInput] = useState(searchQuery);
 
   const [composerSeed, setComposerSeed] = useState('');
+  const scrolledPostIdRef = useRef('');
 
   useEffect(() => {
     setSearchInput(searchQuery);
@@ -188,6 +191,38 @@ function Community() {
       clearTimeout(timeoutId);
     };
   }, [neighborhood, searchQuery]);
+
+  useEffect(() => {
+    if (!highlightedPostId || loading) return;
+
+    let cancelled = false;
+
+    async function pinHighlightedPost() {
+      try {
+        const post = await getCommunityPost(highlightedPostId);
+        if (cancelled || !post) return;
+        setPosts((current) => (
+          current.some((item) => item.id === post.id) ? current : [post, ...current]
+        ));
+      } catch (err) {
+        console.warn('[Community] could not load highlighted post:', err);
+      }
+    }
+
+    pinHighlightedPost();
+    return () => {
+      cancelled = true;
+    };
+  }, [highlightedPostId, loading]);
+
+  useEffect(() => {
+    if (loading || !highlightedPostId) return;
+    if (scrolledPostIdRef.current === highlightedPostId) return;
+    const el = document.getElementById(`community-post-${highlightedPostId}`);
+    if (!el) return;
+    scrolledPostIdRef.current = highlightedPostId;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [loading, highlightedPostId, posts]);
 
   function handleSearchKeyDown(e) {
     if (e.key === 'Enter' && searchInput.trim()) {
@@ -322,6 +357,8 @@ function Community() {
                       currentUser={user}
                       onLike={handleLike}
                       onDelete={handleDelete}
+                      highlighted={post.id === highlightedPostId}
+                      autoOpenComments={post.id === highlightedPostId}
                     />
                   ))}
                 </div>

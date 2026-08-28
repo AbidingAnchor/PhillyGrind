@@ -28,6 +28,17 @@ export function createRateLimiter(requests, window) {
   });
 }
 
+export async function consumeRateLimit(limiter, identifier) {
+  if (!limiter) return true;
+  try {
+    const { success } = await limiter.limit(identifier);
+    return success;
+  } catch (error) {
+    console.error('[rateLimit] consume failed:', error.message);
+    return true;
+  }
+}
+
 export async function checkRateLimit(limiter, identifier, res) {
   if (!limiter) {
     return true; // Skip rate limiting if Redis is unavailable

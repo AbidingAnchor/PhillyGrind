@@ -240,6 +240,9 @@ alter table profiles
   add column if not exists notifications_enabled boolean not null default true;
 
 alter table profiles
+  add column if not exists email_comment_notifications boolean not null default true;
+
+alter table profiles
   add column if not exists last_active_at timestamptz;
 
 alter table profiles
@@ -784,7 +787,7 @@ revoke update on table profiles from anon, authenticated, public;
 grant update (
   name, bio, skills, avatar_url, banner_url, availability,
   neighborhood, neighborhoods, profile_tags, accent_color,
-  notifications_enabled, show_available_now
+  notifications_enabled, email_comment_notifications, show_available_now
 ) on table profiles to authenticated;
 
 revoke insert on table public.profiles from anon, authenticated, public;

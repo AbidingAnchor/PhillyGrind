@@ -11494,6 +11494,11 @@ input[type="datetime-local"]:focus {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.feed-post-card.is-highlighted {
+  border-color: rgba(34, 197, 94, 0.7);
+  box-shadow: 0 4px 18px rgba(34, 197, 94, 0.16);
+}
+
 .feed-post-card:hover {
   border-color: rgba(34, 197, 94, 0.35);
   box-shadow: 0 4px 16px rgba(34, 197, 94, 0.08);
@@ -11504,6 +11509,11 @@ input[type="datetime-local"]:focus {
   background: var(--card);
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="dark"] .feed-post-card.is-highlighted {
+  border-color: rgba(74, 222, 128, 0.7);
+  box-shadow: 0 6px 18px rgba(34, 197, 94, 0.2);
 }
 
 [data-theme="dark"] .feed-post-card:hover {

@@ -669,7 +669,34 @@ export async function createCommunityComment(postId, content, parentCommentId = 
   // Update like_count on post (comment count)
   await supabase.rpc('increment_community_post_comment_count', { post_id: postId });
 
+  notifyPostAuthorOfComment(data.id);
+
   return data;
+}
+
+async function notifyPostAuthorOfComment(commentId) {
+  if (!commentId) return;
+
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    if (!token) return;
+
+    const response = await fetch('/api/notifications?action=comment-on-post', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ comment_id: commentId }),
+    });
+
+    if (!response.ok) {
+      console.warn('[createCommunityComment] comment email notify failed:', response.status);
+    }
+  } catch (error) {
+    console.warn('[createCommunityComment] comment email notify failed:', error);
+  }
 }
 
 export async function shareCommunityPost(originalPostId, caption = '') {

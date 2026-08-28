@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import App from './App.jsx';
 import Jobs from './pages/Jobs.jsx';
 import Gigs from './pages/Gigs.jsx';
@@ -49,6 +49,16 @@ import { AuthProvider } from './lib/auth.jsx';
 import { ThemeProvider } from './lib/theme.jsx';
 import './styles.css';
 
+function RedirectToHomePreservingQuery() {
+  const location = useLocation();
+  return <Navigate to={{ pathname: '/', search: location.search, hash: location.hash }} replace />;
+}
+
+function RedirectCommunityPost() {
+  const { postId } = useParams();
+  return <Navigate to={`/?post=${encodeURIComponent(postId || '')}`} replace />;
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeProvider>
@@ -57,7 +67,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Routes>
             <Route element={<App />}>
               <Route path="/" element={<Community />} />
-              <Route path="/community" element={<Navigate to="/" replace />} />
+              <Route path="/community" element={<RedirectToHomePreservingQuery />} />
+              <Route path="/community/post/:postId" element={<RedirectCommunityPost />} />
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/gigs" element={<Gigs />} />

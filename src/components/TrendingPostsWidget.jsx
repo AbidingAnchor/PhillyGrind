@@ -31,7 +31,7 @@ function TrendingPostsWidget() {
         <p className="trending-empty">No trending posts yet — be the first to get some love!</p>
       ) : (
         trending.map(post => (
-          <div key={post.id} className="trending-post-item" onClick={() => navigate(`/community?post=${post.id}`)}>
+          <div key={post.id} className="trending-post-item" onClick={() => navigate(`/?post=${post.id}`)}>
             <div className="trending-post-author">
               <span
                 className="trending-post-avatar"

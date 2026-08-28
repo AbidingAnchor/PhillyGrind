@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CreditCard, Shield, BadgeCheck, Palette, User, Bell, FileText } from 'lucide-react';
+import { CreditCard, Shield, BadgeCheck, Palette, User, Bell, Mail, FileText } from 'lucide-react';
 import { sendTwoFactorCode, toggleTwoFactorAuth, verifyTwoFactorCode } from '../lib/twoFactorApi.js';
 import { createConnectAccount } from '../lib/ordersApi.js';
 import { getResumeUrl, uploadResume, removeResume } from '../lib/profileApi.js';
@@ -33,6 +33,7 @@ function Settings() {
   const [housingListings, setHousingListings] = useState([]);
   const [showAvailableNow, setShowAvailableNow] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [emailCommentNotifications, setEmailCommentNotifications] = useState(true);
 
   const hasStripeAccount = Boolean(authProfile?.stripe_account_id);
   const payoutsConnected = Boolean(hasStripeAccount && authProfile?.stripe_onboarding_complete);
@@ -43,6 +44,7 @@ function Settings() {
     setTwoFactorEnabled(authProfile.two_factor_enabled || false);
     setShowAvailableNow(Boolean(authProfile.show_available_now));
     setNotificationsEnabled(authProfile.notifications_enabled !== false);
+    setEmailCommentNotifications(authProfile.email_comment_notifications !== false);
     const resumeStoragePath = getProfileResumePath(authProfile);
     if (resumeStoragePath) {
       getResumeUrl(resumeStoragePath).then(setResumeUrl).catch(console.warn);
@@ -196,6 +198,27 @@ function Settings() {
     } catch (err) {
       console.log('[Notifications] catch error (full object):', err);
       setProfileStatus(err.message || 'Could not update notification settings.');
+    }
+  }
+
+  async function handleToggleEmailCommentNotifications() {
+    setProfileStatus('');
+    const nextValue = !emailCommentNotifications;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ email_comment_notifications: nextValue })
+        .eq('id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setEmailCommentNotifications(nextValue);
+      setProfileStatus(`Comment emails ${nextValue ? 'enabled' : 'disabled'}.`);
+      await refreshProfile();
+    } catch (err) {
+      setProfileStatus(err.message || 'Could not update comment email settings.');
     }
   }
 
@@ -422,6 +445,26 @@ function Settings() {
             checked={notificationsEnabled}
             onChange={handleToggleNotifications}
             ariaLabel={notificationsEnabled ? 'Disable notifications' : 'Enable notifications'}
+          />
+        </div>
+      </section>
+
+      <section className="settings-row-card">
+        <div className="settings-row-content">
+          <div className="settings-row-left">
+            <div className="section-icon-wrapper">
+              <Mail size={20} />
+            </div>
+            <div className="settings-row-text">
+              <span className="eyebrow">Email</span>
+              <h2>Comment emails</h2>
+              <p className="settings-row-description">Email me when someone comments on my posts.</p>
+            </div>
+          </div>
+          <SettingsToggle
+            checked={emailCommentNotifications}
+            onChange={handleToggleEmailCommentNotifications}
+            ariaLabel={emailCommentNotifications ? 'Disable comment emails' : 'Enable comment emails'}
           />
         </div>
       </section>
