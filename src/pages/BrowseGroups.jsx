@@ -5,19 +5,9 @@ import EmptyState from '../components/EmptyState.jsx';
 import Skeleton from '../components/Skeleton.jsx';
 import { COMMUNITY_NEIGHBORHOODS } from '../lib/communityApi.js';
 import { GROUP_CATEGORIES, listPublicGroups } from '../lib/groupsApi.js';
+import { FEED_LOAD_TIMEOUT_MS, withTimeoutRetry } from '../lib/loadWithTimeout.js';
 
 const DESCRIPTION_PREVIEW_LENGTH = 140;
-
-function withTimeout(promise, milliseconds, message) {
-  let timeoutId;
-  const timeoutPromise = new Promise((_, reject) => {
-    timeoutId = window.setTimeout(() => reject(new Error(message)), milliseconds);
-  });
-
-  return Promise.race([promise, timeoutPromise]).finally(() => {
-    window.clearTimeout(timeoutId);
-  });
-}
 
 function previewDescription(description) {
   const text = String(description || '').trim();
@@ -45,9 +35,9 @@ function BrowseGroups() {
 
       async function loadGroups() {
         try {
-          const nextGroups = await withTimeout(
-            listPublicGroups({ keyword, category, neighborhood }),
-            5000,
+          const nextGroups = await withTimeoutRetry(
+            () => listPublicGroups({ keyword, category, neighborhood }),
+            FEED_LOAD_TIMEOUT_MS,
             'Supabase took too long to load groups. Please try again.',
           );
           if (!cancelled) setGroups(nextGroups);

@@ -18,6 +18,7 @@ import NeighborhoodWeatherAlert from '../components/NeighborhoodWeatherAlert.jsx
 import PostCard from '../components/community/PostCard.jsx';
 import CommunityComposer from '../components/community/CommunityComposer.jsx';
 import { InviteNeighborButton } from '../components/InviteNeighborSheet.jsx';
+import { FEED_LOAD_TIMEOUT_MS, withTimeoutRetry } from '../lib/loadWithTimeout.js';
 
 function CommunityLeftSidebar({ isLoggedIn, user, profile, neighborhoodName }) {
   const displayName = profile?.name || user?.name || 'Neighbor';
@@ -97,17 +98,6 @@ function AnimatedPlaceholder() {
   );
 }
 
-function withTimeout(promise, milliseconds, message) {
-  let timeoutId;
-  const timeoutPromise = new Promise((_, reject) => {
-    timeoutId = window.setTimeout(() => reject(new Error(message)), milliseconds);
-  });
-
-  return Promise.race([promise, timeoutPromise]).finally(() => {
-    window.clearTimeout(timeoutId);
-  });
-}
-
 function Community() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -166,21 +156,19 @@ function Community() {
       setError('');
 
       async function loadPosts() {
+        const timeoutMessage = 'Supabase took too long to load posts. Please try again.';
         try {
-          let nextPosts;
-          if (searchQuery) {
-            nextPosts = await withTimeout(
-              searchCommunityPosts(searchQuery),
-              5000,
-              'Supabase took too long to load posts. Please try again.',
-            );
-          } else {
-            nextPosts = await withTimeout(
-              getCommunityPosts({ neighborhood }),
-              5000,
-              'Supabase took too long to load posts. Please try again.',
-            );
-          }
+          const nextPosts = searchQuery
+            ? await withTimeoutRetry(
+                () => searchCommunityPosts(searchQuery),
+                FEED_LOAD_TIMEOUT_MS,
+                timeoutMessage,
+              )
+            : await withTimeoutRetry(
+                () => getCommunityPosts({ neighborhood }),
+                FEED_LOAD_TIMEOUT_MS,
+                timeoutMessage,
+              );
 
           if (!cancelled) setPosts(nextPosts);
         } catch (err) {

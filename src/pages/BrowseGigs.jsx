@@ -6,17 +6,7 @@ import Skeleton from '../components/Skeleton.jsx';
 import { gigCategories } from '../data/listings.js';
 import { getListings } from '../lib/listingsApi.js';
 import { attachPosterRatings } from '../lib/reviewsApi.js';
-
-function withTimeout(promise, milliseconds, message) {
-  let timeoutId;
-  const timeoutPromise = new Promise((_, reject) => {
-    timeoutId = window.setTimeout(() => reject(new Error(message)), milliseconds);
-  });
-
-  return Promise.race([promise, timeoutPromise]).finally(() => {
-    window.clearTimeout(timeoutId);
-  });
-}
+import { FEED_LOAD_TIMEOUT_MS, withTimeoutRetry } from '../lib/loadWithTimeout.js';
 
 function BrowseGigs() {
   const [gigs, setGigs] = useState([]);
@@ -35,9 +25,9 @@ function BrowseGigs() {
 
       async function loadGigs() {
         try {
-          const nextGigs = await withTimeout(
-            getListings('gig', { keyword, category, neighborhood, postType }).then(attachPosterRatings),
-            5000,
+          const nextGigs = await withTimeoutRetry(
+            () => getListings('gig', { keyword, category, neighborhood, postType }).then(attachPosterRatings),
+            FEED_LOAD_TIMEOUT_MS,
             'Supabase took too long to load gigs. Please try again.',
           );
 

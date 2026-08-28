@@ -15,32 +15,9 @@ import Skeleton from '../components/Skeleton.jsx';
 import { getMarketplaceListing, getMarketplaceListings } from '../lib/marketplaceApi.js';
 
 import { useAuth } from '../lib/auth.jsx';
+import { FEED_LOAD_TIMEOUT_MS, withTimeoutRetry } from '../lib/loadWithTimeout.js';
 
 import { HOUSING_NEIGHBORHOODS } from '../lib/housingApi.js';
-
-
-
-function withTimeout(promise, milliseconds, message) {
-
-  let timeoutId;
-
-  const timeoutPromise = new Promise((_, reject) => {
-
-    timeoutId = window.setTimeout(() => reject(new Error(message)), milliseconds);
-
-  });
-
-
-
-  return Promise.race([promise, timeoutPromise]).finally(() => {
-
-    window.clearTimeout(timeoutId);
-
-  });
-
-}
-
-
 
 function BrowseMarketplace() {
 
@@ -86,14 +63,10 @@ function BrowseMarketplace() {
 
         try {
 
-          const nextListings = await withTimeout(
-
-            getMarketplaceListings({ keyword, category, condition, neighborhood }),
-
-            5000,
-
+          const nextListings = await withTimeoutRetry(
+            () => getMarketplaceListings({ keyword, category, condition, neighborhood }),
+            FEED_LOAD_TIMEOUT_MS,
             'Supabase took too long to load marketplace listings. Please try again.',
-
           );
 
 

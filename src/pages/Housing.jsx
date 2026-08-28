@@ -5,17 +5,7 @@ import { getHousingImagePublicUrl, getHousingListings, HOUSING_NEIGHBORHOODS } f
 import { useAuth } from '../lib/auth.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import Skeleton from '../components/Skeleton.jsx';
-
-function withTimeout(promise, milliseconds, message) {
-  let timeoutId;
-  const timeoutPromise = new Promise((_, reject) => {
-    timeoutId = window.setTimeout(() => reject(new Error(message)), milliseconds);
-  });
-
-  return Promise.race([promise, timeoutPromise]).finally(() => {
-    window.clearTimeout(timeoutId);
-  });
-}
+import { FEED_LOAD_TIMEOUT_MS, withTimeoutRetry } from '../lib/loadWithTimeout.js';
 
 function formatAvailableDate(value) {
   if (!value) return 'Available now';
@@ -52,9 +42,9 @@ function Housing() {
 
       async function loadListings() {
         try {
-          const nextListings = await withTimeout(
-            getHousingListings({ neighborhood, bedrooms, maxRent, petsAllowed }),
-            5000,
+          const nextListings = await withTimeoutRetry(
+            () => getHousingListings({ neighborhood, bedrooms, maxRent, petsAllowed }),
+            FEED_LOAD_TIMEOUT_MS,
             'Supabase took too long to load rentals. Please try again.',
           );
 

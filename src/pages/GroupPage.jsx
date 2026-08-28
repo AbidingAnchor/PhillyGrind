@@ -9,17 +9,7 @@ import CommunityComposer from '../components/community/CommunityComposer.jsx';
 import { getGroup, isGroupMember, joinGroup, leaveGroup } from '../lib/groupsApi.js';
 import { getGroupPosts, deleteCommunityPost } from '../lib/communityApi.js';
 import { useAuth } from '../lib/auth.jsx';
-
-function withTimeout(promise, milliseconds, message) {
-  let timeoutId;
-  const timeoutPromise = new Promise((_, reject) => {
-    timeoutId = window.setTimeout(() => reject(new Error(message)), milliseconds);
-  });
-
-  return Promise.race([promise, timeoutPromise]).finally(() => {
-    window.clearTimeout(timeoutId);
-  });
-}
+import { FEED_LOAD_TIMEOUT_MS, withTimeoutRetry } from '../lib/loadWithTimeout.js';
 
 function LeaveGroupModal({ isOpen, groupName, busy, onClose, onConfirm }) {
   if (!isOpen) return null;
@@ -112,9 +102,9 @@ function GroupPage() {
       setPostsLoading(true);
       setPostsError('');
       try {
-        const nextPosts = await withTimeout(
-          getGroupPosts(groupId),
-          5000,
+        const nextPosts = await withTimeoutRetry(
+          () => getGroupPosts(groupId),
+          FEED_LOAD_TIMEOUT_MS,
           'Supabase took too long to load posts. Please try again.',
         );
         if (!cancelled) setPosts(nextPosts);
