@@ -682,7 +682,7 @@ async function notifyPostAuthorOfComment(commentId) {
     const token = sessionData?.session?.access_token;
     if (!token) return;
 
-    const response = await fetch('/api/notifications?action=comment-on-post', {
+    const response = await fetch('/api/listing-actions?action=comment-on-post', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
