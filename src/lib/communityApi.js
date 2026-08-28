@@ -178,6 +178,7 @@ export async function getCommunityPosts(filters = {}) {
     let basicQuery = supabase
       .from('community_posts')
       .select('*')
+      .or('hidden.eq.false,hidden.is.null')
       .order('created_at', { ascending: false });
 
     basicQuery = applyGroupScope(basicQuery, groupId);
@@ -1151,6 +1152,7 @@ export async function getTrendingPosts(limit = 5) {
     .from('community_posts')
     .select('id, content, created_at, user_id')
     .is('group_id', null)
+    .or('hidden.eq.false,hidden.is.null')
     .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
     .order('created_at', { ascending: false })
     .limit(50);

@@ -104,7 +104,7 @@ function Community() {
   const { isLoggedIn, user, profile } = useAuth();
   const [posts, setPosts] = useState([]);
   const [homeNeighborhood, setHomeNeighborhood] = useState(() => resolveHomeNeighborhood(profile));
-  const [neighborhood, setNeighborhood] = useState(resolveHomeNeighborhood(profile) || 'Any');
+  const [neighborhood, setNeighborhood] = useState('Any');
   const [filterTab, setFilterTab] = useState('all'); // all, recent, nearby, popular
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -140,7 +140,6 @@ function Community() {
       const next = await fetchHomeNeighborhood(isLoggedIn ? user?.id : null, profile);
       if (cancelled) return;
       setHomeNeighborhood(next);
-      setNeighborhood((current) => (current === 'Any' && next ? next : current));
     }
 
     loadHomeNeighborhood();
@@ -269,7 +268,10 @@ function Community() {
             <div className="feed-filter-tabs">
               <button
                 className={`feed-filter-tab ${filterTab === 'all' ? 'active' : ''}`}
-                onClick={() => setFilterTab('all')}
+                onClick={() => {
+                  setFilterTab('all');
+                  setNeighborhood('Any');
+                }}
               >
                 All Neighborhoods
               </button>
