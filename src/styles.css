@@ -7846,8 +7846,31 @@ a.join-page-cta {
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 0.82rem;
-  background: var(--bg, #f9fafb);
+  background: #fff;
+  color: #0c1726;
+  opacity: 1;
+  -webkit-text-fill-color: #0c1726;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: text;
+}
+
+.invite-sheet-link:read-only {
+  color: #0c1726;
+  -webkit-text-fill-color: #0c1726;
+  opacity: 1;
+}
+
+[data-theme="dark"] .invite-sheet-link {
+  background: var(--card);
   color: var(--ink);
+  -webkit-text-fill-color: var(--ink);
+}
+
+[data-theme="dark"] .invite-sheet-link:read-only {
+  color: var(--ink);
+  -webkit-text-fill-color: var(--ink);
 }
 
 .invite-sheet-copy-btn {
