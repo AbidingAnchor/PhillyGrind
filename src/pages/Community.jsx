@@ -17,6 +17,7 @@ import TrendingPostsWidget from '../components/TrendingPostsWidget.jsx';
 import NeighborhoodWeatherAlert from '../components/NeighborhoodWeatherAlert.jsx';
 import PostCard from '../components/community/PostCard.jsx';
 import CommunityComposer from '../components/community/CommunityComposer.jsx';
+import { InviteNeighborButton } from '../components/InviteNeighborSheet.jsx';
 
 function CommunityLeftSidebar({ isLoggedIn, user, profile, neighborhoodName }) {
   const displayName = profile?.name || user?.name || 'Neighbor';
@@ -63,6 +64,12 @@ function CommunityLeftSidebar({ isLoggedIn, user, profile, neighborhoodName }) {
           <strong className="feed-left-neighborhood-name">{homeNeighborhood || 'Not set yet'}</strong>
         </div>
       </div>
+
+      {isLoggedIn && user?.id && (
+        <div className="feed-left-card feed-left-invite-card">
+          <InviteNeighborButton userId={user.id} className="feed-left-invite-button" />
+        </div>
+      )}
 
       {homeNeighborhood ? (
         <NeighborhoodWeatherAlert neighborhood={homeNeighborhood} locationLabel={homeNeighborhood} />

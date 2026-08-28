@@ -1,8 +1,9 @@
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { Menu, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from './lib/auth.jsx';
+import { persistReferral } from './lib/referral.js';
 import { isAdminUser } from './lib/adminApi.js';
 import { touchOwnLastActive } from './lib/profileApi.js';
 import OnboardingModal from './components/OnboardingModal.jsx';
@@ -23,6 +24,7 @@ function App() {
   const [scrolled, setScrolled] = useState(false);
   const { isLoggedIn, profile, signOut, user } = useAuth();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const displayName = profile?.name || 'My Profile';
   const showAdminLink = isAdminUser(user);
   const shouldShowOnboarding = Boolean(isLoggedIn && profile && profile.onboarding_complete === false && location.pathname === '/');
@@ -40,6 +42,10 @@ function App() {
   useEffect(() => {
     setOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    persistReferral(searchParams.get('ref'));
+  }, [searchParams]);
 
   // Diagnostic to log computed styles of menu element on page load
   useEffect(() => {

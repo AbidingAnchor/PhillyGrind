@@ -16,6 +16,7 @@ import Login from './pages/Login.jsx';
 import AccountRecovery from './pages/AccountRecovery.jsx';
 import AccountRecoveryReset from './pages/AccountRecoveryReset.jsx';
 import SignUp from './pages/SignUp.jsx';
+import Join from './pages/Join.jsx';
 import Messages from './pages/Messages.jsx';
 import Contact from './pages/Contact.jsx';
 import Terms from './pages/Terms.jsx';
@@ -83,6 +84,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="/account-recovery/reset" element={<AccountRecoveryReset />} />
               <Route path="/account-recovery" element={<AccountRecovery />} />
               <Route path="/signup" element={<SignUp />} />
+              <Route path="/join" element={<Join />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/groups" element={<ProtectedRoute><BrowseGroups /></ProtectedRoute>} />
               <Route path="/groups/create" element={<ProtectedRoute><CreateGroup /></ProtectedRoute>} />

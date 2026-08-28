@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { hasSupabaseConfig, supabase } from './supabase.js';
 import { completeOwnOnboarding, ensureOwnProfile } from './profileApi.js';
+import { claimStoredReferral } from './referral.js';
 import OnboardingTour from '../components/OnboardingTour.jsx';
 import Skeleton from '../components/Skeleton.jsx';
 
@@ -83,6 +84,9 @@ export function AuthProvider({ children }) {
 
       if (!error && data) {
         if (active) setProfile(data);
+        claimStoredReferral().catch((claimError) => {
+          console.warn('[Auth] Referral claim failed', claimError);
+        });
         return;
       }
 
@@ -102,6 +106,9 @@ export function AuthProvider({ children }) {
 
         if (refreshError) throw refreshError;
         setProfile(refreshed || ensured);
+        claimStoredReferral().catch((claimError) => {
+          console.warn('[Auth] Referral claim failed', claimError);
+        });
       } catch (ensureError) {
         console.error('[Auth] Could not load or create profile row', ensureError);
         if (active) setProfile(null);
@@ -273,6 +280,10 @@ export function AuthProvider({ children }) {
     }
 
     await captureLoginIp(data.session);
+
+    if (data.session) {
+      await claimStoredReferral();
+    }
 
     // Profile creation is now handled by Postgres trigger on auth.users insert
     // No client-side upsert needed - trigger runs with service role privileges

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
+import { persistReferral } from '../lib/referral.js';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -11,6 +12,11 @@ function SignUp() {
   const [submitting, setSubmitting] = useState(false);
   const { signUp, isLoggedIn } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    persistReferral(searchParams.get('ref'));
+  }, [searchParams]);
 
   // Redirect authenticated users away from signup page
   useEffect(() => {

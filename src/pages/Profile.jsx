@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Briefcase, MapPin, Calendar, MessageCircle, Pencil, Share2, MoreHorizontal, Settings, X, Camera } from 'lucide-react';
+import { InviteNeighborButton } from '../components/InviteNeighborSheet.jsx';
 import FacebookShareIcon from '../components/FacebookShareIcon.jsx';
 import PostReactionControl from '../components/PostReactionControl.jsx';
 import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
@@ -785,6 +786,14 @@ function Profile() {
                       ? new Date(profileData.profileCreatedAt).toLocaleDateString([], { month: 'long', year: 'numeric' })
                       : 'recently'}
                   </span>
+                  {(Number(profileData.profile?.neighbors_invited) || 0) > 0 && (
+                    <>
+                      <span className="profile-identity-sep" aria-hidden="true">·</span>
+                      <span>
+                        Invited {profileData.profile.neighbors_invited} neighbor{Number(profileData.profile.neighbors_invited) === 1 ? '' : 's'}
+                      </span>
+                    </>
+                  )}
                 </div>
                 {profileData.profile?.availability === 'Available Now' && profileData.profile?.show_available_now && (
                   <span className="availability-badge available">{profileData.profile.availability}</span>
@@ -828,6 +837,9 @@ function Profile() {
                 >
                   <Share2 size={18} />
                 </button>
+                {isOwnProfile && (
+                  <InviteNeighborButton userId={user.id} className="profile-icon-button" iconOnly />
+                )}
                 {isOwnProfile && (
                   <div className="profile-actions-menu">
                     <button

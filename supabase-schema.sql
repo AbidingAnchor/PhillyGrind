@@ -243,6 +243,9 @@ alter table profiles
   add column if not exists email_comment_notifications boolean not null default true;
 
 alter table profiles
+  add column if not exists referred_by uuid references profiles(id) on delete set null;
+
+alter table profiles
   add column if not exists last_active_at timestamptz;
 
 alter table profiles

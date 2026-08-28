@@ -151,10 +151,13 @@ export async function getUserReviews(userId) {
     throw new Error('Supabase credentials are missing.');
   }
 
-  const [profileResult, reviewsResult] = await Promise.all([
+  const publicProfileSelect = 'id,name,bio,skills,availability,neighborhood,neighborhoods,avatar_url,banner_url,profile_tags,identity_verified,created_at,neighbors_invited';
+  const publicProfileSelectFallback = 'id,name,bio,skills,availability,neighborhood,neighborhoods,avatar_url,banner_url,profile_tags,identity_verified,created_at';
+
+  let [profileResult, reviewsResult] = await Promise.all([
     supabase
       .from('profiles_public')
-      .select('id,name,bio,skills,availability,neighborhood,neighborhoods,avatar_url,banner_url,profile_tags,identity_verified,created_at')
+      .select(publicProfileSelect)
       .eq('id', userId)
       .maybeSingle(),
     supabase
@@ -163,6 +166,14 @@ export async function getUserReviews(userId) {
       .eq('reviewee_id', userId)
       .order('created_at', { ascending: false }),
   ]);
+
+  if (profileResult.error && String(profileResult.error.message || '').includes('neighbors_invited')) {
+    profileResult = await supabase
+      .from('profiles_public')
+      .select(publicProfileSelectFallback)
+      .eq('id', userId)
+      .maybeSingle();
+  }
 
   if (profileResult.error) throw profileResult.error;
   if (reviewsResult.error) throw reviewsResult.error;

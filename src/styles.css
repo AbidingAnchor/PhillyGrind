@@ -7803,6 +7803,92 @@ body {
   margin-top: 24px;
 }
 
+.join-page-copy {
+  max-width: 380px;
+  margin: 0 auto 20px;
+  text-align: center;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+a.join-page-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  max-width: 380px;
+  width: calc(100% - 0px);
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.invite-sheet-body {
+  padding: 20px 24px 24px;
+}
+
+.invite-sheet-copy {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.invite-sheet-link-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.invite-sheet-link {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.82rem;
+  background: var(--bg, #f9fafb);
+  color: var(--ink);
+}
+
+.invite-sheet-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: #16a34a;
+  color: #fff;
+  font-weight: 650;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.invite-sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invite-sheet-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line, #e5e7eb);
+  background: var(--card);
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  font: inherit;
+}
+
+.invite-sheet-action:hover {
+  border-color: rgba(34, 197, 94, 0.45);
+}
+
 .report-category-button {
   display: flex;
   align-items: center;
@@ -12873,6 +12959,30 @@ input[type="datetime-local"]:focus {
 
 [data-theme="dark"] .feed-left-neighborhood-name {
   color: #f5f5f5;
+}
+
+.feed-left-invite-card {
+  padding: 10px;
+}
+
+.feed-left-invite-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 650;
+  cursor: pointer;
+  padding: 6px 4px;
+}
+
+.feed-left-invite-button:hover {
+  color: #15803d;
 }
 
 .feed-weather-card {
