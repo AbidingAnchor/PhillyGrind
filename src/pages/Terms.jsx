@@ -6,7 +6,7 @@ function Terms() {
       <div className="page-heading">
         <span className="eyebrow">Legal</span>
         <h1>Terms of Service</h1>
-        <p>Last Updated: August 13, 2026</p>
+        <p>Last Updated: August 28, 2026</p>
       </div>
 
       <article className="legal-card">
@@ -85,7 +85,7 @@ function Terms() {
         <p>If a buyer and seller disagree about whether an item was received, matches its description, or was handled properly, either party may open a dispute. Both parties may submit evidence; PhillyGrind reviews the evidence and makes a final determination regarding release of escrowed funds. Our decision on fund release is final.</p>
 
         <h3>6.4 Cash Transactions</h3>
-        <p>Users may also arrange cash transactions outside of Secure Checkout. PhillyGrind has no visibility into and bears no responsibility for cash transactions arranged between users.</p>
+        <p>Users may also arrange cash transactions outside of Secure Checkout. PhillyGrind has no visibility into and bears no responsibility for cash transactions arranged between users. Reviews and ratings on PhillyGrind reflect only transactions completed through Secure Checkout — cash transactions arranged outside of Secure Checkout will not generate a review or affect either party's rating.</p>
 
         <h2>7. Housing</h2>
         <p>The Housing section allows users to list and browse rental housing in Philadelphia.</p>
