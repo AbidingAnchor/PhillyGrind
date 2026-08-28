@@ -30,7 +30,7 @@ export async function getNotifications(userId) {
 
   const { data, error } = await supabase
     .from('notifications')
-    .select('id,user_id,type,message,listing_id,listing_type,sender_id,alert_id,read,created_at')
+    .select('id,user_id,type,message,listing_id,listing_type,order_id,sender_id,alert_id,read,created_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(10);
@@ -41,16 +41,46 @@ export async function getNotifications(userId) {
 
   return (data ?? []).map((notification) => ({
     ...notification,
-    listingPath: notification.type === 'neighborhood_alert'
-      ? (notification.alert_id ? `/alerts?id=${encodeURIComponent(notification.alert_id)}` : '/alerts')
-      : notification.listing_type && notification.listing_id
-      ? `/${notification.listing_type === 'gig' ? 'gigs' : 'jobs'}/${notification.listing_id}${
-          notification.type === 'message' && notification.sender_id
-            ? `?openChat=true&senderId=${notification.sender_id}`
-            : ''
-        }`
-      : pathsById.get(notification.listing_id) || '/messages',
+    listingPath: buildNotificationPath(notification, pathsById),
   }));
+}
+
+function buildNotificationPath(notification, pathsById) {
+  if (notification.type === 'neighborhood_alert') {
+    return notification.alert_id
+      ? `/alerts?id=${encodeURIComponent(notification.alert_id)}`
+      : '/alerts';
+  }
+
+  if (notification.type === 'review_request' && notification.listing_id) {
+    const reviewQuery = notification.order_id
+      ? `?reviewOrder=${encodeURIComponent(notification.order_id)}`
+      : '';
+    if (notification.listing_type === 'marketplace') {
+      return `/marketplace/${notification.listing_id}${reviewQuery}`;
+    }
+    if (notification.listing_type === 'gig') {
+      return `/gigs/${notification.listing_id}${reviewQuery}`;
+    }
+  }
+
+  if (notification.listing_type === 'marketplace' && notification.listing_id) {
+    const basePath = `/marketplace/${notification.listing_id}`;
+    if (notification.type === 'message' && notification.sender_id) {
+      return `${basePath}?openChat=true&senderId=${notification.sender_id}`;
+    }
+    return basePath;
+  }
+
+  if (notification.listing_type && notification.listing_id) {
+    const basePath = `/${notification.listing_type === 'gig' ? 'gigs' : 'jobs'}/${notification.listing_id}`;
+    if (notification.type === 'message' && notification.sender_id) {
+      return `${basePath}?openChat=true&senderId=${notification.sender_id}`;
+    }
+    return basePath;
+  }
+
+  return pathsById.get(notification.listing_id) || '/messages';
 }
 
 export async function markNotificationsRead(userId) {

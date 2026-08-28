@@ -179,6 +179,7 @@ function MarketplaceDetail() {
   const [handoffOpen, setHandoffOpen] = useState(false);
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [sellerEvidenceOpen, setSellerEvidenceOpen] = useState(false);
+  const reviewOrderId = searchParams.get('reviewOrder') || '';
   const [dispute, setDispute] = useState(null);
   const [countdown, setCountdown] = useState('');
   const [connectingStripe, setConnectingStripe] = useState(false);
@@ -646,6 +647,7 @@ function MarketplaceDetail() {
         listing={listing}
         orderKind="marketplace"
         refreshKey={order ? `${order.id}:${order.status}` : 'none'}
+        preferredOrderId={reviewOrderId}
         onReviewed={() => {}}
       />
 

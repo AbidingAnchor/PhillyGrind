@@ -88,6 +88,7 @@ function ListingDetail({ type }) {
   const canMessagePoster = Boolean(isLoggedIn && listing?.user_id && listing.user_id !== user?.id && !hasApplyUrl && !canQuickApply && (type !== 'gig' || isSeekingGig || isAcceptedGigWorker));
   const boostCancelled = searchParams.get('boost') === 'cancelled';
   const cancelledBoostTier = ['basic', 'pro'].includes(searchParams.get('tier')) ? searchParams.get('tier') : null;
+  const reviewOrderId = searchParams.get('reviewOrder') || '';
   const showBoostCancelledPanel = Boolean(isOwner && listing?.boost_pending && boostCancelled);
   const orderNeedsAfterPhoto = Boolean(isWorker && currentOrder && ['pending', 'escrowed'].includes(currentOrder.status) && !currentOrder.after_photo_url);
 
@@ -730,6 +731,7 @@ function ListingDetail({ type }) {
           listing={listing}
           orderKind="gig"
           refreshKey={orders.map((order) => `${order.id}:${order.status}`).join(',')}
+          preferredOrderId={reviewOrderId}
           onReviewed={refreshPosterRating}
         />
       )}

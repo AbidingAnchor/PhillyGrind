@@ -3,7 +3,7 @@ import { createReview, getCompletedOrderReviewTargets } from '../lib/reviewsApi.
 import { useAuth } from '../lib/auth.jsx';
 import Skeleton from './Skeleton.jsx';
 
-function ReviewForm({ listing, orderKind, refreshKey = '', onReviewed }) {
+function ReviewForm({ listing, orderKind, refreshKey = '', preferredOrderId = '', onReviewed }) {
   const { user, isLoggedIn } = useAuth();
   const [targets, setTargets] = useState([]);
   const [selectedTargetKey, setSelectedTargetKey] = useState('');
@@ -30,11 +30,20 @@ function ReviewForm({ listing, orderKind, refreshKey = '', onReviewed }) {
     })
       .then((nextTargets) => {
         setTargets(nextTargets);
-        setSelectedTargetKey(nextTargets[0]?.orderId || '');
+        const preferred = preferredOrderId && nextTargets.some((target) => target.orderId === preferredOrderId)
+          ? preferredOrderId
+          : nextTargets[0]?.orderId || '';
+        setSelectedTargetKey(preferred);
       })
       .catch((error) => setStatus(error.message || 'Could not load review options.'))
       .finally(() => setLoading(false));
-  }, [isLoggedIn, listing?.id, orderKind, refreshKey, user]);
+  }, [isLoggedIn, listing?.id, orderKind, preferredOrderId, refreshKey, user]);
+
+  useEffect(() => {
+    if (!preferredOrderId || loading || !targets.length) return;
+    const panel = document.getElementById('leave-review-panel');
+    panel?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [preferredOrderId, loading, targets.length]);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -67,7 +76,7 @@ function ReviewForm({ listing, orderKind, refreshKey = '', onReviewed }) {
   if (!loading && !targets.length) return null;
 
   return (
-    <section className="review-panel">
+    <section className="review-panel" id="leave-review-panel">
       <h2>Leave a Review</h2>
       <p className="detail-note">Reviews are available after a completed secure checkout.</p>
       {loading && <Skeleton variant="list" count={2} />}

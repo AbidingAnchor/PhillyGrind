@@ -104,14 +104,26 @@ function NotificationBell() {
         : '/alerts';
     }
 
+    if (notification.type === 'review_request' && notification.listing_id) {
+      const reviewQuery = notification.order_id
+        ? `?reviewOrder=${encodeURIComponent(notification.order_id)}`
+        : '';
+      if (notification.listing_type === 'marketplace') {
+        return `/marketplace/${notification.listing_id}${reviewQuery}`;
+      }
+      if (notification.listing_type === 'gig') {
+        return `/gigs/${notification.listing_id}${reviewQuery}`;
+      }
+    }
+
     if (notification.listing_type && notification.listing_id) {
       const basePath = notification.listing_type === 'marketplace'
-        ? '/marketplace'
+        ? `/marketplace/${notification.listing_id}`
         : `/${notification.listing_type === 'gig' ? 'gigs' : 'jobs'}/${notification.listing_id}`;
       const shouldOpenChat = notification.type === 'message' && notification.sender_id;
 
       if (notification.listing_type === 'marketplace' && shouldOpenChat) {
-        return `${basePath}?listingId=${notification.listing_id}&openChat=true&senderId=${notification.sender_id}`;
+        return `${basePath}?openChat=true&senderId=${notification.sender_id}`;
       }
 
       return shouldOpenChat ? `${basePath}?openChat=true&senderId=${notification.sender_id}` : basePath;
