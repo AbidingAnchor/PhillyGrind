@@ -725,7 +725,14 @@ function ListingDetail({ type }) {
         )}
         {actionStatus && <p className="form-status error-text">{actionStatus}</p>}
       </article>
-      <ReviewForm listing={listing} onReviewed={refreshPosterRating} />
+      {type === 'gig' && (
+        <ReviewForm
+          listing={listing}
+          orderKind="gig"
+          refreshKey={orders.map((order) => `${order.id}:${order.status}`).join(',')}
+          onReviewed={refreshPosterRating}
+        />
+      )}
       {chatOpen && (
         <ChatModal
           listing={listing}

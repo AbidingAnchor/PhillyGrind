@@ -60,62 +60,80 @@ export async function attachPosterRatings(listings) {
   }));
 }
 
-export async function getExistingReview({ listingId, reviewerId }) {
-  if (!hasSupabaseConfig || !reviewerId) return null;
+/**
+ * Completed-order review targets for the current user on a listing.
+ * Returns one entry per completed order the user hasn't reviewed yet.
+ */
+export async function getCompletedOrderReviewTargets({ currentUserId, listingId, orderKind }) {
+  if (!hasSupabaseConfig || !currentUserId || !listingId || !orderKind) return [];
 
-  const { data, error } = await supabase
+  let orderRows = [];
+
+  if (orderKind === 'gig') {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('id, hirer_id, worker_id')
+      .eq('listing_id', listingId)
+      .eq('status', 'completed')
+      .or(`hirer_id.eq.${currentUserId},worker_id.eq.${currentUserId}`);
+
+    if (error) throw error;
+
+    orderRows = (data ?? []).map((order) => ({
+      orderId: order.id,
+      revieweeId: order.hirer_id === currentUserId ? order.worker_id : order.hirer_id,
+    }));
+  } else if (orderKind === 'marketplace') {
+    const { data, error } = await supabase
+      .from('marketplace_orders')
+      .select('id, buyer_id, seller_id')
+      .eq('listing_id', listingId)
+      .eq('status', 'completed')
+      .or(`buyer_id.eq.${currentUserId},seller_id.eq.${currentUserId}`);
+
+    if (error) throw error;
+
+    orderRows = (data ?? []).map((order) => ({
+      orderId: order.id,
+      revieweeId: order.buyer_id === currentUserId ? order.seller_id : order.buyer_id,
+    }));
+  }
+
+  if (!orderRows.length) return [];
+
+  const orderIds = orderRows.map((row) => row.orderId);
+  const { data: existingReviews, error: existingError } = await supabase
     .from('reviews')
-    .select('id')
-    .eq('listing_id', listingId)
-    .eq('reviewer_id', reviewerId)
-    .maybeSingle();
+    .select('order_id')
+    .eq('reviewer_id', currentUserId)
+    .in('order_id', orderIds);
 
-  if (error) throw error;
+  if (existingError) throw existingError;
 
-  return data;
-}
+  const reviewedOrderIds = new Set((existingReviews ?? []).map((review) => review.order_id));
+  const pending = orderRows.filter((row) => !reviewedOrderIds.has(row.orderId));
 
-export async function getReviewTargets({ currentUserId, listing }) {
-  if (!hasSupabaseConfig || !currentUserId || !listing?.user_id) return [];
+  if (!pending.length) return [];
 
-  const { data, error } = await supabase
-    .from('messages')
-    .select('sender_id,receiver_id')
-    .eq('listing_id', listing.id);
+  const profileIds = [...new Set(pending.map((row) => row.revieweeId))];
+  const profilesById = await getProfilesByIds(profileIds);
 
-  if (error) {
-    console.warn(error);
-    return [];
-  }
-
-  if (currentUserId !== listing.user_id) {
-    const hasMessagedPoster = (data ?? []).some((message) => {
-      const participants = [message.sender_id, message.receiver_id];
-      return participants.includes(currentUserId) && participants.includes(listing.user_id);
-    });
-
-    if (!hasMessagedPoster) return [];
-
-    const profilesById = await getProfilesByIds([listing.user_id]);
-
-    return [{
-      id: listing.user_id,
-      name: profilesById.get(listing.user_id) || listing.posterName || 'PhillyGrind user',
-    }];
-  }
-
-  const participantIds = [...new Set((data ?? [])
-    .flatMap((message) => [message.sender_id, message.receiver_id])
-    .filter((userId) => userId && userId !== currentUserId))];
-  const profilesById = await getProfilesByIds(participantIds);
-
-  return participantIds.map((userId) => ({
-    id: userId,
-    name: profilesById.get(userId) || 'PhillyGrind user',
+  return pending.map((row) => ({
+    orderId: row.orderId,
+    revieweeId: row.revieweeId,
+    name: profilesById.get(row.revieweeId) || 'PhillyGrind user',
+    listingType: orderKind,
   }));
 }
 
-export async function createReview({ listingId, revieweeId, rating, comment }) {
+export async function createReview({
+  listingId,
+  orderId,
+  listingType,
+  revieweeId,
+  rating,
+  comment,
+}) {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
   }
@@ -129,16 +147,22 @@ export async function createReview({ listingId, revieweeId, rating, comment }) {
     throw new Error('You cannot review yourself.');
   }
 
+  if (!orderId || !listingType) {
+    throw new Error('Reviews require a completed order.');
+  }
+
   const { data, error } = await supabase
     .from('reviews')
     .insert({
       listing_id: listingId,
+      order_id: orderId,
+      listing_type: listingType,
       reviewer_id: userData.user.id,
       reviewee_id: revieweeId,
       rating,
       comment,
     })
-    .select('id,listing_id,reviewer_id,reviewee_id,rating,comment,created_at')
+    .select('id,listing_id,order_id,listing_type,reviewer_id,reviewee_id,rating,comment,created_at')
     .single();
 
   if (error) throw error;
@@ -162,7 +186,7 @@ export async function getUserReviews(userId) {
       .maybeSingle(),
     supabase
       .from('reviews')
-      .select('id,listing_id,reviewer_id,reviewee_id,rating,comment,created_at')
+      .select('id,listing_id,order_id,listing_type,reviewer_id,reviewee_id,rating,comment,created_at')
       .eq('reviewee_id', userId)
       .order('created_at', { ascending: false }),
   ]);

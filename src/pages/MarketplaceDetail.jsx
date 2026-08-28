@@ -10,6 +10,7 @@ import HandoffPhotoModal from '../components/HandoffPhotoModal.jsx';
 import DisputeFormModal from '../components/DisputeFormModal.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { createConnectAccount } from '../lib/ordersApi.js';
+import ReviewForm from '../components/ReviewForm.jsx';
 import { getUserAvatarColor } from '../lib/reactions.js';
 import {
   confirmMarketplaceReceipt,
@@ -640,6 +641,13 @@ function MarketplaceDetail() {
       )}
 
       {actionStatus && <p className="mp-detail-status">{actionStatus}</p>}
+
+      <ReviewForm
+        listing={listing}
+        orderKind="marketplace"
+        refreshKey={order ? `${order.id}:${order.status}` : 'none'}
+        onReviewed={() => {}}
+      />
 
       {chatOpen && (
         <ChatModal
