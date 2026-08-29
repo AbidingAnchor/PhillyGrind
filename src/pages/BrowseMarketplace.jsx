@@ -453,9 +453,9 @@ function BrowseMarketplace() {
     align-items: flex-start;
   }
   .marketplace-category-pill {
-    background: white;
-    border: 1px solid #d1d5db;
-    color: #1a2332;
+    background: var(--card);
+    border: 1px solid var(--line);
+    color: var(--ink);
     font-size: 13px;
     padding: 6px 14px;
     border-radius: 9999px;
@@ -463,12 +463,12 @@ function BrowseMarketplace() {
     transition: all 0.2s ease;
   }
   .marketplace-category-pill:hover {
-    background: #f1f5f9;
+    background: var(--background);
   }
   .marketplace-category-pill.selected {
-    background: #1a2332;
-    color: white;
-    border-color: #1a2332;
+    background: var(--green);
+    color: #fff;
+    border-color: var(--green);
   }
   [data-theme="dark"] .marketplace-category-pill {
     background: #1e1e1e;

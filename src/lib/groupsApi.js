@@ -92,35 +92,47 @@ export async function getGroup(groupId) {
 export async function listPublicGroups({ keyword, category, neighborhood } = {}) {
   await requireAuthUser();
 
-  let query = supabase
-    .from('groups')
-    .select('*')
-    .eq('privacy', 'public')
-    .order('created_at', { ascending: false });
+  async function runQuery(filterByStatus) {
+    let query = supabase
+      .from('groups')
+      .select('*')
+      .eq('privacy', 'public')
+      .order('created_at', { ascending: false });
 
-  const trimmedKeyword = String(keyword || '').trim();
-  if (trimmedKeyword) {
-    query = query.ilike('name', `%${trimmedKeyword}%`);
+    if (filterByStatus) {
+      query = query.eq('status', 'active');
+    }
+
+    const trimmedKeyword = String(keyword || '').trim();
+    if (trimmedKeyword) {
+      query = query.ilike('name', `%${trimmedKeyword}%`);
+    }
+
+    const trimmedCategory = String(category || '').trim();
+    if (trimmedCategory && trimmedCategory !== 'All') {
+      query = query.ilike('category', escapeIlikeExact(trimmedCategory));
+    }
+
+    const trimmedNeighborhood = String(neighborhood || '').trim();
+    if (trimmedNeighborhood) {
+      query = query.eq('neighborhood', trimmedNeighborhood);
+    }
+
+    return query;
   }
 
-  const trimmedCategory = String(category || '').trim();
-  if (trimmedCategory && trimmedCategory !== 'All') {
-    query = query.ilike('category', escapeIlikeExact(trimmedCategory));
-  }
+  let { data, error } = await runQuery(true);
 
-  const trimmedNeighborhood = String(neighborhood || '').trim();
-  if (trimmedNeighborhood) {
-    query = query.eq('neighborhood', trimmedNeighborhood);
+  if (error && (error.code === '42703' || /status/i.test(error.message || ''))) {
+    ({ data, error } = await runQuery(false));
   }
-
-  const { data, error } = await query;
 
   if (error) {
     console.error('[groupsApi] listPublicGroups failed', error);
     throw new Error(error.message);
   }
 
-  return data ?? [];
+  return (data ?? []).filter((group) => group.status == null || group.status === 'active');
 }
 
 export async function joinGroup(groupId) {

@@ -106,7 +106,7 @@ function BrowseGroups() {
       </div>
 
       {error && <p className="empty-state error-state">{error}</p>}
-      {loading && <Skeleton variant="cards" />}
+      {loading && <Skeleton variant="groupCards" />}
 
       {!loading && !error && (
         <>

@@ -125,6 +125,25 @@ export function Skeleton({ variant = 'page', count }) {
     );
   }
 
+  if (variant === 'groupCards') {
+    return (
+      <div className="skeleton-group-cards groups-browse-grid" role="status" aria-label="Loading groups">
+        {Array.from({ length: count || 6 }, (_, index) => (
+          <div className="skeleton-group-card" key={index}>
+            <Bone className="skeleton-group-cover" />
+            <Bone className="skeleton-group-avatar" />
+            <div className="skeleton-group-body">
+              <Bone className="skeleton-line skeleton-line-xs" />
+              <Bone className="skeleton-line skeleton-line-md" />
+              <Bone className="skeleton-line" />
+              <Bone className="skeleton-line skeleton-line-sm" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   if (variant === 'cards') {
     return (
       <div className="skeleton-cards" role="status" aria-label="Loading listings">
