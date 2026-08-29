@@ -17603,3 +17603,13 @@ input[type="datetime-local"]:focus {
   margin: 0 auto;
   line-height: 1.5;
 }
+
+.group-page-empty .groups-browse-create.filter.active,
+.group-page-empty .groups-browse-create.filter.active:hover,
+.group-page-empty .groups-browse-create.filter.active:focus,
+.group-page-empty .groups-browse-create.filter.active:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-color: transparent;
+  background-image: none;
+}

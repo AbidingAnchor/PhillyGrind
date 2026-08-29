@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { MapPin, PlusCircle, Users } from 'lucide-react';
 import EmptyState from '../components/EmptyState.jsx';
 import Skeleton from '../components/Skeleton.jsx';
@@ -17,7 +17,6 @@ function previewDescription(description) {
 }
 
 function BrowseGroups() {
-  const navigate = useNavigate();
   const [groups, setGroups] = useState([]);
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState('All');
@@ -170,7 +169,9 @@ function BrowseGroups() {
                 }
                 action
                 actionLabel="Create a Group"
-                onAction={() => navigate('/groups/create')}
+                actionHref="/groups/create"
+                actionClassName="filter active groups-browse-create"
+                actionIcon={<PlusCircle size={18} />}
               />
             </div>
           )}
