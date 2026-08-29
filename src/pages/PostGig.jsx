@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { HandHelping, Wrench } from 'lucide-react';
 import ListingForm from '../components/ListingForm.jsx';
 import { gigCategories } from '../data/listings.js';
 import { createConnectAccount } from '../lib/ordersApi.js';
@@ -38,6 +39,11 @@ function tokenPreview(token) {
   if (!token) return null;
   return `${token.slice(0, 12)}...${token.slice(-8)}`;
 }
+
+const gigModeIcons = {
+  offering: Wrench,
+  seeking: HandHelping,
+};
 
 function PostGig() {
   const [postType, setPostType] = useState('');
@@ -88,13 +94,20 @@ function PostGig() {
       </div>
       {!postType && (
         <div className="gig-type-grid">
-          {Object.entries(gigModes).map(([value, mode]) => (
-            <button key={value} className="gig-type-card" type="button" onClick={() => setPostType(value)}>
-              <span className="eyebrow">{mode.eyebrow}</span>
-              <h2>{mode.title}</h2>
-              <p>{mode.description}</p>
-            </button>
-          ))}
+          {Object.entries(gigModes).map(([value, mode]) => {
+            const Icon = gigModeIcons[value];
+
+            return (
+              <button key={value} className="gig-type-card" type="button" onClick={() => setPostType(value)}>
+                <div className="gig-type-card-icon" aria-hidden="true">
+                  <Icon size={26} strokeWidth={2} />
+                </div>
+                <span className="group-create-category gig-type-card-label">{mode.eyebrow}</span>
+                <h2>{mode.title}</h2>
+                <p>{mode.description}</p>
+              </button>
+            );
+          })}
         </div>
       )}
       {postType && (
