@@ -17484,13 +17484,6 @@ input[type="datetime-local"]:focus {
 .skeleton-group-cover {
   height: 132px;
   border-radius: 0;
-  background-color: var(--line);
-  background-image: linear-gradient(
-    105deg,
-    var(--line) 0%,
-    var(--background) 45%,
-    var(--line) 90%
-  );
 }
 
 .skeleton-group-avatar {
@@ -17498,12 +17491,31 @@ input[type="datetime-local"]:focus {
   height: 58px;
   margin: -29px 18px 0;
   border-radius: 18px;
-  background-color: var(--line);
+}
+
+.skeleton-group-card .skeleton-bone {
+  background-color: var(--mint);
   background-image: linear-gradient(
     105deg,
-    var(--line) 0%,
-    var(--background) 45%,
-    var(--line) 90%
+    var(--mint) 0%,
+    rgba(17, 184, 121, 0.22) 36%,
+    var(--green) 50%,
+    rgba(17, 184, 121, 0.22) 64%,
+    var(--mint) 100%
+  );
+}
+
+[data-theme="dark"] .skeleton-group-card .skeleton-bone {
+  background-color: #0b1724;
+  background-image: linear-gradient(
+    105deg,
+    #0b1724 0%,
+    #061524 28%,
+    #0a2a1a 42%,
+    #22c55e 50%,
+    #0a2a1a 58%,
+    #061524 72%,
+    #0b1724 100%
   );
 }
 
