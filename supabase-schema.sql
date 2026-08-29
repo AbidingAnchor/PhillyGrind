@@ -1761,7 +1761,7 @@ alter table community_comment_likes enable row level security;
 
 create policy "Anyone can read community comment likes"
   on community_comment_likes for select
-  to authenticated
+  to anon, authenticated
   using (true);
 
 create policy "Users can insert own community comment likes"
@@ -1887,7 +1887,7 @@ alter table community_posts enable row level security;
 
 create policy "Anyone can read community posts"
   on community_posts for select
-  to authenticated
+  to anon, authenticated
   using (true);
 
 create policy "Users can insert own community posts if not suspended"
@@ -1939,7 +1939,7 @@ alter table community_comments enable row level security;
 
 create policy "Anyone can read community comments"
   on community_comments for select
-  to authenticated
+  to anon, authenticated
   using (true);
 
 create policy "Users can insert own community comments if not suspended"
@@ -1991,7 +1991,7 @@ alter table community_post_likes enable row level security;
 
 create policy "Anyone can read community post likes"
   on community_post_likes for select
-  to authenticated
+  to anon, authenticated
   using (true);
 
 create policy "Users can insert own community post likes"
