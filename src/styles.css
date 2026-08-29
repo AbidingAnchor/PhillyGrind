@@ -853,9 +853,16 @@ main {
   width: 100%;
 }
 
-#datepicker-portal,
-.auth-datepicker-popper {
-  z-index: 40;
+#datepicker-portal {
+  position: relative;
+  z-index: 9999;
+}
+
+/* Two-class selector + !important so this wins over react-datepicker.css
+   (.react-datepicker-popper { z-index: 1 }), which is concatenated later in prod. */
+.react-datepicker-popper.auth-datepicker-popper,
+#datepicker-portal .react-datepicker-popper {
+  z-index: 9999 !important;
 }
 
 .auth-datepicker-popper .react-datepicker {
