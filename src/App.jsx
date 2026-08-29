@@ -6,8 +6,10 @@ import { useAuth } from './lib/auth.jsx';
 import { persistReferral } from './lib/referral.js';
 import { isAdminUser } from './lib/adminApi.js';
 import { touchOwnLastActive } from './lib/profileApi.js';
+import { subscribeToToasts } from './lib/toast.js';
 import OnboardingModal from './components/OnboardingModal.jsx';
 import NotificationBell from './components/NotificationBell.jsx';
+import Toast from './components/Toast.jsx';
 
 const navItems = [
   { to: '/', label: 'Community', tour: 'community', id: 'nav-community' },
@@ -22,6 +24,7 @@ const navItems = [
 function App() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   const { isLoggedIn, profile, signOut, user } = useAuth();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -46,6 +49,8 @@ function App() {
   useEffect(() => {
     persistReferral(searchParams.get('ref'));
   }, [searchParams]);
+
+  useEffect(() => subscribeToToasts(setToastMessage), []);
 
   // Diagnostic to log computed styles of menu element on page load
   useEffect(() => {
@@ -213,6 +218,9 @@ function App() {
       </main>
 
       {shouldShowOnboarding && <OnboardingModal />}
+      {toastMessage && (
+        <Toast message={toastMessage} onClose={() => setToastMessage('')} />
+      )}
 
       <footer className="site-footer">
         <div>

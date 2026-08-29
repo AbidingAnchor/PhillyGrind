@@ -1,15 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../lib/auth.jsx';
 import { persistReferral } from '../lib/referral.js';
+import { showToast } from '../lib/toast.js';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+
+const EMAIL_CONFIRM_MESSAGE = 'Check your email to confirm your address, then log in to get started.';
 
 function SignUp() {
   const [form, setForm] = useState({ name: '', email: '', password: '', birthdate: null });
   const [agreed, setAgreed] = useState(false);
   const [status, setStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [succeeded, setSucceeded] = useState(false);
   const { signUp, isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -43,6 +48,8 @@ function SignUp() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (submitting || succeeded) return;
+
     setSubmitting(true);
     setStatus('');
 
@@ -66,12 +73,14 @@ function SignUp() {
         birthdate: form.birthdate.toISOString().split('T')[0],
         tosAgreedAt: new Date().toISOString() 
       });
+      setSucceeded(true);
       if (data.session) {
+        showToast('Your account has been created. Welcome to PhillyGrind!');
         navigate('/', { replace: true });
         return;
       }
 
-      setStatus('Account created. Check your email to confirm your address, then log in.');
+      showToast('Your account has been created. Check your email to confirm, then log in.');
     } catch (error) {
       setStatus(error.message || 'Could not create your account.');
     } finally {
@@ -86,60 +95,80 @@ function SignUp() {
         <div className="auth-wordmark">Philly<span>Grind</span></div>
         <div className="auth-wordmark-shine" aria-hidden="true">Philly<span>Grind</span></div>
       </div>
-      <div className="auth-tagline">Join the community built by Philly, for Philly.</div>
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <input 
-          className="auth-input" 
-          name="name" 
-          value={form.name} 
-          onChange={updateField} 
-          placeholder="Name"
-          required 
-        />
-        <input 
-          className="auth-input" 
-          name="email" 
-          type="email" 
-          value={form.email} 
-          onChange={updateField} 
-          placeholder="Email"
-          required 
-        />
-        <input 
-          className="auth-input" 
-          name="password" 
-          type="password" 
-          value={form.password} 
-          onChange={updateField} 
-          placeholder="Password"
-          minLength="6" 
-          required 
-        />
-        <DatePicker
-          selected={form.birthdate}
-          onChange={(date) => setForm({ ...form, birthdate: date })}
-          placeholderText="Date of Birth"
-          required
-          maxDate={new Date()}
-          showYearDropdown
-          scrollableYearDropdown
-          yearDropdownItemNumber={100}
-          className="auth-input"
-          wrapperClassName="auth-datepicker-wrapper"
-          dateFormat="MMMM d, yyyy"
-        />
-        <label className="clickwrap-label">
-          <input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} required />
-          <span>
-            I have read and agree to the <Link to="/terms">Terms of Service</Link> and <Link to="/privacy">Privacy Policy</Link>
-          </span>
-        </label>
-        <button className="auth-submit-btn" type="submit" disabled={submitting || !agreed}>
-          {submitting ? 'Creating account...' : 'Sign Up'}
-        </button>
-        {status && <p className="form-status">{status}</p>}
-      </form>
-      <p className="auth-switch-link">Already have an account? <Link to="/login">Login</Link></p>
+      <div className="auth-tagline">
+        {succeeded ? 'Confirm your email to finish signing up.' : 'Join the community built by Philly, for Philly.'}
+      </div>
+      {succeeded ? (
+        <div className="auth-success" role="status" aria-live="polite">
+          <CheckCircle2 className="auth-success-icon" aria-hidden="true" />
+          <h1>Your account has been created</h1>
+          <p>{EMAIL_CONFIRM_MESSAGE}</p>
+          <Link to="/login" className="auth-submit-btn">Continue to Login</Link>
+        </div>
+      ) : (
+        <>
+          <form className="auth-form" onSubmit={handleSubmit}>
+            <input 
+              className="auth-input" 
+              name="name" 
+              value={form.name} 
+              onChange={updateField} 
+              placeholder="Name"
+              required 
+              disabled={submitting}
+            />
+            <input 
+              className="auth-input" 
+              name="email" 
+              type="email" 
+              value={form.email} 
+              onChange={updateField} 
+              placeholder="Email"
+              required 
+              disabled={submitting}
+            />
+            <input 
+              className="auth-input" 
+              name="password" 
+              type="password" 
+              value={form.password} 
+              onChange={updateField} 
+              placeholder="Password"
+              minLength="6" 
+              required 
+              disabled={submitting}
+            />
+            <div className="auth-datepicker-wrapper">
+              <DatePicker
+                selected={form.birthdate}
+                onChange={(date) => setForm({ ...form, birthdate: date })}
+                placeholderText="Date of Birth"
+                required
+                maxDate={new Date()}
+                showYearDropdown
+                scrollableYearDropdown
+                yearDropdownItemNumber={100}
+                className="auth-input"
+                popperClassName="auth-datepicker-popper"
+                portalId="datepicker-portal"
+                dateFormat="MMMM d, yyyy"
+                disabled={submitting}
+              />
+            </div>
+            <label className="clickwrap-label">
+              <input type="checkbox" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} required disabled={submitting} />
+              <span>
+                I have read and agree to the <Link to="/terms">Terms of Service</Link> and <Link to="/privacy">Privacy Policy</Link>
+              </span>
+            </label>
+            <button className="auth-submit-btn" type="submit" disabled={submitting || succeeded || !agreed}>
+              {succeeded ? 'Account created' : submitting ? 'Creating account...' : 'Sign Up'}
+            </button>
+            {status && <p className="form-status error-text">{status}</p>}
+          </form>
+          <p className="auth-switch-link">Already have an account? <Link to="/login">Login</Link></p>
+        </>
+      )}
     </section>
   );
 }
