@@ -265,9 +265,9 @@ function HousingDetail() {
               </button>
             )}
             {!isLoggedIn && (
-              <Link className="primary-button" to="/login" state={{ from: `/housing/${listing.id}` }}>
+              <Link className="primary-button" to="/signup" state={{ from: `/housing/${listing.id}` }}>
                 <MessageCircle size={18} />
-                Login to Contact Landlord
+                Sign up to Contact Landlord
               </Link>
             )}
           </div>

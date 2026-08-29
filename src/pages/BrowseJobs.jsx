@@ -10,6 +10,7 @@ import { jobCategories } from '../data/listings.js';
 import { getListings, getFeaturedWorkers } from '../lib/listingsApi.js';
 import { attachPosterRatings } from '../lib/reviewsApi.js';
 import { useAuth } from '../lib/auth.jsx';
+import { redirectToSignup } from '../lib/requireSignup.js';
 import { getUserAvatarColor } from '../lib/reactions.js';
 
 // Helper function to format salary in thousands
@@ -346,7 +347,7 @@ function BrowseJobs() {
                   showQuickApply={usingFallback && job.user_id && !job.apply_url && (!isLoggedIn || job.user_id !== user?.id)}
                   onQuickApply={(selectedJob) => {
                     if (!isLoggedIn) {
-                      navigate('/login', { state: { from: `/jobs/${selectedJob.id}` } });
+                      redirectToSignup(navigate, `/jobs/${selectedJob.id}`);
                       return;
                     }
                     setQuickApplyJob(selectedJob);

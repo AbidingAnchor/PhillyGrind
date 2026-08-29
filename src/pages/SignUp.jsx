@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../lib/auth.jsx';
 import { persistReferral } from '../lib/referral.js';
@@ -17,7 +17,14 @@ function SignUp() {
   const [succeeded, setSucceeded] = useState(false);
   const { signUp, isLoggedIn } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
+
+  function nextPath() {
+    const from = location.state?.from;
+    if (typeof from !== 'string' || !from.startsWith('/') || from.startsWith('//')) return '/';
+    return from;
+  }
 
   useEffect(() => {
     persistReferral(searchParams.get('ref'));
@@ -26,9 +33,9 @@ function SignUp() {
   // Redirect authenticated users away from signup page
   useEffect(() => {
     if (isLoggedIn) {
-      navigate('/', { replace: true });
+      navigate(nextPath(), { replace: true });
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, navigate, location.state?.from]);
 
   function updateField(event) {
     const { name, value } = event.target;
@@ -103,7 +110,7 @@ function SignUp() {
           <CheckCircle2 className="auth-success-icon" aria-hidden="true" />
           <h1>Your account has been created</h1>
           <p>{EMAIL_CONFIRM_MESSAGE}</p>
-          <Link to="/login" className="auth-submit-btn">Continue to Login</Link>
+          <Link to="/login" state={{ from: nextPath() }} className="auth-submit-btn">Continue to Login</Link>
         </div>
       ) : (
         <>
@@ -166,7 +173,7 @@ function SignUp() {
             </button>
             {status && <p className="form-status error-text">{status}</p>}
           </form>
-          <p className="auth-switch-link">Already have an account? <Link to="/login">Login</Link></p>
+          <p className="auth-switch-link">Already have an account? <Link to="/login" state={{ from: nextPath() }}>Login</Link></p>
         </>
       )}
     </section>

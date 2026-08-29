@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Briefcase, MapPin, Calendar, MessageCircle, Pencil, Share2, MoreHorizontal, Settings, X, Camera } from 'lucide-react';
 import { InviteNeighborButton } from '../components/InviteNeighborSheet.jsx';
@@ -23,6 +23,7 @@ import { getUserAvatarColor } from '../lib/reactions.js';
 import { getUserCommunityPosts, canViewActivity } from '../lib/communityApi.js';
 import { getOrCreateProfileConversation, sendMessage } from '../lib/messagesApi.js';
 import { getUserReaction, toggleCommunityPostReaction, getReactionBreakdown } from '../lib/communityApi.js';
+import { alertUnlessLoginRequired } from '../lib/requireSignup.js';
 
 const availabilityOptions = ['Available Now', 'Weekends Only', 'Evenings Only', 'Not Available'];
 const profileTagOptions = [
@@ -129,6 +130,7 @@ export function OwnProfileRedirect() {
 
 function Profile() {
   const { userId } = useParams();
+  const navigate = useNavigate();
   const { user, isLoggedIn, profile: authProfile, refreshProfile } = useAuth();
   const viewedUserId = isUsableUserId(userId) ? userId : null;
 
@@ -434,7 +436,7 @@ function Profile() {
       }));
     } catch (error) {
       console.error('Failed to toggle reaction:', error);
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
     }
   }
 
@@ -460,7 +462,7 @@ function Profile() {
       }
     } catch (error) {
       console.error('Failed to toggle like:', error);
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
     }
   }
 

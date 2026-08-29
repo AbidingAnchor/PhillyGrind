@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MapPin, Users, X } from 'lucide-react';
 import Skeleton from '../components/Skeleton.jsx';
 import EmptyState from '../components/EmptyState.jsx';
@@ -10,6 +10,7 @@ import { getGroup, isGroupMember, joinGroup, leaveGroup } from '../lib/groupsApi
 import { getGroupPosts, deleteCommunityPost } from '../lib/communityApi.js';
 import { useAuth } from '../lib/auth.jsx';
 import { FEED_LOAD_TIMEOUT_MS, withTimeoutRetry } from '../lib/loadWithTimeout.js';
+import { alertUnlessLoginRequired, isLoginRequiredError, redirectToSignup } from '../lib/requireSignup.js';
 
 function LeaveGroupModal({ isOpen, groupName, busy, onClose, onConfirm }) {
   if (!isOpen) return null;
@@ -44,6 +45,7 @@ function LeaveGroupModal({ isOpen, groupName, busy, onClose, onConfirm }) {
 
 function GroupPage() {
   const { groupId } = useParams();
+  const navigate = useNavigate();
   const { isLoggedIn, user, profile } = useAuth();
   const [group, setGroup] = useState(null);
   const [membership, setMembership] = useState({ isMember: false, role: null });
@@ -129,6 +131,10 @@ function GroupPage() {
       await refreshGroup();
     } catch (error) {
       console.error('[GroupPage] join failed', error);
+      if (isLoginRequiredError(error)) {
+        redirectToSignup(navigate);
+        return;
+      }
       setActionError(error.message || 'Could not join group.');
     } finally {
       setActionBusy('');
@@ -141,7 +147,10 @@ function GroupPage() {
     try {
       await leaveGroup(groupId);
       setShowLeaveModal(false);
-      await refreshGroup();
+      const { nextGroup } = await refreshGroup();
+      if (!nextGroup) {
+        navigate('/groups', { replace: true });
+      }
     } catch (error) {
       console.error('[GroupPage] leave failed', error);
       setActionError(error.message || 'Could not leave group.');
@@ -289,7 +298,7 @@ function GroupPage() {
                       await deleteCommunityPost(postId);
                       setPosts((current) => current.filter((item) => item.id !== postId));
                     } catch (error) {
-                      alert(error.message);
+                      alertUnlessLoginRequired(error, navigate);
                     }
                   }}
                   readOnly={!membership.isMember}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { Send, X } from 'lucide-react';
 import {
   getMessages,
@@ -10,6 +11,7 @@ import {
   subscribeToMessages,
 } from '../lib/messagesApi.js';
 import { useAuth } from '../lib/auth.jsx';
+import { isLoginRequiredError, redirectToSignup } from '../lib/requireSignup.js';
 import { getUserAvatarColor } from '../lib/reactions.js';
 import Skeleton from './Skeleton.jsx';
 
@@ -32,6 +34,7 @@ function listingSubtitle(listing, posterLabel) {
 }
 
 function ChatModal({ listing, onClose, receiverId: receiverIdOverride, receiverLabel }) {
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
   const [messages, setMessages] = useState([]);
   const [content, setContent] = useState('');
@@ -172,6 +175,10 @@ function ChatModal({ listing, onClose, receiverId: receiverIdOverride, receiverL
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (!user?.id) {
+      redirectToSignup(navigate);
+      return;
+    }
     const trimmed = content.trim();
     if (!trimmed) return;
 
@@ -200,6 +207,10 @@ function ChatModal({ listing, onClose, receiverId: receiverIdOverride, receiverL
       setContent('');
     } catch (error) {
       console.error(error);
+      if (isLoginRequiredError(error)) {
+        redirectToSignup(navigate);
+        return;
+      }
       setStatus('Something went wrong sending your message, please try again');
     } finally {
       setSending(false);

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import AlertsMap from '../components/AlertsMap.jsx';
 import { useAuth } from '../lib/auth.jsx';
+import { redirectToSignup } from '../lib/requireSignup.js';
 import { fetchHomeNeighborhood, resolveHomeNeighborhood } from '../lib/communityApi.js';
 import { loadWeatherAlerts } from '../lib/weatherAlertsClient.js';
 
@@ -204,7 +205,7 @@ export default function Alerts() {
     const title = alert?.title || 'this alert';
     const target = `/?compose=alert&title=${encodeURIComponent(title)}`;
     if (!isLoggedIn) {
-      navigate('/login', { state: { from: target } });
+      redirectToSignup(navigate, target);
       return;
     }
     navigate(target);

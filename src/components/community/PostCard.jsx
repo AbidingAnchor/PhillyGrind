@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { MessageCircle, MoreHorizontal, X, Flag, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft } from 'lucide-react';
 import FacebookShareIcon from '../FacebookShareIcon.jsx';
@@ -26,8 +26,10 @@ import { getReactionTotalCount as getReactionTotalCount, getUserAvatarColor as g
 import ReactionBreakdown from '../ReactionBreakdown.jsx';
 import PostReactionControl from '../PostReactionControl.jsx';
 import Skeleton from '../Skeleton.jsx';
+import { alertUnlessLoginRequired, redirectToSignup } from '../../lib/requireSignup.js';
 
 function ReportModal({ isOpen, onClose, onSubmit, reportType = 'post' }) {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [reason, setReason] = useState('');
   const [subreason, setSubreason] = useState('');
@@ -58,7 +60,7 @@ function ReportModal({ isOpen, onClose, onSubmit, reportType = 'post' }) {
       setStep(3); // Success step - only reached on confirmed insert
     } catch (error) {
       console.error('[ReportModal] Report submission failed:', error);
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
       // Don't set step to 3 on error - modal stays on current step
     } finally {
       setSubmitting(false);
@@ -306,6 +308,7 @@ function CommentItem({
   readOnly = false,
   allowShare = true,
 }) {
+  const navigate = useNavigate();
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
@@ -360,6 +363,10 @@ function CommentItem({
 
   async function handleReactionSelect(reactionType) {
     if (readOnly) return;
+    if (!currentUser?.id) {
+      redirectToSignup(navigate);
+      return;
+    }
     try {
       const newReaction = await toggleCommentReaction(comment.id, reactionType);
       setUserReaction(newReaction);
@@ -367,12 +374,16 @@ function CommentItem({
       setReactionBreakdown(breakdown);
     } catch (error) {
       console.error('Failed to toggle comment reaction:', error);
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
     }
   }
 
   async function handleSubmitReply(e) {
     e.preventDefault();
+    if (!currentUser?.id) {
+      redirectToSignup(navigate);
+      return;
+    }
     if (!replyText.trim()) return;
 
     setSubmittingReply(true);
@@ -382,7 +393,7 @@ function CommentItem({
       setShowReplyForm(false);
       setShowMentionDropdown(false);
     } catch (error) {
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
     } finally {
       setSubmittingReply(false);
     }
@@ -442,7 +453,7 @@ function CommentItem({
       alert(`${comment.authorName} has been muted.`);
       setShowMenu(false);
     } catch (error) {
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
     }
   }
 
@@ -461,7 +472,7 @@ function CommentItem({
       }
       setShowMenu(false);
     } catch (error) {
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
     }
   }
 
@@ -675,6 +686,7 @@ function CommentItem({
 }
 
 function ShareComposerModal({ isOpen, onClose, originalPost, currentUser, onShare }) {
+  const navigate = useNavigate();
   const [caption, setCaption] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -686,7 +698,7 @@ function ShareComposerModal({ isOpen, onClose, originalPost, currentUser, onShar
       setCaption('');
       onClose();
     } catch (error) {
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
     } finally {
       setSubmitting(false);
     }
@@ -818,6 +830,7 @@ function ReactionsListModal({ postId, onClose }) {
 }
 
 function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allowShare = true, highlighted = false, autoOpenComments = false }) {
+  const navigate = useNavigate();
   const { profile } = useAuth();
   const replyAsName = profile?.name || currentUser?.email?.split('@')[0] || 'Neighbor';
   const replyAsAvatarUrl = profile?.avatar_url || null;
@@ -928,6 +941,10 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
 
   async function handleLike() {
     if (readOnly) return;
+    if (!currentUser?.id) {
+      redirectToSignup(navigate);
+      return;
+    }
     console.log('[Community PostCard] handleLike called', { 
       userReaction, 
       hadReaction: !!userReaction,
@@ -959,12 +976,16 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
       }
     } catch (error) {
       console.error('[handleLike] Error:', error);
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
     }
   }
 
   async function handleReactionSelect(reactionType) {
     if (readOnly) return;
+    if (!currentUser?.id) {
+      redirectToSignup(navigate);
+      return;
+    }
     console.log('[Community PostCard] Selected:', reactionType, 'replacing:', userReaction);
     try {
       const hadReaction = !!userReaction;
@@ -983,12 +1004,16 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
       onLike(post.id, countDelta);
     } catch (error) {
       console.error('[handleReactionSelect] Error:', error);
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
     }
   }
 
   async function handleShare() {
     if (!allowShare) return;
+    if (!currentUser?.id) {
+      redirectToSignup(navigate);
+      return;
+    }
     setShowShareComposer(true);
   }
 
@@ -998,7 +1023,7 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
       setToastMessage('Post shared to your feed!');
       setShowShareComposer(false);
     } catch (error) {
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
     }
   }
 
@@ -1039,6 +1064,10 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
 
   async function handleSubmitComment(e) {
     e.preventDefault();
+    if (!currentUser?.id) {
+      redirectToSignup(navigate);
+      return;
+    }
     if (!newComment.trim()) return;
 
     setSubmittingComment(true);
@@ -1049,7 +1078,7 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
       setComments(loadedComments);
       setNewComment('');
     } catch (error) {
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
     } finally {
       setSubmittingComment(false);
     }
@@ -1104,7 +1133,7 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
       const loadedComments = await getCommunityComments(post.id);
       setComments(loadedComments);
     } catch (error) {
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
     }
   }
 
@@ -1141,7 +1170,7 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
       }
       setShowMenu(false);
     } catch (error) {
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
     }
   }
 

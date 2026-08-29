@@ -9,6 +9,7 @@ import PaymentModal from '../components/PaymentModal.jsx';
 import HandoffPhotoModal from '../components/HandoffPhotoModal.jsx';
 import DisputeFormModal from '../components/DisputeFormModal.jsx';
 import { useAuth } from '../lib/auth.jsx';
+import { redirectToSignup } from '../lib/requireSignup.js';
 import { createConnectAccount } from '../lib/ordersApi.js';
 import ReviewForm from '../components/ReviewForm.jsx';
 import { getUserAvatarColor } from '../lib/reactions.js';
@@ -377,6 +378,10 @@ function MarketplaceDetail() {
   }
 
   function openCashChat() {
+    if (!isLoggedIn) {
+      redirectToSignup(navigate, `/marketplace/${listing?.id || id}`);
+      return;
+    }
     setChatReceiverId(listing.user_id);
     setChatOpen(true);
   }

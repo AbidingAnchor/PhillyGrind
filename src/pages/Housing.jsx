@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import Skeleton from '../components/Skeleton.jsx';
 import { FEED_LOAD_TIMEOUT_MS, withTimeoutRetry } from '../lib/loadWithTimeout.js';
+import { redirectToSignup } from '../lib/requireSignup.js';
 
 function formatAvailableDate(value) {
   if (!value) return 'Available now';
@@ -67,7 +68,7 @@ function Housing() {
 
   function handlePostClick() {
     if (!isLoggedIn) {
-      navigate('/login', { state: { from: '/housing/post' } });
+      redirectToSignup(navigate, '/housing/post');
       return;
     }
     navigate('/housing/post');

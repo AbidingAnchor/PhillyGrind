@@ -32,7 +32,7 @@ function Gigs() {
             Post a Gig
           </button>
         ) : (
-          <Link to="/login" state={{ from: '/gigs?tab=post' }} className="feed-filter-tab">
+          <Link to="/signup" state={{ from: '/gigs?tab=post' }} className="feed-filter-tab">
             Post a Gig
           </Link>
         )}

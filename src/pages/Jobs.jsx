@@ -32,7 +32,7 @@ function Jobs() {
             Post a Job
           </button>
         ) : (
-          <Link to="/login" state={{ from: '/jobs?tab=post' }} className="feed-filter-tab">
+          <Link to="/signup" state={{ from: '/jobs?tab=post' }} className="feed-filter-tab">
             Post a Job
           </Link>
         )}

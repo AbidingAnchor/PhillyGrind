@@ -512,15 +512,15 @@ function ListingDetail({ type }) {
             <p className="detail-note">You posted this listing.</p>
           )}
           {!isLoggedIn && type === 'job' && !hasApplyUrl && listing?.user_id && (
-            <Link className="primary-button" to="/login" state={{ from: `/${plural}/${listing.id}` }}>
+            <Link className="primary-button" to="/signup" state={{ from: `/${plural}/${listing.id}` }}>
               <Zap size={18} />
-              Login to Quick Apply
+              Sign up to Quick Apply
             </Link>
           )}
           {!isLoggedIn && !hasApplyUrl && type !== 'job' && (
-            <Link className="primary-button" to="/login" state={{ from: `/${plural}/${listing.id}` }}>
+            <Link className="primary-button" to="/signup" state={{ from: `/${plural}/${listing.id}` }}>
               <MessageCircle size={18} />
-              {isOfferingGig ? 'Login to Contact / Hire' : type === 'gig' ? 'Login to Place a Bid' : 'Login to Message Poster'}
+              {isOfferingGig ? 'Sign up to Contact / Hire' : type === 'gig' ? 'Sign up to Place a Bid' : 'Sign up to Message Poster'}
             </Link>
           )}
           {isLoggedIn && !listing.user_id && (

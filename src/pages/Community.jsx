@@ -19,6 +19,7 @@ import PostCard from '../components/community/PostCard.jsx';
 import CommunityComposer from '../components/community/CommunityComposer.jsx';
 import { InviteNeighborButton } from '../components/InviteNeighborSheet.jsx';
 import { FEED_LOAD_TIMEOUT_MS, withTimeoutRetry } from '../lib/loadWithTimeout.js';
+import { alertUnlessLoginRequired, redirectToSignup } from '../lib/requireSignup.js';
 
 function CommunityLeftSidebar({ isLoggedIn, user, profile, neighborhoodName }) {
   const displayName = profile?.name || user?.name || 'Neighbor';
@@ -123,7 +124,7 @@ function Community() {
     if (searchParams.get('compose') !== 'alert') return;
     const title = searchParams.get('title') || 'this alert';
     if (!isLoggedIn) {
-      navigate('/login', { state: { from: `/?compose=alert&title=${encodeURIComponent(title)}` } });
+      redirectToSignup(navigate, `/?compose=alert&title=${encodeURIComponent(title)}`);
       return;
     }
     setComposerSeed(`Neighbors — weather alert: ${title}\n\n`);
@@ -245,7 +246,7 @@ function Community() {
       await deleteCommunityPost(postId);
       setPosts(posts.filter((post) => post.id !== postId));
     } catch (error) {
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate);
     }
   }
 

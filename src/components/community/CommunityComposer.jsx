@@ -7,6 +7,7 @@ import {
   COMMUNITY_NEIGHBORHOODS,
   createCommunityPost,
 } from '../../lib/communityApi.js';
+import { alertUnlessLoginRequired, redirectToSignup } from '../../lib/requireSignup.js';
 import { getUserAvatarColor } from '../../lib/reactions.js';
 
 const COMPOSER_FEELINGS = [
@@ -99,7 +100,7 @@ export default function CommunityComposer({
 
   function handleComposerClick() {
     if (!isLoggedIn) {
-      navigate('/login', { state: { from: loginFrom } });
+      redirectToSignup(navigate, loginFrom);
       return;
     }
     setComposerNeighborhood(defaultComposerNeighborhood(defaultNeighborhood || homeNeighborhood));
@@ -123,7 +124,7 @@ export default function CommunityComposer({
   function handleCreateJobShortcut() {
     closeComposer();
     if (!isLoggedIn) {
-      navigate('/login', { state: { from: '/jobs?tab=post' } });
+      redirectToSignup(navigate, '/jobs?tab=post');
       return;
     }
     navigate('/jobs?tab=post');
@@ -176,7 +177,7 @@ export default function CommunityComposer({
       onCommit?.(tempPostId, newPost);
     } catch (error) {
       onFail?.(tempPostId);
-      alert(error.message);
+      alertUnlessLoginRequired(error, navigate, loginFrom);
       setComposerContent(
         contentToPost.includes('\n\n') ? contentToPost.split('\n\n').slice(1).join('\n\n') : contentToPost,
       );

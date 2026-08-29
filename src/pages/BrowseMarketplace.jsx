@@ -15,6 +15,7 @@ import Skeleton from '../components/Skeleton.jsx';
 import { getMarketplaceListing, getMarketplaceListings } from '../lib/marketplaceApi.js';
 
 import { useAuth } from '../lib/auth.jsx';
+import { redirectToSignup } from '../lib/requireSignup.js';
 import { FEED_LOAD_TIMEOUT_MS, withTimeoutRetry } from '../lib/loadWithTimeout.js';
 
 import { HOUSING_NEIGHBORHOODS } from '../lib/housingApi.js';
@@ -151,7 +152,7 @@ function BrowseMarketplace() {
 
     if (!isLoggedIn) {
 
-      navigate('/login', { state: { from: '/marketplace' } });
+      redirectToSignup(navigate, '/marketplace');
 
       return;
 
