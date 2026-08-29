@@ -17,6 +17,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/unsubscribe",
+      "destination": "/api/auth?action=unsubscribe"
+    },
+    {
       "source": "/((?!api/|assets/|.*\\..*).*)",
       "destination": "/index.html"
     }

@@ -7,6 +7,7 @@ import {
   startRecoveryChallenge,
   submitRecoveryRequest,
 } from './_utils/accountRecovery.js';
+import { handleUnsubscribeRequest, sendUnsubscribePage } from './_utils/unsubscribe.js';
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
@@ -38,11 +39,36 @@ function getClientIP(req) {
 }
 
 export default async function handler(req, res) {
+  const action = req.query?.action || req.body?.action;
+
+  if (action === 'unsubscribe') {
+    if (req.method !== 'GET' && req.method !== 'POST') {
+      res.setHeader('Allow', 'GET, POST');
+      sendUnsubscribePage(res, 405, {
+        title: 'Unsubscribe — PhillyGrind',
+        heading: 'Method not allowed',
+        body: 'Open this page from the unsubscribe link in your email.',
+      });
+      return;
+    }
+    try {
+      await handleUnsubscribeRequest(req, res, { hasServerSupabaseConfig, supabaseAdmin });
+    } catch (error) {
+      console.error('[unsubscribe] Unexpected error:', error);
+      sendUnsubscribePage(res, 500, {
+        title: 'Unsubscribe — PhillyGrind',
+        heading: 'Something went wrong',
+        body: 'We could not update your email preferences right now. Please try again in a few minutes.',
+      });
+    }
+    return;
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { action, email } = req.body;
+  const { email } = req.body ?? {};
   const clientIP = getClientIP(req);
 
   console.log('[Auth] API request received:', { action, email: !!email, ip: clientIP });
