@@ -1,6 +1,6 @@
 const FROM_ADDRESS = 'PhillyGrind <noreply@phillygrind.work>';
 
-export async function sendEmail({ to, subject, html }) {
+export async function sendEmail({ to, subject, html, headers }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.warn('RESEND_API_KEY missing; skipping email to', to);
@@ -18,6 +18,7 @@ export async function sendEmail({ to, subject, html }) {
       to,
       subject,
       html,
+      ...(headers && Object.keys(headers).length ? { headers } : {}),
     }),
   });
 

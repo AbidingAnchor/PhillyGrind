@@ -4,7 +4,22 @@
  * Uses inline styles since many clients strip <style> tags
  */
 
-export function createEmailTemplate({ subject, content, isCodeEmail = false, code = null }) {
+import { createUnsubscribeUrl } from './unsubscribe.js';
+
+export function createEmailTemplate({
+  subject,
+  content,
+  isCodeEmail = false,
+  code = null,
+  userId = null,
+  unsubscribeUrl = null,
+}) {
+  const resolvedUnsubscribeUrl = unsubscribeUrl
+    || (userId ? createUnsubscribeUrl(userId) : '');
+  const unsubscribeLink = resolvedUnsubscribeUrl ? `
+                      <span style="color: #d1d5db; margin: 0 8px;">•</span>
+                      <a href="${resolvedUnsubscribeUrl}" style="color: #22c55e; text-decoration: none;">Unsubscribe</a>` : '';
+
   const codeBox = isCodeEmail && code ? `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 24px 0;">
       <tr>
@@ -77,7 +92,7 @@ export function createEmailTemplate({ subject, content, isCodeEmail = false, cod
                       <span style="color: #d1d5db; margin: 0 8px;">•</span>
                       <a href="https://phillygrind.work/terms" style="color: #22c55e; text-decoration: none;">Terms</a>
                       <span style="color: #d1d5db; margin: 0 8px;">•</span>
-                      <a href="https://phillygrind.work/privacy" style="color: #22c55e; text-decoration: none;">Privacy</a>
+                      <a href="https://phillygrind.work/privacy" style="color: #22c55e; text-decoration: none;">Privacy</a>${unsubscribeLink}
                     </div>
                     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; font-size: 11px; color: #9ca3af; margin-top: 16px;">
                       If you didn't request this email, you can safely ignore it.
@@ -218,7 +233,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;');
 }
 
-export function createCommentOnPostEmail({ commenterName, commentPreview, postUrl, settingsUrl }) {
+export function createCommentOnPostEmail({ commenterName, commentPreview, postUrl, settingsUrl, userId }) {
   const safeName = escapeHtml(commenterName);
   const safePreview = escapeHtml(commentPreview);
   const subject = `${String(commenterName || 'Someone').replace(/\s+/g, ' ').trim()} commented on your post`;
@@ -227,6 +242,7 @@ export function createCommentOnPostEmail({ commenterName, commentPreview, postUr
     subject,
     html: createEmailTemplate({
       subject: escapeHtml(subject),
+      userId,
       content: `
       <h2 style="margin: 0 0 16px 0; font-size: 20px; color: #111827;">New comment on your post</h2>
       <p style="margin: 0 0 16px 0; color: #374151; font-size: 15px; line-height: 1.6;">

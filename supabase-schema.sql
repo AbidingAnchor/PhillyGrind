@@ -243,6 +243,9 @@ alter table profiles
   add column if not exists email_comment_notifications boolean not null default true;
 
 alter table profiles
+  add column if not exists unsubscribed boolean not null default false;
+
+alter table profiles
   add column if not exists referred_by uuid references profiles(id) on delete set null;
 
 alter table profiles
@@ -790,7 +793,7 @@ revoke update on table profiles from anon, authenticated, public;
 grant update (
   name, bio, skills, avatar_url, banner_url, availability,
   neighborhood, neighborhoods, profile_tags, accent_color,
-  notifications_enabled, email_comment_notifications, show_available_now
+  notifications_enabled, email_comment_notifications, unsubscribed, show_available_now
 ) on table profiles to authenticated;
 
 revoke insert on table public.profiles from anon, authenticated, public;

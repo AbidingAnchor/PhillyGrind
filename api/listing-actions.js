@@ -388,7 +388,7 @@ async function handleCommentOnPost(req, res, user) {
   const [{ data: author, error: authorError }, { data: commenter, error: commenterError }] = await Promise.all([
     supabaseAdmin
       .from('profiles')
-      .select('id, email, name, email_comment_notifications')
+      .select('id, email, name, email_comment_notifications, unsubscribed')
       .eq('id', post.user_id)
       .maybeSingle(),
     supabaseAdmin
@@ -406,7 +406,7 @@ async function handleCommentOnPost(req, res, user) {
     return;
   }
 
-  if (author.email_comment_notifications === false) {
+  if (author.email_comment_notifications === false || author.unsubscribed === true) {
     sendJson(res, 200, { skipped: true, reason: 'opt-out' });
     return;
   }
@@ -425,6 +425,7 @@ async function handleCommentOnPost(req, res, user) {
     commentPreview: previewCommentText(comment.content) || 'New comment',
     postUrl: `${siteUrl}/?post=${encodeURIComponent(post.id)}`,
     settingsUrl: `${siteUrl}/settings`,
+    userId: author.id,
   });
 
   await sendEmail({
