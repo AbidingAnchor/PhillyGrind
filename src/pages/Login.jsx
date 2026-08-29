@@ -3,6 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
 import TwoFactorVerification from '../components/TwoFactorVerification.jsx';
 import { sendTwoFactorCode } from '../lib/twoFactorApi.js';
+import { cancelPendingDeletionRequest } from '../lib/deletionRequestsApi.js';
+import { showToast } from '../lib/toast.js';
+
+const DELETION_CANCELLED_MESSAGE = 'Your account deletion request was cancelled since you logged back in.';
 
 function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -25,6 +29,18 @@ function Login() {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
+  async function finishSuccessfulLogin() {
+    navigate(nextPath(), { replace: true });
+
+    cancelPendingDeletionRequest()
+      .then((cancelled) => {
+        if (cancelled) showToast(DELETION_CANCELLED_MESSAGE);
+      })
+      .catch((cancelError) => {
+        console.warn('[Login] Could not cancel pending deletion request', cancelError);
+      });
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setSubmitting(true);
@@ -43,7 +59,7 @@ function Login() {
         await sendTwoFactorCode(profile.email);
         setStatus('');
       } else {
-        navigate(nextPath(), { replace: true });
+        await finishSuccessfulLogin();
       }
     } catch (error) {
       setStatus(error.message || 'Could not log in.');
@@ -53,7 +69,7 @@ function Login() {
   }
 
   async function handleTwoFactorVerified() {
-    navigate(nextPath(), { replace: true });
+    await finishSuccessfulLogin();
   }
 
   function handleTwoFactorCancel() {
