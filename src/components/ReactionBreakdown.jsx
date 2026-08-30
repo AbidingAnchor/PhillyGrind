@@ -42,7 +42,7 @@ export default function ReactionBreakdown({ breakdown, maxTypes = 3, className =
       
       {showTooltip && userReactionData && (
         <div className="reaction-tooltip">
-          <span className="reaction-tooltip-user">
+          <span className="reaction-tooltip-user" data-reaction={userReactionData.type}>
             {userReactionData.label}
           </span>
           {otherCount > 0 && (
