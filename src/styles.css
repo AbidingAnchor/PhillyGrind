@@ -13789,6 +13789,350 @@ input[type="datetime-local"]:focus {
   color: #fca5a5;
 }
 
+.feed-sports-card {
+  --sports-eagles: #2f7d6d;
+  --sports-sixers: #3d7ec9;
+  --sports-phillies: #c93c3c;
+  padding: 0;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .feed-sports-card {
+  --sports-eagles: #3d9b88;
+  --sports-sixers: #5b9be0;
+  --sports-phillies: #e25858;
+}
+
+.feed-sports-header {
+  position: relative;
+  overflow: hidden;
+  padding: 14px 14px 0;
+}
+
+.feed-sports-header::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 108px;
+  height: 44px;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, var(--card) 0%, transparent 38%),
+    url("./assets/philly-skyline.jpg") right bottom / 160px auto no-repeat;
+  opacity: 0.16;
+}
+
+[data-theme="dark"] .feed-sports-header::after {
+  opacity: 0.22;
+  filter: grayscale(0.2) brightness(0.85);
+}
+
+.feed-sports-body {
+  padding: 10px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feed-sports-kicker {
+  position: relative;
+  z-index: 1;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.feed-sports-empty,
+.feed-sports-kickoff,
+.feed-sports-source,
+.feed-sports-matchup,
+.feed-sports-next,
+.feed-sports-period,
+.feed-sports-play-meta,
+.feed-sports-stat-value {
+  color: var(--muted);
+}
+
+.feed-sports-empty {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.feed-sports-team {
+  --sports-accent: var(--muted);
+  padding: 8px 6px 8px 10px;
+  border-left: 3px solid var(--sports-accent);
+  border-radius: 0 8px 8px 0;
+}
+
+.feed-sports-team--eagles { --sports-accent: var(--sports-eagles); }
+.feed-sports-team--sixers { --sports-accent: var(--sports-sixers); }
+.feed-sports-team--phillies { --sports-accent: var(--sports-phillies); }
+
+.feed-sports-team-toggle,
+.feed-sports-team-static {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 2px 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.feed-sports-team-toggle {
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.feed-sports-team-toggle:hover,
+.feed-sports-team.is-open .feed-sports-team-toggle {
+  background: color-mix(in srgb, var(--sports-accent) 12%, transparent);
+}
+
+.feed-sports-team-chip {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--sports-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sports-accent) 22%, transparent);
+}
+
+.feed-sports-team-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.feed-sports-team-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+[data-theme="dark"] .feed-sports-team-name {
+  color: #f5f5f5;
+}
+
+.feed-sports-countdown,
+.feed-sports-live-pill,
+.feed-sports-final-pill,
+.feed-sports-compact-score {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.feed-sports-live-pill,
+.feed-sports-final-pill {
+  margin-left: auto;
+}
+
+.feed-sports-countdown,
+.feed-sports-compact-score {
+  margin-left: auto;
+}
+
+.feed-sports-live-pill + .feed-sports-compact-score,
+.feed-sports-final-pill + .feed-sports-compact-score {
+  margin-left: 0;
+}
+
+.feed-sports-compact-score {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  letter-spacing: 0;
+}
+
+[data-theme="dark"] .feed-sports-compact-score {
+  color: #f5f5f5;
+}
+
+.feed-sports-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.14);
+  border-radius: 999px;
+  padding: 2px 7px 2px 6px;
+}
+
+[data-theme="dark"] .feed-sports-live-pill {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.16);
+}
+
+.feed-sports-live-dot {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+  animation: feed-sports-live-pulse 1.6s ease-out infinite;
+}
+
+.feed-sports-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 1px solid rgba(34, 197, 94, 0.55);
+  animation: feed-sports-live-ring 1.6s ease-out infinite;
+}
+
+@keyframes feed-sports-live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@keyframes feed-sports-live-ring {
+  0% { transform: scale(0.7); opacity: 0.7; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
+.feed-sports-details {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 220ms ease, opacity 180ms ease;
+}
+
+.feed-sports-team.is-open .feed-sports-details {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.feed-sports-details-inner {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-sports-live-dot,
+  .feed-sports-live-dot::after {
+    animation: none;
+  }
+
+  .feed-sports-details {
+    transition: none;
+  }
+}
+
+.feed-sports-final-pill {
+  color: var(--muted);
+}
+
+.feed-sports-matchup,
+.feed-sports-next,
+.feed-sports-kickoff,
+.feed-sports-period,
+.feed-sports-source {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.feed-sports-kickoff {
+  margin-top: 4px;
+}
+
+.feed-sports-scoreboard {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.feed-sports-score-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+
+[data-theme="dark"] .feed-sports-score-row {
+  color: #e5e5e5;
+}
+
+.feed-sports-score-row strong {
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.feed-sports-section {
+  margin-top: 8px;
+}
+
+.feed-sports-section-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.feed-sports-plays,
+.feed-sports-stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.feed-sports-plays li,
+.feed-sports-stats li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.feed-sports-play-meta {
+  font-size: 0.68rem;
+}
+
+.feed-sports-play-text,
+.feed-sports-stat-player {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+[data-theme="dark"] .feed-sports-play-text,
+[data-theme="dark"] .feed-sports-stat-player {
+  color: #e5e5e5;
+}
+
+.feed-sports-plays li.is-scoring .feed-sports-play-text {
+  font-weight: 650;
+}
+
+.feed-sports-stat-value {
+  font-size: 0.72rem;
+}
+
+.feed-sports-source {
+  margin-top: 2px;
+}
+
 .feed-left-avatar,
 .feed-left-avatar-placeholder {
   width: 44px;

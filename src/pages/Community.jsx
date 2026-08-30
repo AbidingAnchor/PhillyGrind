@@ -15,6 +15,7 @@ import EmptyState from '../components/EmptyState.jsx';
 import Skeleton from '../components/Skeleton.jsx';
 import TrendingPostsWidget from '../components/TrendingPostsWidget.jsx';
 import NeighborhoodWeatherAlert from '../components/NeighborhoodWeatherAlert.jsx';
+import PhillySportsWidget from '../components/PhillySportsWidget.jsx';
 import PostCard from '../components/community/PostCard.jsx';
 import CommunityComposer from '../components/community/CommunityComposer.jsx';
 import { InviteNeighborButton } from '../components/InviteNeighborSheet.jsx';
@@ -78,6 +79,7 @@ function CommunityLeftSidebar({ isLoggedIn, user, profile, neighborhoodName }) {
       ) : (
         <NeighborhoodWeatherAlert neighborhood="Center City" locationLabel="Philadelphia" />
       )}
+      <PhillySportsWidget />
     </aside>
   );
 }

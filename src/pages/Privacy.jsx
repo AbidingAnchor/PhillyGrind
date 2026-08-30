@@ -6,7 +6,7 @@ function Privacy() {
       <div className="page-heading">
         <span className="eyebrow">Privacy</span>
         <h1>Privacy Policy</h1>
-        <p>Last Updated: August 23, 2026</p>
+        <p>Last Updated: August 29, 2026</p>
       </div>
 
       <article className="legal-card">
@@ -34,6 +34,9 @@ function Privacy() {
 
         <h3>1.3 Weather and Local Alerts</h3>
         <p>To show you local weather conditions and severe weather alerts relevant to your neighborhood, we use your selected neighborhood (or, where available, your approximate location) to request data from the National Weather Service (NWS), a public U.S. government data source. We do not share your precise location or account information with NWS — only the general area needed to retrieve relevant weather data.</p>
+
+        <h3>1.4 Philly Sports Scores</h3>
+        <p>The Community sidebar may show scheduled and live scores for Philadelphia teams using publicly available game data from ESPN. That request does not include your account information, neighborhood, or precise location — only the team schedules and live game data needed to display the widget.</p>
 
         <h2>2. How We Use Information</h2>
         <p>We use collected information to:</p>
@@ -88,6 +91,14 @@ function Privacy() {
 
         <h3>7.1 Account Recovery</h3>
         <p>If you lose access to the email address associated with your account, you may request account recovery. To verify your identity, we'll ask you to answer a small number of questions about your account (such as approximately when you joined, your selected neighborhood, or a recent post). Your answers are compared by a human reviewer against information already on file for that account — including a snapshot of your account activity taken at the time of your request. We do not tell you which answers matched or didn't, to protect against attempts to guess your account information. If approved, we will email a one-time secure link to the new email address you provide, allowing you to set a new password. Approving a recovery request also disables two-factor authentication on the account (since it may be tied to the lost inbox) and signs out all active sessions for security. Recovery requests, snapshots, and the IP address they were submitted from are retained to prevent abuse of this process.</p>
+
+        <h3>7.2 How to Delete Your Account</h3>
+        <p>You can request deletion of your PhillyGrind account at any time:</p>
+        <ul>
+          <li>In the app, go to <Link to="/settings">Settings</Link> → Account → Delete Account, or</li>
+          <li>Email <a href="mailto:support@phillygrind.work">support@phillygrind.work</a></li>
+        </ul>
+        <p>We process deletion requests within 14 days. When a request is processed, we delete your profile, account, and personal information. Moderation logs and dispute records tied to the account are retained for up to 90 days after deletion for legal compliance and fraud prevention.</p>
 
         <h2>8. Children's Privacy</h2>
         <p>PhillyGrind is intended for use by individuals 18 years of age and older. We do not knowingly collect personal information from children under the age of 13, and our services are not directed to children.</p>
