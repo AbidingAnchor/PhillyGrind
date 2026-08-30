@@ -12101,6 +12101,116 @@ input[type="datetime-local"]:focus {
   /* Allow inline background color override */
 }
 
+.profile-hover-anchor {
+  display: inline-flex;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.feed-comment-avatar-link,
+.shared-post-avatar-link {
+  display: flex;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.profile-hover-card {
+  position: fixed;
+  z-index: 1400;
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 12px 34px rgba(6, 21, 36, 0.16);
+  color: var(--ink);
+}
+
+[data-theme="dark"] .profile-hover-card {
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+}
+
+.profile-hover-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.profile-hover-card-avatar,
+.profile-hover-card-avatar-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.profile-hover-card-avatar-placeholder {
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.profile-hover-card-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.profile-hover-card-name {
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.profile-hover-card-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.profile-hover-card-location svg {
+  flex-shrink: 0;
+}
+
+.profile-hover-card-bio {
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.profile-hover-card-link {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--green);
+  text-decoration: none;
+}
+
+.profile-hover-card-link:hover {
+  text-decoration: underline;
+}
+
+@media (hover: none) {
+  .profile-hover-card {
+    display: none;
+  }
+}
+
 .feed-post-author-info {
   display: flex;
   flex-direction: column;

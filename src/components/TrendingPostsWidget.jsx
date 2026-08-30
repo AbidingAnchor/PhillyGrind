@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 import { getTrendingPosts } from '../lib/communityApi';
 import { getUserAvatarColor } from '../lib/reactions.js';
+import ProfileHoverTrigger from './ProfileHoverCard.jsx';
 
 const TRENDING_TARGET_COUNT = 5;
 
@@ -33,12 +34,18 @@ function TrendingPostsWidget() {
         trending.map(post => (
           <div key={post.id} className="trending-post-item" onClick={() => navigate(`/?post=${post.id}`)}>
             <div className="trending-post-author">
-              <span
-                className="trending-post-avatar"
-                style={!post.authorAvatarUrl ? { backgroundColor: getUserAvatarColor(post.authorId, post.authorName) } : undefined}
+              <ProfileHoverTrigger
+                userId={post.authorId}
+                fallbackName={post.authorName}
+                fallbackAvatarUrl={post.authorAvatarUrl}
               >
-                {post.authorAvatarUrl ? <img src={post.authorAvatarUrl} alt={`${post.authorName} profile`} draggable={false} /> : getInitial(post.authorName)}
-              </span>
+                <span
+                  className="trending-post-avatar"
+                  style={!post.authorAvatarUrl ? { backgroundColor: getUserAvatarColor(post.authorId, post.authorName) } : undefined}
+                >
+                  {post.authorAvatarUrl ? <img src={post.authorAvatarUrl} alt={`${post.authorName} profile`} draggable={false} /> : getInitial(post.authorName)}
+                </span>
+              </ProfileHoverTrigger>
               <span>{post.authorName}</span>
             </div>
             <p className="trending-post-snippet">{post.content.slice(0, 70)}{post.content.length > 70 ? '...' : ''}</p>

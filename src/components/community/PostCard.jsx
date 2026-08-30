@@ -27,6 +27,8 @@ import ReactionBreakdown from '../ReactionBreakdown.jsx';
 import PostReactionControl from '../PostReactionControl.jsx';
 import Skeleton from '../Skeleton.jsx';
 import { alertUnlessLoginRequired, redirectToSignup } from '../../lib/requireSignup.js';
+import ProfileHoverTrigger from '../ProfileHoverCard.jsx';
+import { isProfileUserId } from '../../lib/profilePreview.js';
 
 function ReportModal({ isOpen, onClose, onSubmit, reportType = 'post' }) {
   const navigate = useNavigate();
@@ -289,11 +291,55 @@ function CommentAvatar({ userId, name, avatarUrl, size = 'md' }) {
     </div>
   );
 
-  if (userId && userId !== 'undefined' && userId !== 'null') {
-    return <Link to={`/profile/${userId}`}>{avatar}</Link>;
+  if (isProfileUserId(userId)) {
+    return (
+      <ProfileHoverTrigger userId={userId} fallbackName={name} fallbackAvatarUrl={avatarUrl}>
+        <Link to={`/profile/${userId}`} className="feed-comment-avatar-link">{avatar}</Link>
+      </ProfileHoverTrigger>
+    );
   }
 
   return avatar;
+}
+
+function PostAuthorAvatar({ userId, name, avatarUrl }) {
+  const avatar = avatarUrl ? (
+    <img src={avatarUrl} alt={name} className="feed-post-avatar" draggable={false} />
+  ) : (
+    <div
+      className="feed-post-avatar-placeholder"
+      style={{ backgroundColor: getUserAvatarColor(userId, name) }}
+    >
+      {name?.charAt(0) || '?'}
+    </div>
+  );
+
+  return (
+    <ProfileHoverTrigger userId={userId} fallbackName={name} fallbackAvatarUrl={avatarUrl}>
+      {avatar}
+    </ProfileHoverTrigger>
+  );
+}
+
+function SharedPostAvatar({ userId, name, avatarUrl }) {
+  const avatar = avatarUrl ? (
+    <img src={avatarUrl} alt={name} className="shared-post-avatar" draggable={false} />
+  ) : (
+    <div
+      className="shared-post-avatar-placeholder"
+      style={{ backgroundColor: getUserAvatarColor(userId, name) }}
+    >
+      {name?.charAt(0) || '?'}
+    </div>
+  );
+
+  if (!isProfileUserId(userId)) return avatar;
+
+  return (
+    <ProfileHoverTrigger userId={userId} fallbackName={name} fallbackAvatarUrl={avatarUrl}>
+      <Link to={`/profile/${userId}`} className="shared-post-avatar-link">{avatar}</Link>
+    </ProfileHoverTrigger>
+  );
 }
 
 function CommentItem({
@@ -1189,18 +1235,13 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
       className={`feed-post-card${highlighted ? ' is-highlighted' : ''}`}
     >
       <div className="feed-post-header">
-        {post.authorId && post.authorId !== 'undefined' && post.authorId !== 'null' ? (
+        {isProfileUserId(post.authorId) ? (
           <Link to={`/profile/${post.authorId}`} className="feed-post-author">
-            {post.authorAvatarUrl ? (
-              <img src={post.authorAvatarUrl} alt={post.authorName} className="feed-post-avatar" draggable={false} />
-            ) : (
-              <div
-                className="feed-post-avatar-placeholder"
-                style={{ backgroundColor: getUserAvatarColor(post.authorId, post.authorName) }}
-              >
-                {post.authorName?.charAt(0) || '?'}
-              </div>
-            )}
+            <PostAuthorAvatar
+              userId={post.authorId}
+              name={post.authorName}
+              avatarUrl={post.authorAvatarUrl}
+            />
             <div className="feed-post-author-info">
               <span className="feed-post-author-name">{post.authorName}</span>
               <div className="feed-post-meta">
@@ -1211,16 +1252,11 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
           </Link>
         ) : (
           <div className="feed-post-author">
-            {post.authorAvatarUrl ? (
-              <img src={post.authorAvatarUrl} alt={post.authorName} className="feed-post-avatar" draggable={false} />
-            ) : (
-              <div
-                className="feed-post-avatar-placeholder"
-                style={{ backgroundColor: getUserAvatarColor(post.authorId, post.authorName) }}
-              >
-                {post.authorName?.charAt(0) || '?'}
-              </div>
-            )}
+            <PostAuthorAvatar
+              userId={post.authorId}
+              name={post.authorName}
+              avatarUrl={post.authorAvatarUrl}
+            />
             <div className="feed-post-author-info">
               <span className="feed-post-author-name">{post.authorName}</span>
               <div className="feed-post-meta">
@@ -1288,16 +1324,11 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
       {post.original_post ? (
         <div className="shared-post-card">
           <div className="shared-post-header">
-            {post.original_post.authorAvatarUrl ? (
-              <img src={post.original_post.authorAvatarUrl} alt={post.original_post.authorName} className="shared-post-avatar" draggable={false} />
-            ) : (
-              <div 
-                className="shared-post-avatar-placeholder"
-                style={{ backgroundColor: getUserAvatarColor(post.original_post.authorId, post.original_post.authorName) }}
-              >
-                {post.original_post.authorName?.charAt(0) || '?'}
-              </div>
-            )}
+            <SharedPostAvatar
+              userId={post.original_post.authorId}
+              name={post.original_post.authorName}
+              avatarUrl={post.original_post.authorAvatarUrl}
+            />
             <div className="shared-post-author-info">
               <span className="shared-post-author">{post.original_post.authorName}</span>
               <span className="shared-post-time">{new Date(post.original_post.created_at).toLocaleDateString()}</span>
