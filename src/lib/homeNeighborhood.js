@@ -39,6 +39,29 @@ function milesBetween(from, to) {
   return 3959 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+export function snapToHomeNeighborhood(coords, maxMiles = 25) {
+  const lat = Number(coords?.lat);
+  const lon = Number(coords?.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return '';
+
+  const here = { lat, lon };
+  let bestName = '';
+  let bestMiles = Infinity;
+  for (const name of HOME_NEIGHBORHOODS) {
+    if (name === 'Other') continue;
+    const point = NEIGHBORHOOD_COORDS[name];
+    if (!point) continue;
+    const miles = milesBetween(here, point);
+    if (miles < bestMiles) {
+      bestMiles = miles;
+      bestName = name;
+    }
+  }
+
+  if (!bestName || bestMiles > maxMiles) return '';
+  return bestName;
+}
+
 export async function suggestNeighborhoodFromIp() {
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 4000);
@@ -51,20 +74,7 @@ export async function suggestNeighborhoodFromIp() {
     if (!data?.success || !Number.isFinite(Number(data.latitude)) || !Number.isFinite(Number(data.longitude))) {
       return '';
     }
-
-    const here = { lat: Number(data.latitude), lon: Number(data.longitude) };
-    let bestName = '';
-    let bestMiles = Infinity;
-    for (const [name, coords] of Object.entries(NEIGHBORHOOD_COORDS)) {
-      const miles = milesBetween(here, coords);
-      if (miles < bestMiles) {
-        bestMiles = miles;
-        bestName = name;
-      }
-    }
-
-    if (!bestName || bestMiles > 25) return '';
-    return HOME_NEIGHBORHOODS.includes(bestName) ? bestName : '';
+    return snapToHomeNeighborhood({ lat: Number(data.latitude), lon: Number(data.longitude) });
   } catch {
     return '';
   } finally {

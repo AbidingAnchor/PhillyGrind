@@ -4,22 +4,12 @@ import { normalizeReactionType } from './reactions.js';
 import { checkCommunitySafety } from './moderationService.js';
 import { getFilteredUsers } from './moderationApi.js';
 import { REACTIONS } from './reactions.js';
+import { HOME_NEIGHBORHOODS } from './homeNeighborhood.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export const COMMUNITY_NEIGHBORHOODS = [
-  'Fishtown',
-  'Kensington',
-  'South Philly',
-  'North Philly',
-  'West Philly',
-  'Northeast Philly',
-  'Center City',
-  'Germantown',
-  'Manayunk',
-  'Other',
-];
+export const COMMUNITY_NEIGHBORHOODS = HOME_NEIGHBORHOODS;
 
 function usableNeighborhood(value) {
   const name = String(value ?? '').trim();

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { MapPin, X, ArrowRight, Navigation } from 'lucide-react';
 import { useAuth } from '../lib/auth.jsx';
-import { HOUSING_NEIGHBORHOODS } from '../lib/housingApi.js';
+import { HOME_NEIGHBORHOODS, snapToHomeNeighborhood } from '../lib/homeNeighborhood.js';
 
 function OnboardingModal() {
   const [neighborhood, setNeighborhood] = useState('');
@@ -12,7 +12,7 @@ function OnboardingModal() {
   const [suggestedNeighborhood, setSuggestedNeighborhood] = useState(null);
   const { profile, completeOnboarding, refreshProfile } = useAuth();
 
-  const filteredNeighborhoods = HOUSING_NEIGHBORHOODS.filter((n) =>
+  const filteredNeighborhoods = HOME_NEIGHBORHOODS.filter((n) =>
     n.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -35,59 +35,17 @@ function OnboardingModal() {
         });
       });
 
-      const { latitude, longitude } = position.coords;
-
-      // Use Nominatim (OpenStreetMap) for reverse geocoding with higher zoom for neighborhood-level precision
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=16`
-      );
-      const data = await response.json();
-
-      if (!data || data.error) {
-        setStatus('Could not determine your location. Please search manually.');
-        setLocating(false);
-        return;
-      }
-
-      // Extract neighborhood/city from the response
-      const address = data.address || {};
-      const possibleNames = [
-        address.neighbourhood,
-        address.suburb,
-        address.city_district,
-        address.city,
-        address.town,
-        address.village,
-        address.county,
-      ].filter(Boolean);
-
-      // Try to match against our neighborhood list
-      let matchedNeighborhood = null;
-      for (const name of possibleNames) {
-        const match = HOUSING_NEIGHBORHOODS.find((n) =>
-          n.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(n.toLowerCase())
-        );
-        if (match) {
-          matchedNeighborhood = match;
-          break;
-        }
-      }
+      const matchedNeighborhood = snapToHomeNeighborhood({
+        lat: position.coords.latitude,
+        lon: position.coords.longitude,
+      });
 
       if (matchedNeighborhood) {
         setSuggestedNeighborhood(matchedNeighborhood);
         setStatus('');
       } else {
-        // Check if we got a generic "Philadelphia" result
-        const isGenericPhiladelphia = possibleNames.some(name =>
-          name.toLowerCase().includes('philadelphia')
-        );
-
-        if (isGenericPhiladelphia) {
-          setStatus("We can tell you're in Philadelphia — which neighborhood?");
-          setSearchQuery(''); // Clear search to show full list
-        } else {
-          setStatus('Could not match your location to our neighborhood list. Please search manually.');
-        }
+        setStatus('Could not match your location to a PhillyGrind neighborhood. Please search manually.');
+        setSearchQuery('');
       }
     } catch (error) {
       if (error.code === 1) {

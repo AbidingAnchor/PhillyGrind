@@ -3,10 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Briefcase, Image, Smile, X } from 'lucide-react';
 import ProfileListbox from '../ProfileListbox.jsx';
-import {
-  COMMUNITY_NEIGHBORHOODS,
-  createCommunityPost,
-} from '../../lib/communityApi.js';
+import { createCommunityPost } from '../../lib/communityApi.js';
 import { HOME_NEIGHBORHOODS } from '../../lib/homeNeighborhood.js';
 import { alertUnlessLoginRequired, redirectToSignup } from '../../lib/requireSignup.js';
 import { getUserAvatarColor } from '../../lib/reactions.js';
@@ -20,13 +17,11 @@ const COMPOSER_FEELINGS = [
   { emoji: '🤝', label: 'Looking to connect' },
 ];
 
-const COMPOSER_NEIGHBORHOODS = [...new Set([...COMMUNITY_NEIGHBORHOODS, ...HOME_NEIGHBORHOODS])];
-
 function defaultComposerNeighborhood(profileNeighborhood) {
-  if (profileNeighborhood && COMPOSER_NEIGHBORHOODS.includes(profileNeighborhood)) {
+  if (profileNeighborhood && HOME_NEIGHBORHOODS.includes(profileNeighborhood)) {
     return profileNeighborhood;
   }
-  return COMMUNITY_NEIGHBORHOODS[0];
+  return HOME_NEIGHBORHOODS[0];
 }
 
 export default function CommunityComposer({
@@ -290,7 +285,7 @@ export default function CommunityComposer({
               <ProfileListbox
                 label="Neighborhood"
                 value={composerNeighborhood}
-                options={COMPOSER_NEIGHBORHOODS}
+                options={HOME_NEIGHBORHOODS}
                 placeholder="Select neighborhood"
                 onChange={setComposerNeighborhood}
               />
