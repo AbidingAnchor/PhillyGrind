@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CloudLightning } from 'lucide-react';
 import { loadWeatherAlerts } from '../lib/weatherAlertsClient.js';
@@ -194,6 +194,60 @@ function WeatherSparkline({ model, activeKey, onHover, onSelect }) {
   );
 }
 
+function useHourlyDragScroll(ref, ready) {
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return undefined;
+
+    let pointerId = null;
+    let originX = 0;
+    let originScroll = 0;
+
+    function onPointerDown(event) {
+      if (event.pointerType !== 'mouse' || event.button !== 0) return;
+      event.preventDefault();
+      pointerId = event.pointerId;
+      originX = event.clientX;
+      originScroll = node.scrollLeft;
+      node.classList.add('is-dragging');
+      node.setPointerCapture(event.pointerId);
+    }
+
+    function onDragStart(event) {
+      event.preventDefault();
+    }
+
+    function onPointerMove(event) {
+      if (event.pointerId !== pointerId) return;
+      node.scrollLeft = originScroll - (event.clientX - originX);
+    }
+
+    function endDrag(event) {
+      if (event.pointerId !== pointerId) return;
+      pointerId = null;
+      node.classList.remove('is-dragging');
+      try {
+        node.releasePointerCapture(event.pointerId);
+      } catch {
+        /* already released */
+      }
+    }
+
+    node.addEventListener('pointerdown', onPointerDown);
+    node.addEventListener('pointermove', onPointerMove);
+    node.addEventListener('pointerup', endDrag);
+    node.addEventListener('pointercancel', endDrag);
+    node.addEventListener('dragstart', onDragStart);
+    return () => {
+      node.removeEventListener('pointerdown', onPointerDown);
+      node.removeEventListener('pointermove', onPointerMove);
+      node.removeEventListener('pointerup', endDrag);
+      node.removeEventListener('pointercancel', endDrag);
+      node.removeEventListener('dragstart', onDragStart);
+    };
+  }, [ready]);
+}
+
 function WeatherAlertBody({ alert, severity }) {
   return (
     <Link to="/alerts" className={`feed-weather-alert-banner feed-weather-alert--${severity}`}>
@@ -222,7 +276,9 @@ export default function NeighborhoodWeatherAlert({
   const [loaded, setLoaded] = useState(false);
   const [openDate, setOpenDate] = useState('');
   const [hoverKey, setHoverKey] = useState('');
+  const hourlyRef = useRef(null);
   const place = locationLabel || neighborhood || 'Philadelphia';
+  useHourlyDragScroll(hourlyRef, openDate);
 
   useEffect(() => {
     let cancelled = false;
@@ -348,7 +404,7 @@ export default function NeighborhoodWeatherAlert({
               </ul>
             </div>
             {openDate && (
-              <div className="feed-weather-hourly" role="region" aria-label="Hourly forecast">
+              <div ref={hourlyRef} className="feed-weather-hourly" role="region" aria-label="Hourly forecast">
                 {openHours.length ? openHours.map((hour) => (
                   <div key={hour.start} className="feed-weather-hour">
                     <span className="feed-weather-hour-time">{hour.hour}</span>

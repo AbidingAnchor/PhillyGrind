@@ -14071,14 +14071,40 @@ input[type="datetime-local"]:focus {
 .feed-weather-hourly {
   display: flex;
   gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+  overflow-y: hidden;
   padding: 8px 2px 10px;
   margin: 0 0 6px;
   scrollbar-width: thin;
+  /* html { scroll-behavior: smooth } is inherited and interpolates every
+     wheel/drag tick — the same jerk as the old map zoom. Keep native momentum. */
+  scroll-behavior: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: none;
+  touch-action: pan-x;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 2px;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.feed-weather-hourly.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+}
+
+.feed-weather-hourly::-webkit-scrollbar {
+  height: 4px;
 }
 
 .feed-weather-hour {
   flex: 0 0 46px;
+  scroll-snap-align: start;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -14086,6 +14112,7 @@ input[type="datetime-local"]:focus {
   color: var(--muted);
   font-size: 0.68rem;
   font-weight: 700;
+  -webkit-user-drag: none;
 }
 
 .feed-weather-hour-icon {
