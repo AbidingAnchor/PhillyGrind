@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
 
 const TILE_SIZE = 256;
 const MIN_ZOOM = 10;
 const MAX_ZOOM = 16;
 const DEFAULT_ZOOM = 12;
+const WHEEL_ZOOM_RATE = 1 / 420;
+const ZOOM_EASE = 0.24;
+const ZOOM_SNAP = 0.0025;
 
 function wrapTile(value, max) {
   return ((value % max) + max) % max;
@@ -33,7 +36,39 @@ function unproject(x, y, zoom) {
 }
 
 function tileUrl(x, y, z) {
-  return `https://tiles.stadiamaps.com/tiles/alidade_smooth/${z}/${x}/${y}@2x.png`;
+  return `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/${z}/${x}/${y}@2x.png`;
+}
+
+function applyZoom(currentZoom, currentView, nextZoom, size, anchor) {
+  const clamped = clamp(nextZoom, MIN_ZOOM, MAX_ZOOM);
+  if (clamped === currentZoom) {
+    return { zoom: currentZoom, view: currentView };
+  }
+
+  const { width, height } = size;
+  const origin = project(currentView.lat, currentView.lon, currentZoom);
+  const focusX = anchor ? origin.x - width / 2 + anchor.x : origin.x;
+  const focusY = anchor ? origin.y - height / 2 + anchor.y : origin.y;
+  const ratio = 2 ** (clamped - currentZoom);
+  const nextOriginX = focusX * ratio - (anchor ? anchor.x - width / 2 : 0);
+  const nextOriginY = focusY * ratio - (anchor ? anchor.y - height / 2 : 0);
+
+  return {
+    zoom: clamped,
+    view: unproject(nextOriginX, nextOriginY, clamped),
+  };
+}
+
+function normalizeWheelDelta(event, pageHeight) {
+  let dy = event.deltaY;
+  if (event.deltaMode === 1) dy *= 16;
+  if (event.deltaMode === 2) dy *= pageHeight || 800;
+  return dy;
+}
+
+function prefersReducedMotion() {
+  return typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 export default function AlertsMap({
@@ -44,19 +79,72 @@ export default function AlertsMap({
 }) {
   const wrapRef = useRef(null);
   const dragRef = useRef(null);
-  const [size, setSize] = useState({ width: 640, height: 520 });
-  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
-  const [view, setView] = useState(() => ({
+  const sizeRef = useRef({ width: 640, height: 520 });
+  const zoomRef = useRef(DEFAULT_ZOOM);
+  const viewRef = useRef({
     lat: Number(center?.lat) || 39.9526,
     lon: Number(center?.lon) || -75.1652,
-  }));
+  });
+  const targetZoomRef = useRef(DEFAULT_ZOOM);
+  const anchorRef = useRef(null);
+  const rafRef = useRef(0);
+
+  const [size, setSize] = useState({ width: 640, height: 520 });
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+  const [view, setView] = useState(() => viewRef.current);
   const [dragging, setDragging] = useState(false);
 
+  function commitCamera(next) {
+    zoomRef.current = next.zoom;
+    viewRef.current = next.view;
+    setZoom(next.zoom);
+    setView(next.view);
+  }
+
+  function stepZoomTowardTarget() {
+    const currentZoom = zoomRef.current;
+    const target = targetZoomRef.current;
+    const diff = target - currentZoom;
+    const ease = prefersReducedMotion() ? 1 : ZOOM_EASE;
+    const nextZoom = Math.abs(diff) <= ZOOM_SNAP
+      ? target
+      : currentZoom + diff * ease;
+    const next = applyZoom(
+      currentZoom,
+      viewRef.current,
+      nextZoom,
+      sizeRef.current,
+      anchorRef.current,
+    );
+    commitCamera(next);
+
+    if (next.zoom !== targetZoomRef.current) {
+      rafRef.current = window.requestAnimationFrame(stepZoomTowardTarget);
+      return;
+    }
+    rafRef.current = 0;
+  }
+
+  function requestZoom(nextTarget, anchor) {
+    targetZoomRef.current = clamp(nextTarget, MIN_ZOOM, MAX_ZOOM);
+    anchorRef.current = anchor || null;
+    if (rafRef.current) return;
+    rafRef.current = window.requestAnimationFrame(stepZoomTowardTarget);
+  }
+
   useEffect(() => {
-    setView({
+    const nextView = {
       lat: Number(center?.lat) || 39.9526,
       lon: Number(center?.lon) || -75.1652,
-    });
+    };
+    if (rafRef.current) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+    zoomRef.current = DEFAULT_ZOOM;
+    targetZoomRef.current = DEFAULT_ZOOM;
+    viewRef.current = nextView;
+    setView(nextView);
     setZoom(DEFAULT_ZOOM);
   }, [center?.lat, center?.lon]);
 
@@ -65,10 +153,12 @@ export default function AlertsMap({
     if (!node) return undefined;
 
     function measure() {
-      setSize({
+      const next = {
         width: node.clientWidth || 640,
         height: node.clientHeight || 520,
-      });
+      };
+      sizeRef.current = next;
+      setSize(next);
     }
 
     measure();
@@ -77,28 +167,6 @@ export default function AlertsMap({
     return () => observer.disconnect();
   }, []);
 
-  const zoomAt = useCallback((nextZoom, anchor) => {
-    setZoom((currentZoom) => {
-      const clamped = clamp(
-        typeof nextZoom === 'function' ? nextZoom(currentZoom) : nextZoom,
-        MIN_ZOOM,
-        MAX_ZOOM,
-      );
-      if (clamped === currentZoom) return currentZoom;
-      setView((currentView) => {
-        const { width, height } = size;
-        const origin = project(currentView.lat, currentView.lon, currentZoom);
-        const focusX = anchor ? origin.x - width / 2 + anchor.x : origin.x;
-        const focusY = anchor ? origin.y - height / 2 + anchor.y : origin.y;
-        const ratio = 2 ** (clamped - currentZoom);
-        const nextOriginX = focusX * ratio - (anchor ? anchor.x - width / 2 : 0);
-        const nextOriginY = focusY * ratio - (anchor ? anchor.y - height / 2 : 0);
-        return unproject(nextOriginX, nextOriginY, clamped);
-      });
-      return clamped;
-    });
-  }, [size]);
-
   useEffect(() => {
     const node = wrapRef.current;
     if (!node) return undefined;
@@ -106,26 +174,37 @@ export default function AlertsMap({
     function onWheel(event) {
       event.preventDefault();
       const rect = node.getBoundingClientRect();
-      const direction = event.deltaY > 0 ? -1 : 1;
-      zoomAt((current) => current + direction, {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top,
-      });
+      const delta = normalizeWheelDelta(event, sizeRef.current.height);
+      requestZoom(
+        targetZoomRef.current - delta * WHEEL_ZOOM_RATE,
+        {
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top,
+        },
+      );
     }
 
     node.addEventListener('wheel', onWheel, { passive: false });
-    return () => node.removeEventListener('wheel', onWheel);
-  }, [zoomAt]);
+    return () => {
+      node.removeEventListener('wheel', onWheel);
+      if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
   function onPointerDown(event) {
     if (event.button != null && event.button !== 0) return;
     if (event.target.closest('.alerts-map-pin, .alerts-map-zoom, .alerts-map-credit')) return;
+    if (rafRef.current) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+    targetZoomRef.current = zoomRef.current;
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = {
       x: event.clientX,
       y: event.clientY,
-      lat: view.lat,
-      lon: view.lon,
+      lat: viewRef.current.lat,
+      lon: viewRef.current.lon,
     };
     setDragging(true);
   }
@@ -133,12 +212,13 @@ export default function AlertsMap({
   function onPointerMove(event) {
     const drag = dragRef.current;
     if (!drag) return;
-    const origin = project(drag.lat, drag.lon, zoom);
+    const origin = project(drag.lat, drag.lon, zoomRef.current);
     const next = unproject(
       origin.x - (event.clientX - drag.x),
       origin.y - (event.clientY - drag.y),
-      zoom,
+      zoomRef.current,
     );
+    viewRef.current = next;
     setView(next);
   }
 
@@ -153,21 +233,24 @@ export default function AlertsMap({
   const layout = useMemo(() => {
     const { width, height } = size;
     const origin = project(view.lat, view.lon, zoom);
-    const maxTile = 2 ** zoom;
+    const tileZoom = clamp(Math.round(zoom), MIN_ZOOM, MAX_ZOOM);
+    const tileSize = TILE_SIZE * 2 ** (zoom - tileZoom);
+    const maxTile = 2 ** tileZoom;
     const tiles = [];
-    const startX = Math.floor((origin.x - width / 2) / TILE_SIZE) - 1;
-    const endX = Math.floor((origin.x + width / 2) / TILE_SIZE) + 1;
-    const startY = Math.floor((origin.y - height / 2) / TILE_SIZE) - 1;
-    const endY = Math.floor((origin.y + height / 2) / TILE_SIZE) + 1;
+    const startX = Math.floor((origin.x - width / 2) / tileSize) - 1;
+    const endX = Math.floor((origin.x + width / 2) / tileSize) + 1;
+    const startY = Math.floor((origin.y - height / 2) / tileSize) - 1;
+    const endY = Math.floor((origin.y + height / 2) / tileSize) + 1;
 
     for (let x = startX; x <= endX; x += 1) {
       for (let y = startY; y <= endY; y += 1) {
         if (y < 0 || y >= maxTile) continue;
         tiles.push({
-          key: `${zoom}-${x}-${y}`,
-          left: x * TILE_SIZE - origin.x + width / 2,
-          top: y * TILE_SIZE - origin.y + height / 2,
-          url: tileUrl(wrapTile(x, maxTile), y, zoom),
+          key: `${tileZoom}-${x}-${y}`,
+          left: x * tileSize - origin.x + width / 2,
+          top: y * tileSize - origin.y + height / 2,
+          size: tileSize,
+          url: tileUrl(wrapTile(x, maxTile), y, tileZoom),
         });
       }
     }
@@ -203,7 +286,11 @@ export default function AlertsMap({
             src={tile.url}
             alt=""
             className="alerts-map-tile"
-            style={{ transform: `translate(${tile.left}px, ${tile.top}px)` }}
+            style={{
+              width: tile.size,
+              height: tile.size,
+              transform: `translate3d(${tile.left}px, ${tile.top}px, 0)`,
+            }}
             draggable={false}
           />
         ))}
@@ -212,7 +299,7 @@ export default function AlertsMap({
         <button
           key={pin.id}
           type="button"
-          className={`alerts-map-pin${selectedId === pin.id ? ' is-selected' : ''}`}
+          className={`alerts-map-pin alerts-map-pin--${pin.category || 'safety'}${selectedId === pin.id ? ' is-selected' : ''}`}
           style={{ left: pin.left, top: pin.top }}
           onClick={() => onSelect?.(pin.id)}
           aria-label={pin.title}
@@ -221,20 +308,29 @@ export default function AlertsMap({
         </button>
       ))}
       <div className="alerts-map-zoom" role="group" aria-label="Map zoom">
-        <button type="button" aria-label="Zoom in" onClick={() => zoomAt((current) => current + 1)}>
+        <button type="button" aria-label="Zoom in" onClick={() => requestZoom(targetZoomRef.current + 1)}>
           <Plus size={16} />
         </button>
-        <button type="button" aria-label="Zoom out" onClick={() => zoomAt((current) => current - 1)}>
+        <button type="button" aria-label="Zoom out" onClick={() => requestZoom(targetZoomRef.current - 1)}>
           <Minus size={16} />
         </button>
       </div>
       <div className="alerts-map-credit">
-        ©{' '}
-        <a href="https://stadiamaps.com/" target="_blank" rel="noreferrer">Stadia Maps</a>
-        {' '}©{' '}
-        <a href="https://openmaptiles.org/" target="_blank" rel="noreferrer">OpenMapTiles</a>
-        {' '}©{' '}
-        <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>
+        <div>
+          ©{' '}
+          <a href="https://stadiamaps.com/" target="_blank" rel="noreferrer">Stadia Maps</a>
+          {' '}©{' '}
+          <a href="https://openmaptiles.org/" target="_blank" rel="noreferrer">OpenMapTiles</a>
+          {' '}©{' '}
+          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>
+        </div>
+        <div>
+          Data:{' '}
+          <a href="https://opendataphilly.org/datasets/crime-incidents/" target="_blank" rel="noreferrer">
+            Philadelphia Police Department via OpenDataPhilly
+          </a>
+          {' '}· past 30 days, updated daily
+        </div>
       </div>
     </div>
   );

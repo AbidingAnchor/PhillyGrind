@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react';
-import { CreditCard, Shield, BadgeCheck, Palette, User, Bell, Mail, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { CreditCard, Shield, BadgeCheck, Palette, User, Bell, Mail, FileText, Trash2, MapPin } from 'lucide-react';
 import { sendTwoFactorCode, toggleTwoFactorAuth, verifyTwoFactorCode } from '../lib/twoFactorApi.js';
 import { createConnectAccount } from '../lib/ordersApi.js';
-import { getResumeUrl, uploadResume, removeResume } from '../lib/profileApi.js';
+import { getResumeUrl, uploadResume, removeResume, saveHomeNeighborhood } from '../lib/profileApi.js';
+import ProfileListbox from '../components/ProfileListbox.jsx';
+import { HOME_NEIGHBORHOODS } from '../lib/homeNeighborhood.js';
+import { requestAccountDeletion } from '../lib/deletionRequestsApi.js';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import SettingsToggle from '../components/SettingsToggle.jsx';
 import Skeleton from '../components/Skeleton.jsx';
+import DeleteAccountModal from '../components/DeleteAccountModal.jsx';
 
 function resumeFilename(path) {
   if (!path) return '';
@@ -20,7 +25,8 @@ function getProfileResumePath(profile) {
 }
 
 function Settings() {
-  const { user, isLoggedIn, profile: authProfile, refreshProfile } = useAuth();
+  const { user, isLoggedIn, profile: authProfile, refreshProfile, signOut } = useAuth();
+  const navigate = useNavigate();
   const [connectingPayouts, setConnectingPayouts] = useState(false);
   const [resumeUrl, setResumeUrl] = useState('');
   const [profileStatus, setProfileStatus] = useState('');
@@ -34,6 +40,11 @@ function Settings() {
   const [showAvailableNow, setShowAvailableNow] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emailCommentNotifications, setEmailCommentNotifications] = useState(true);
+  const [homeNeighborhood, setHomeNeighborhood] = useState('');
+  const [savingNeighborhood, setSavingNeighborhood] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const hasStripeAccount = Boolean(authProfile?.stripe_account_id);
   const payoutsConnected = Boolean(hasStripeAccount && authProfile?.stripe_onboarding_complete);
@@ -45,6 +56,7 @@ function Settings() {
     setShowAvailableNow(Boolean(authProfile.show_available_now));
     setNotificationsEnabled(authProfile.notifications_enabled !== false);
     setEmailCommentNotifications(authProfile.email_comment_notifications !== false);
+    setHomeNeighborhood(authProfile.neighborhood || '');
     const resumeStoragePath = getProfileResumePath(authProfile);
     if (resumeStoragePath) {
       getResumeUrl(resumeStoragePath).then(setResumeUrl).catch(console.warn);
@@ -201,6 +213,22 @@ function Settings() {
     }
   }
 
+  async function handleSaveNeighborhood(nextNeighborhood) {
+    setProfileStatus('');
+    setSavingNeighborhood(true);
+    setHomeNeighborhood(nextNeighborhood);
+    try {
+      await saveHomeNeighborhood(nextNeighborhood);
+      await refreshProfile();
+      setProfileStatus(`Neighborhood set to ${nextNeighborhood}.`);
+    } catch (err) {
+      setHomeNeighborhood(authProfile?.neighborhood || '');
+      setProfileStatus(err.message || 'Could not save your neighborhood.');
+    } finally {
+      setSavingNeighborhood(false);
+    }
+  }
+
   async function handleToggleEmailCommentNotifications() {
     setProfileStatus('');
     const nextValue = !emailCommentNotifications;
@@ -222,6 +250,20 @@ function Settings() {
     }
   }
 
+  async function handleDeleteAccount() {
+    setDeletingAccount(true);
+    setDeleteError('');
+
+    try {
+      await requestAccountDeletion();
+      await signOut();
+      navigate('/', { replace: true });
+    } catch (err) {
+      setDeleteError(err.message || 'Could not submit deletion request.');
+      setDeletingAccount(false);
+    }
+  }
+
   async function handleRemoveResume() {
     if (!confirm('Are you sure you want to remove your resume? This action cannot be undone.')) {
       return;
@@ -236,6 +278,17 @@ function Settings() {
     } catch (err) {
       setProfileStatus(err.message || 'Could not remove resume.');
     }
+  }
+
+  if (deletingAccount) {
+    return (
+      <DeleteAccountModal
+        submitting
+        error={deleteError}
+        onCancel={() => {}}
+        onConfirm={() => {}}
+      />
+    );
   }
 
   if (!isLoggedIn) {
@@ -390,6 +443,32 @@ function Settings() {
       </section>
 
       <section className="settings-row-card">
+        <div className="settings-row-content settings-row-content--stack">
+          <div className="settings-row-left">
+            <div className="section-icon-wrapper">
+              <MapPin size={20} />
+            </div>
+            <div className="settings-row-text">
+              <span className="eyebrow">Location</span>
+              <h2>Your Neighborhood</h2>
+              <p className="settings-row-description">
+                This is the default area for Community and Alerts. You can still browse other neighborhoods anytime.
+              </p>
+            </div>
+          </div>
+          <div className="settings-neighborhood-picker" aria-busy={savingNeighborhood}>
+            <ProfileListbox
+              label="Your Neighborhood"
+              value={homeNeighborhood}
+              placeholder="Select your neighborhood"
+              options={HOME_NEIGHBORHOODS}
+              onChange={handleSaveNeighborhood}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-row-card">
         <div className="settings-row-content">
           <div className="settings-row-left">
             <div className="section-icon-wrapper">
@@ -508,6 +587,47 @@ function Settings() {
           )}
         </div>
       </section>
+
+      <section className="settings-row-card">
+        <div className="settings-row-content">
+          <div className="settings-row-left">
+            <div className="section-icon-wrapper">
+              <Trash2 size={20} />
+            </div>
+            <div className="settings-row-text">
+              <span className="eyebrow">Account</span>
+              <h2>Delete Account</h2>
+              <p className="settings-row-description">
+                Request deletion of your PhillyGrind account. We process requests within 14 days. You will be signed out after you confirm.
+              </p>
+            </div>
+          </div>
+          <button
+            className="settings-danger-outline"
+            type="button"
+            onClick={() => {
+              setDeleteError('');
+              setDeleteOpen(true);
+            }}
+          >
+            Delete Account
+          </button>
+        </div>
+      </section>
+
+      {deleteOpen && (
+        <DeleteAccountModal
+          submitting={deletingAccount}
+          error={deleteError}
+          onCancel={() => {
+            if (!deletingAccount) {
+              setDeleteOpen(false);
+              setDeleteError('');
+            }
+          }}
+          onConfirm={handleDeleteAccount}
+        />
+      )}
     </section>
   );
 }

@@ -7,6 +7,7 @@ import {
   COMMUNITY_NEIGHBORHOODS,
   createCommunityPost,
 } from '../../lib/communityApi.js';
+import { HOME_NEIGHBORHOODS } from '../../lib/homeNeighborhood.js';
 import { alertUnlessLoginRequired, redirectToSignup } from '../../lib/requireSignup.js';
 import { getUserAvatarColor } from '../../lib/reactions.js';
 
@@ -19,8 +20,10 @@ const COMPOSER_FEELINGS = [
   { emoji: '🤝', label: 'Looking to connect' },
 ];
 
+const COMPOSER_NEIGHBORHOODS = [...new Set([...COMMUNITY_NEIGHBORHOODS, ...HOME_NEIGHBORHOODS])];
+
 function defaultComposerNeighborhood(profileNeighborhood) {
-  if (profileNeighborhood && COMMUNITY_NEIGHBORHOODS.includes(profileNeighborhood)) {
+  if (profileNeighborhood && COMPOSER_NEIGHBORHOODS.includes(profileNeighborhood)) {
     return profileNeighborhood;
   }
   return COMMUNITY_NEIGHBORHOODS[0];
@@ -287,7 +290,7 @@ export default function CommunityComposer({
               <ProfileListbox
                 label="Neighborhood"
                 value={composerNeighborhood}
-                options={COMMUNITY_NEIGHBORHOODS}
+                options={COMPOSER_NEIGHBORHOODS}
                 placeholder="Select neighborhood"
                 onChange={setComposerNeighborhood}
               />

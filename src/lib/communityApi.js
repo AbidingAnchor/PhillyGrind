@@ -41,32 +41,17 @@ export function resolveHomeNeighborhood(profile) {
 }
 
 export async function fetchHomeNeighborhood(userId, profile) {
-  const fromProfile = resolveHomeNeighborhood(profile);
+  const fromProfile = usableNeighborhood(profile?.neighborhood);
   if (fromProfile) return fromProfile;
   if (!hasSupabaseConfig || !userId) return '';
 
   const { data: publicProfile } = await supabase
     .from('profiles_public')
-    .select('neighborhood, neighborhoods')
+    .select('neighborhood')
     .eq('id', userId)
     .maybeSingle();
 
-  const fromPublic = resolveHomeNeighborhood(publicProfile);
-  if (fromPublic) return fromPublic;
-
-  const { data: posts } = await supabase
-    .from('community_posts')
-    .select('neighborhood')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(10);
-
-  for (const post of posts || []) {
-    const name = usableNeighborhood(post?.neighborhood);
-    if (name) return name;
-  }
-
-  return '';
+  return usableNeighborhood(publicProfile?.neighborhood);
 }
 
 function safeDisplayName(value, fallback = 'PhillyGrind user') {

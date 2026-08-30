@@ -247,6 +247,28 @@ export async function updateProfile({ name, bio, skills, availability, neighborh
   return data;
 }
 
+export async function saveHomeNeighborhood(neighborhood) {
+  if (!hasSupabaseConfig) {
+    throw new Error('Supabase credentials are missing.');
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw new Error('Please log in before setting your neighborhood.');
+  }
+
+  const next = String(neighborhood || '').trim() || null;
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ neighborhood: next })
+    .eq('id', userData.user.id)
+    .select(profileSelect)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function completeOwnOnboarding(neighborhood) {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');

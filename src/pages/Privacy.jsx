@@ -35,7 +35,10 @@ function Privacy() {
         <h3>1.3 Weather and Local Alerts</h3>
         <p>To show you local weather conditions and severe weather alerts relevant to your neighborhood, we use your selected neighborhood (or, where available, your approximate location) to request data from the National Weather Service (NWS), a public U.S. government data source. We do not share your precise location or account information with NWS — only the general area needed to retrieve relevant weather data.</p>
 
-        <h3>1.4 Philly Sports Scores</h3>
+        <h3>1.4 Crime and Safety Alerts</h3>
+        <p>The Alerts page may show police-reported crime incidents near your selected neighborhood using public data from the Philadelphia Police Department via OpenDataPhilly. That request uses only a general neighborhood area to find nearby incidents from the past 30 days. We do not share your account information or precise location with OpenDataPhilly. This data is updated daily and is not a live dispatch feed.</p>
+
+        <h3>1.5 Philly Sports Scores</h3>
         <p>The Community sidebar may show scheduled and live scores for Philadelphia teams using publicly available game data from ESPN. That request does not include your account information, neighborhood, or precise location — only the team schedules and live game data needed to display the widget.</p>
 
         <h2>2. How We Use Information</h2>

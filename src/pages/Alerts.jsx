@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ChevronDown,
   ChevronUp,
   CloudLightning,
+  Flame,
   MessageSquarePlus,
   Radio,
   Share2,
@@ -13,20 +14,23 @@ import {
   Zap,
 } from 'lucide-react';
 import AlertsMap from '../components/AlertsMap.jsx';
+import NeighborhoodSelect from '../components/NeighborhoodSelect.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { redirectToSignup } from '../lib/requireSignup.js';
-import { fetchHomeNeighborhood, resolveHomeNeighborhood } from '../lib/communityApi.js';
+import { fetchHomeNeighborhood } from '../lib/communityApi.js';
+import { loadCrimeIncidents } from '../lib/crimeIncidentsClient.js';
+import { ALL_NEIGHBORHOODS, resolveSavedHomeNeighborhood, suggestNeighborhoodFromIp } from '../lib/homeNeighborhood.js';
+import { PHILLY_CENTER } from '../lib/neighborhoodCoords.js';
 import { loadWeatherAlerts } from '../lib/weatherAlertsClient.js';
 
 const TABS = [
   { id: 'all', label: 'All' },
   { id: 'safety', label: 'Safety' },
+  { id: 'fires', label: 'Fires' },
   { id: 'outages', label: 'Outages' },
   { id: 'weather', label: 'Weather' },
   { id: 'traffic', label: 'Traffic' },
 ];
-
-const PHILLY_CENTER = { lat: 39.9526, lon: -75.1652 };
 
 function milesBetween(from, to) {
   if (!from || !to) return null;
@@ -63,6 +67,7 @@ function AlertGlyph({ category }) {
   if (category === 'weather') return <CloudLightning size={18} />;
   if (category === 'outages') return <Zap size={18} />;
   if (category === 'traffic') return <TrafficCone size={18} />;
+  if (category === 'fires') return <Flame size={18} />;
   if (category === 'safety') return <Siren size={18} />;
   return <ShieldAlert size={18} />;
 }
@@ -81,12 +86,47 @@ function formatAlertTime(iso) {
   });
 }
 
+function formatAlertDate(iso) {
+  if (!iso) return '';
+  const date = new Date(iso.includes('T') ? iso : `${iso}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 function previewText(alert) {
   return String(alert?.summary || alert?.description || '').trim();
 }
 
 function fullAlertText(alert) {
   return String(alert?.description || alert?.summary || '').trim();
+}
+
+function emptyCopyForTab(tab, coverage) {
+  if (tab === 'safety' || tab === 'fires') {
+    if (coverage === 'outside-philadelphia') {
+      return 'Crime incident data is from the Philadelphia Police Department and covers Philadelphia only.';
+    }
+    if (coverage === 'unavailable') {
+      return 'Police incident data is unavailable right now. Try again in a few minutes.';
+    }
+    return tab === 'fires'
+      ? 'No police-reported fire or arson incidents near this neighborhood in the past 30 days.'
+      : 'No police-reported incidents near this neighborhood in the past 30 days.';
+  }
+  if (tab === 'all') {
+    return coverage === 'outside-philadelphia'
+      ? 'There are no live NWS alerts right now. Crime incident data covers Philadelphia only.'
+      : 'There are no live NWS alerts and no nearby police-reported incidents from the past 30 days.';
+  }
+  if (tab === 'weather') {
+    return 'There are no live NWS alerts for this neighborhood right now.';
+  }
+  return `${TABS.find((item) => item.id === tab)?.label} alerts are not connected yet. We’ll show them here once that feed is live.`;
 }
 
 function canExpandAlert(alert) {
@@ -127,10 +167,13 @@ export default function Alerts() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const { isLoggedIn, user, profile } = useAuth();
-  const [neighborhood, setNeighborhood] = useState(() => resolveHomeNeighborhood(profile) || 'Center City');
+  const [homeNeighborhood, setHomeNeighborhood] = useState(() => resolveSavedHomeNeighborhood(profile));
+  const [neighborhood, setNeighborhood] = useState(() => resolveSavedHomeNeighborhood(profile) || '');
+  const browseOverrideRef = useRef(false);
   const [tab, setTab] = useState('all');
   const [alerts, setAlerts] = useState([]);
   const [coords, setCoords] = useState(PHILLY_CENTER);
+  const [crimeCoverage, setCrimeCoverage] = useState('philadelphia');
   const [selectedId, setSelectedId] = useState(params.get('id') || '');
   const [expandedId, setExpandedId] = useState(params.get('id') || '');
   const [loading, setLoading] = useState(true);
@@ -139,28 +182,51 @@ export default function Alerts() {
   useEffect(() => {
     let cancelled = false;
     fetchHomeNeighborhood(isLoggedIn ? user?.id : null, profile)
-      .then((name) => {
-        if (!cancelled && name) setNeighborhood(name);
+      .then(async (name) => {
+        if (cancelled) return;
+        setHomeNeighborhood(name);
+        if (browseOverrideRef.current) return;
+        if (name) {
+          setNeighborhood(name);
+          return;
+        }
+        const guess = await suggestNeighborhoodFromIp();
+        if (!cancelled && !browseOverrideRef.current) {
+          setNeighborhood(guess || 'Center City');
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled && !browseOverrideRef.current) {
+          setNeighborhood((current) => current || 'Center City');
+        }
+      });
     return () => {
       cancelled = true;
     };
-  }, [isLoggedIn, profile, user?.id]);
+  }, [isLoggedIn, profile?.neighborhood, user?.id]);
 
   useEffect(() => {
+    if (!neighborhood) return undefined;
     let cancelled = false;
     setLoading(true);
-    loadWeatherAlerts(neighborhood)
-      .then((payload) => {
+    Promise.all([
+      loadWeatherAlerts(neighborhood === ALL_NEIGHBORHOODS ? 'Center City' : neighborhood).catch(() => ({ alerts: [], coords: null })),
+      loadCrimeIncidents(neighborhood).catch(() => ({ incidents: [], coords: null, coverage: 'unavailable' })),
+    ])
+      .then(([weatherPayload, crimePayload]) => {
         if (cancelled) return;
-        const nextCoords = payload.coords || PHILLY_CENTER;
-        const nextAlerts = (payload.alerts?.length ? payload.alerts : fallbackFromSingular(payload))
-          .map((alert) => ({
-            ...alert,
-            distanceMiles: milesBetween(nextCoords, { lat: alert.lat, lon: alert.lon }),
-          }));
+        const nextCoords = weatherPayload.coords || crimePayload.coords || PHILLY_CENTER;
+        const weatherAlerts = (weatherPayload.alerts?.length
+          ? weatherPayload.alerts
+          : fallbackFromSingular(weatherPayload)
+        ).map((alert) => ({
+          ...alert,
+          source: alert.source || 'nws',
+          distanceMiles: milesBetween(nextCoords, { lat: alert.lat, lon: alert.lon }),
+        }));
+        const nextAlerts = [...weatherAlerts, ...(crimePayload.incidents || [])];
         setCoords(nextCoords);
+        setCrimeCoverage(crimePayload.coverage || 'philadelphia');
         setAlerts(nextAlerts);
         setSelectedId((current) => current || nextAlerts[0]?.id || '');
       })
@@ -232,11 +298,33 @@ export default function Alerts() {
         <div>
           <span className="eyebrow">Neighborhood</span>
           <h1>
-            Alerts in {neighborhood}
+            Alerts in {neighborhood === ALL_NEIGHBORHOODS || !neighborhood ? 'Philadelphia' : neighborhood}
             {liveCount > 0 && <span className="alerts-count-badge">{liveCount} new</span>}
           </h1>
-          <p>Live weather warnings for your area. Safety, outages, and traffic feeds will show here when they are connected.</p>
+          <p>
+            Live weather warnings plus police-reported incidents from the past 30 days.
+            Crime data is updated daily by PPD — not live or real-time.
+          </p>
+          {!homeNeighborhood && (
+            <p className="alerts-neighborhood-prompt">
+              {isLoggedIn ? (
+                <Link to="/settings">Set your neighborhood</Link>
+              ) : (
+                <Link to="/login" state={{ from: '/alerts' }}>Sign in to save your neighborhood</Link>
+              )}
+              {' '}to make this the default. You can still browse other areas anytime.
+            </p>
+          )}
         </div>
+        <NeighborhoodSelect
+          id="alerts-neighborhood"
+          label="Show alerts for"
+          value={neighborhood || ALL_NEIGHBORHOODS}
+          onChange={(next) => {
+            browseOverrideRef.current = true;
+            setNeighborhood(next);
+          }}
+        />
       </header>
 
       <div className="alerts-tabs" role="tablist" aria-label="Alert categories">
@@ -262,9 +350,7 @@ export default function Alerts() {
               <Radio size={22} />
               <strong>No active alerts in this category</strong>
               <p>
-                {tab === 'all' || tab === 'weather'
-                  ? 'There are no live NWS alerts for this neighborhood right now.'
-                  : `${TABS.find((item) => item.id === tab)?.label} alerts are not connected yet. We’ll show them here once that feed is live.`}
+                {emptyCopyForTab(tab, crimeCoverage)}
               </p>
             </div>
           )}
@@ -297,7 +383,9 @@ export default function Alerts() {
                   <p className="alerts-card-meta">
                     {formatDistance(alert.distanceMiles) || alert.neighborhood || neighborhood}
                     <span aria-hidden="true"> · </span>
-                    {formatTimeAgo(alert.issuedAt)}
+                    {alert.source === 'ppd' && formatAlertDate(alert.issuedAt)
+                      ? formatAlertDate(alert.issuedAt)
+                      : formatTimeAgo(alert.issuedAt)}
                   </p>
                   {!expanded && preview && <p className="alerts-card-copy">{preview}</p>}
                   {expanded && (
@@ -355,7 +443,9 @@ export default function Alerts() {
           })}
           {shareNote && <p className="alerts-share-note">{shareNote}</p>}
           <p className="alerts-footnote">
-            Weather alerts come from the National Weather Service. <Link to="/">Back to Community</Link>
+            Weather alerts come from the National Weather Service. Crime incidents are police-reported
+            data from the Philadelphia Police Department via OpenDataPhilly, covering the past 30 days
+            and updated daily — not live. <Link to="/">Back to Community</Link>
           </p>
         </div>
 

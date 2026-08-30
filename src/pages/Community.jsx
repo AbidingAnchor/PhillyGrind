@@ -5,7 +5,6 @@ import {
   getCommunityPosts,
   getCommunityPost,
   fetchHomeNeighborhood,
-  resolveHomeNeighborhood,
   deleteCommunityPost,
   searchCommunityPosts,
 } from '../lib/communityApi.js';
@@ -18,7 +17,9 @@ import NeighborhoodWeatherAlert from '../components/NeighborhoodWeatherAlert.jsx
 import PhillySportsWidget from '../components/PhillySportsWidget.jsx';
 import PostCard from '../components/community/PostCard.jsx';
 import CommunityComposer from '../components/community/CommunityComposer.jsx';
+import NeighborhoodSelect from '../components/NeighborhoodSelect.jsx';
 import { InviteNeighborButton } from '../components/InviteNeighborSheet.jsx';
+import { ALL_NEIGHBORHOODS, resolveSavedHomeNeighborhood } from '../lib/homeNeighborhood.js';
 import { FEED_LOAD_TIMEOUT_MS, withTimeoutRetry } from '../lib/loadWithTimeout.js';
 import { alertUnlessLoginRequired, redirectToSignup } from '../lib/requireSignup.js';
 
@@ -65,6 +66,15 @@ function CommunityLeftSidebar({ isLoggedIn, user, profile, neighborhoodName }) {
         <div className="feed-left-neighborhood-copy">
           <span className="feed-left-neighborhood-label">Your Neighborhood</span>
           <strong className="feed-left-neighborhood-name">{homeNeighborhood || 'Not set yet'}</strong>
+          {isLoggedIn ? (
+            <Link to="/settings" className="feed-left-profile-link">
+              {homeNeighborhood ? 'Change' : 'Set your neighborhood'}
+            </Link>
+          ) : (
+            <Link to="/login" state={{ from: '/community' }} className="feed-left-profile-link">
+              Sign in to set yours
+            </Link>
+          )}
         </div>
       </div>
 
@@ -106,9 +116,10 @@ function Community() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isLoggedIn, user, profile } = useAuth();
   const [posts, setPosts] = useState([]);
-  const [homeNeighborhood, setHomeNeighborhood] = useState(() => resolveHomeNeighborhood(profile));
-  const [neighborhood, setNeighborhood] = useState('Any');
-  const [filterTab, setFilterTab] = useState('all'); // all, recent, nearby, popular
+  const [homeNeighborhood, setHomeNeighborhood] = useState(() => resolveSavedHomeNeighborhood(profile));
+  const [neighborhood, setNeighborhood] = useState(() => resolveSavedHomeNeighborhood(profile) || ALL_NEIGHBORHOODS);
+  const [filterTab, setFilterTab] = useState(() => (resolveSavedHomeNeighborhood(profile) ? 'nearby' : 'all'));
+  const browseOverrideRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const searchQuery = searchParams.get('search') || '';
@@ -143,13 +154,17 @@ function Community() {
       const next = await fetchHomeNeighborhood(isLoggedIn ? user?.id : null, profile);
       if (cancelled) return;
       setHomeNeighborhood(next);
+      if (!browseOverrideRef.current && next) {
+        setNeighborhood(next);
+        setFilterTab((current) => (current === 'all' ? 'nearby' : current));
+      }
     }
 
     loadHomeNeighborhood();
     return () => {
       cancelled = true;
     };
-  }, [isLoggedIn, user?.id, profile?.neighborhood, profile?.neighborhoods]);
+  }, [isLoggedIn, user?.id, profile?.neighborhood]);
 
   useEffect(() => {
     let cancelled = false;
@@ -268,37 +283,51 @@ function Community() {
           {/* Main Feed Column */}
           <div className="feed-main-column">
             {/* Filter Tabs */}
-            <div className="feed-filter-tabs">
-              <button
-                className={`feed-filter-tab ${filterTab === 'all' ? 'active' : ''}`}
-                onClick={() => {
-                  setFilterTab('all');
-                  setNeighborhood('Any');
+            <div className="feed-filter-toolbar">
+              <NeighborhoodSelect
+                id="community-neighborhood"
+                label="Show posts from"
+                value={neighborhood}
+                onChange={(next) => {
+                  browseOverrideRef.current = true;
+                  setNeighborhood(next);
+                  setFilterTab(next === ALL_NEIGHBORHOODS ? 'all' : 'nearby');
                 }}
-              >
-                All Neighborhoods
-              </button>
-              <button
-                className={`feed-filter-tab ${filterTab === 'recent' ? 'active' : ''}`}
-                onClick={() => setFilterTab('recent')}
-              >
-                Recent
-              </button>
-              <button
-                className={`feed-filter-tab ${filterTab === 'nearby' ? 'active' : ''}`}
-                onClick={() => {
-                  setFilterTab('nearby');
-                  setNeighborhood(homeNeighborhood || 'Any');
-                }}
-              >
-                Nearby
-              </button>
-              <button
-                className={`feed-filter-tab ${filterTab === 'popular' ? 'active' : ''}`}
-                onClick={() => setFilterTab('popular')}
-              >
-                Popular
-              </button>
+              />
+              <div className="feed-filter-tabs">
+                <button
+                  className={`feed-filter-tab ${filterTab === 'all' ? 'active' : ''}`}
+                  onClick={() => {
+                    browseOverrideRef.current = true;
+                    setFilterTab('all');
+                    setNeighborhood(ALL_NEIGHBORHOODS);
+                  }}
+                >
+                  All Neighborhoods
+                </button>
+                <button
+                  className={`feed-filter-tab ${filterTab === 'recent' ? 'active' : ''}`}
+                  onClick={() => setFilterTab('recent')}
+                >
+                  Recent
+                </button>
+                <button
+                  className={`feed-filter-tab ${filterTab === 'nearby' ? 'active' : ''}`}
+                  onClick={() => {
+                    browseOverrideRef.current = true;
+                    setFilterTab('nearby');
+                    setNeighborhood(homeNeighborhood || ALL_NEIGHBORHOODS);
+                  }}
+                >
+                  Nearby
+                </button>
+                <button
+                  className={`feed-filter-tab ${filterTab === 'popular' ? 'active' : ''}`}
+                  onClick={() => setFilterTab('popular')}
+                >
+                  Popular
+                </button>
+              </div>
             </div>
 
             {/* Search Bar */}
