@@ -13389,28 +13389,20 @@ input[type="datetime-local"]:focus {
   background: rgba(74, 222, 128, 0.08);
 }
 
-.feed-mobile-weather .feed-weather-week {
-  flex-direction: row;
+.feed-mobile-weather .feed-weather-week-chart {
   overflow-x: auto;
-  gap: 6px;
-  padding: 8px 0 2px;
+  grid-template-columns: repeat(var(--wx-days, 7), minmax(64px, 1fr));
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
 }
 
 .feed-mobile-weather .feed-weather-week > li {
-  flex: 0 0 68px;
   scroll-snap-align: start;
 }
 
 .feed-mobile-weather .feed-weather-day {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  width: 100%;
-  min-height: 76px;
+  min-height: 86px;
   padding: 8px 4px;
   background: rgba(17, 24, 39, 0.04);
   border-radius: 12px;
@@ -13673,18 +13665,23 @@ input[type="datetime-local"]:focus {
   position: relative;
   display: inline-grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
   border-radius: 16px;
-  background: rgba(24, 24, 27, 0.42);
-  color: #94a3b8;
+  background: rgba(24, 24, 27, 0.22);
   flex-shrink: 0;
-  overflow: hidden;
-  isolation: isolate;
-  contain: paint;
 }
 
-.feed-weather-now-icon svg {
+.feed-weather-meteo {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+
+.feed-weather-now-icon .feed-weather-meteo {
   position: relative;
   z-index: 1;
 }
@@ -13843,17 +13840,8 @@ input[type="datetime-local"]:focus {
   }
 }
 
-[data-theme="dark"] .feed-weather-now-icon,
-[data-theme="dark"] .feed-weather-fx--sun,
-[data-theme="dark"] .feed-weather-fx--moon,
-[data-theme="dark"] .feed-weather-fx--cloud,
-[data-theme="dark"] .feed-weather-fx--fog,
-[data-theme="dark"] .feed-weather-fx--wind,
-[data-theme="dark"] .feed-weather-fx--partly,
-[data-theme="dark"] .feed-weather-fx--rain,
-[data-theme="dark"] .feed-weather-fx--storm,
-[data-theme="dark"] .feed-weather-fx--snow {
-  background: rgba(2, 6, 23, 0.38);
+[data-theme="dark"] .feed-weather-now-icon {
+  background: rgba(2, 6, 23, 0.28);
 }
 
 [data-theme="dark"] .feed-weather-glyph .wx-sun {
@@ -13916,68 +13904,123 @@ input[type="datetime-local"]:focus {
   white-space: nowrap;
 }
 
+.feed-weather-week-chart {
+  display: grid;
+  grid-template-columns: repeat(var(--wx-days, 7), minmax(0, 1fr));
+  column-gap: 0;
+}
+
 .feed-weather-week {
+  display: contents;
   list-style: none;
   margin: 0;
-  padding: 2px 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  border-top: 1px solid rgba(17, 24, 39, 0.06);
+  padding: 0;
 }
 
 .feed-weather-sparkline {
-  height: 28px;
-  margin: 2px 4px 6px;
-  pointer-events: none;
-  overflow: visible;
+  position: relative;
+  grid-column: 1 / -1;
+  height: 58px;
+  margin: 0 0 2px;
 }
 
-.feed-weather-sparkline svg {
+.feed-weather-sparkline-svg {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
   overflow: visible;
 }
 
-.feed-mobile-weather .feed-weather-sparkline {
-  height: 26px;
-  margin: 4px 0 2px;
+.feed-weather-spark-points {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--wx-days, 7), minmax(0, 1fr));
 }
 
-[data-theme="dark"] .feed-weather-week {
-  border-top-color: rgba(255, 255, 255, 0.08);
+.feed-weather-spark-hit {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.feed-weather-spark-dot {
+  position: absolute;
+  left: 50%;
+  top: var(--wx-y);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--wx-color, #fbbf24);
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.72);
+  transform: translate(-50%, -50%);
+  transition: width 0.16s ease, height 0.16s ease, box-shadow 0.16s ease;
+}
+
+.feed-weather-spark-hit.is-active .feed-weather-spark-dot {
+  width: 11px;
+  height: 11px;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--wx-color, #fbbf24) 45%, transparent),
+    0 0 0 2px rgba(15, 23, 42, 0.85);
+}
+
+.feed-weather-spark-tip {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--wx-y) - 14px);
+  transform: translate(-50%, -100%);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #f8fafc;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
 }
 
 .feed-weather-day {
-  display: grid;
-  grid-template-columns: 2.4rem 1fr auto;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-start;
+  gap: 4px;
   width: 100%;
-  padding: 5px 0;
+  min-height: 88px;
+  padding: 6px 2px 8px;
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 0.78rem;
-  text-align: left;
+  font-size: 0.72rem;
+  text-align: center;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .feed-weather-day:hover,
-.feed-weather-day.is-open {
-  background: rgba(15, 23, 42, 0.04);
+.feed-weather-day.is-open,
+.feed-weather-day.is-active {
+  background: rgba(15, 23, 42, 0.06);
 }
 
 [data-theme="dark"] .feed-weather-day:hover,
-[data-theme="dark"] .feed-weather-day.is-open {
-  background: rgba(255, 255, 255, 0.06);
+[data-theme="dark"] .feed-weather-day.is-open,
+[data-theme="dark"] .feed-weather-day.is-active {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .feed-weather-day-name {
   font-weight: 700;
+  font-size: 0.64rem;
+  line-height: 1.2;
   color: var(--ink);
+  max-width: 100%;
+  white-space: nowrap;
 }
 
 [data-theme="dark"] .feed-weather-day-name {
@@ -13987,16 +14030,9 @@ input[type="datetime-local"]:focus {
 .feed-weather-day-icon {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
-  width: 22px;
-  height: 22px;
-  color: #94a3b8;
-}
-
-.feed-mobile-weather .feed-weather-day-icon {
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
 }
 
 .feed-weather-day-icon .wx-sun { stroke: #eab308; }
@@ -14011,7 +14047,9 @@ input[type="datetime-local"]:focus {
 
 .feed-weather-day-temps {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 0;
+  align-items: center;
   font-variant-numeric: tabular-nums;
 }
 
@@ -14022,8 +14060,8 @@ input[type="datetime-local"]:focus {
 
 .feed-weather-day-temps span {
   color: var(--muted);
-  min-width: 1.6rem;
-  text-align: right;
+  min-width: 0;
+  text-align: center;
 }
 
 [data-theme="dark"] .feed-weather-day-temps strong {
@@ -14048,6 +14086,13 @@ input[type="datetime-local"]:focus {
   color: var(--muted);
   font-size: 0.68rem;
   font-weight: 700;
+}
+
+.feed-weather-hour-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
 }
 
 .feed-weather-hour-temp {
