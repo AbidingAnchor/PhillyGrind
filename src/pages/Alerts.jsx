@@ -18,7 +18,7 @@ import NeighborhoodSelect from '../components/NeighborhoodSelect.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { redirectToSignup } from '../lib/requireSignup.js';
 import { fetchHomeNeighborhood } from '../lib/communityApi.js';
-import { loadCrimeIncidents } from '../lib/crimeIncidentsClient.js';
+import { CRIME_REFRESH_MS, loadCrimeIncidents } from '../lib/crimeIncidentsClient.js';
 import { ALL_NEIGHBORHOODS, resolveSavedHomeNeighborhood, suggestNeighborhoodFromIp } from '../lib/homeNeighborhood.js';
 import { PHILLY_CENTER } from '../lib/neighborhoodCoords.js';
 import { loadWeatherAlerts } from '../lib/weatherAlertsClient.js';
@@ -83,6 +83,20 @@ function formatAlertTime(iso) {
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+  });
+}
+
+function formatLastPulled(iso) {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
   });
 }
 
@@ -174,6 +188,8 @@ export default function Alerts() {
   const [alerts, setAlerts] = useState([]);
   const [coords, setCoords] = useState(PHILLY_CENTER);
   const [crimeCoverage, setCrimeCoverage] = useState('philadelphia');
+  const [crimeFetchedAt, setCrimeFetchedAt] = useState(null);
+  const crimeFetchedAtRef = useRef(null);
   const [selectedId, setSelectedId] = useState(params.get('id') || '');
   const [expandedId, setExpandedId] = useState(params.get('id') || '');
   const [loading, setLoading] = useState(true);
@@ -208,6 +224,8 @@ export default function Alerts() {
   useEffect(() => {
     if (!neighborhood) return undefined;
     let cancelled = false;
+    crimeFetchedAtRef.current = null;
+    setCrimeFetchedAt(null);
     setLoading(true);
     Promise.all([
       loadWeatherAlerts(neighborhood === ALL_NEIGHBORHOODS ? 'Center City' : neighborhood).catch(() => ({ alerts: [], coords: null })),
@@ -227,6 +245,8 @@ export default function Alerts() {
         const nextAlerts = [...weatherAlerts, ...(crimePayload.incidents || [])];
         setCoords(nextCoords);
         setCrimeCoverage(crimePayload.coverage || 'philadelphia');
+        crimeFetchedAtRef.current = crimePayload.fetchedAt || null;
+        setCrimeFetchedAt(crimePayload.fetchedAt || null);
         setAlerts(nextAlerts);
         setSelectedId((current) => current || nextAlerts[0]?.id || '');
       })
@@ -239,6 +259,43 @@ export default function Alerts() {
 
     return () => {
       cancelled = true;
+    };
+  }, [neighborhood]);
+
+  useEffect(() => {
+    if (!neighborhood) return undefined;
+
+    function crimeIsStale() {
+      const last = crimeFetchedAtRef.current;
+      if (!last) return true;
+      return Date.now() - new Date(last).getTime() >= CRIME_REFRESH_MS;
+    }
+
+    function refreshCrimeIfStale() {
+      if (!crimeIsStale()) return;
+      loadCrimeIncidents(neighborhood, { force: true })
+        .then((crimePayload) => {
+          if (!crimePayload?.fetchedAt) return;
+          crimeFetchedAtRef.current = crimePayload.fetchedAt;
+          setCrimeFetchedAt(crimePayload.fetchedAt);
+          setCrimeCoverage(crimePayload.coverage || 'philadelphia');
+          setAlerts((current) => {
+            const weather = current.filter((alert) => alert.source !== 'ppd');
+            return [...weather, ...(crimePayload.incidents || [])];
+          });
+        })
+        .catch(() => {});
+    }
+
+    function onVisibility() {
+      if (document.visibilityState === 'visible') refreshCrimeIfStale();
+    }
+
+    const timer = window.setInterval(refreshCrimeIfStale, 60 * 60 * 1000);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [neighborhood]);
 
@@ -344,6 +401,14 @@ export default function Alerts() {
 
       <div className="alerts-shell">
         <div className="alerts-list-panel">
+          {crimeFetchedAt && (
+            <p className="alerts-updated">
+              Last updated{' '}
+              <time dateTime={crimeFetchedAt}>{formatLastPulled(crimeFetchedAt)}</time>
+              {' · '}
+              Pulled from OpenDataPhilly. PPD publishes this dataset daily — not live.
+            </p>
+          )}
           {loading && <p className="alerts-empty">Checking for alerts…</p>}
           {!loading && !visibleAlerts.length && (
             <div className="alerts-empty-card">
@@ -455,6 +520,7 @@ export default function Alerts() {
             alerts={visibleAlerts}
             selectedId={selected?.id}
             onSelect={selectAlert}
+            updatedAt={crimeFetchedAt}
           />
         </aside>
       </div>

@@ -5,6 +5,7 @@ const LOOKBACK_DAYS = 30;
 const RADIUS_MILES = 1.5;
 const MAX_RESULTS = 40;
 const CACHE_MS = 15 * 60 * 1000;
+export const CRIME_REFRESH_MS = 24 * 60 * 60 * 1000;
 const requestCache = new Map();
 
 function milesBetween(from, to) {
@@ -45,17 +46,18 @@ function titleForIncident(code) {
   return String(code || '').trim() || 'Police-reported incident';
 }
 
-export async function loadCrimeIncidents(neighborhood) {
+export async function loadCrimeIncidents(neighborhood, options = {}) {
   const citywide = !neighborhood || neighborhood === 'Any';
   const name = citywide ? 'Philadelphia' : String(neighborhood).trim();
+  const force = Boolean(options.force);
   const cached = requestCache.get(name);
-  if (cached && Date.now() - cached.at < CACHE_MS) return cached.promise;
+  if (!force && cached && Date.now() - cached.at < CACHE_MS) return cached.promise;
 
   const promise = (async () => {
     const coords = coordsForNeighborhood(citywide ? 'Center City' : name);
     const radiusMiles = citywide ? 6 : RADIUS_MILES;
     if (!citywide && !isInsidePhiladelphia(coords)) {
-      return { incidents: [], coords, coverage: 'outside-philadelphia' };
+      return { incidents: [], coords, coverage: 'outside-philadelphia', fetchedAt: null };
     }
 
     const since = lookbackDate();
@@ -76,8 +78,9 @@ export async function loadCrimeIncidents(neighborhood) {
     try {
       const response = await fetch(`${CARTO_SQL}?${new URLSearchParams({ q: query })}`, {
         signal: controller.signal,
+        cache: 'no-store',
       });
-      if (!response.ok) return { incidents: [], coords, coverage: 'unavailable' };
+      if (!response.ok) return { incidents: [], coords, coverage: 'unavailable', fetchedAt: null };
       const payload = await response.json();
       const incidents = (payload.rows || [])
         .map((row) => {
@@ -121,9 +124,9 @@ export async function loadCrimeIncidents(neighborhood) {
         .sort((a, b) => String(b.issuedAt || '').localeCompare(String(a.issuedAt || '')))
         .slice(0, MAX_RESULTS);
 
-      return { incidents, coords, coverage: 'philadelphia' };
+      return { incidents, coords, coverage: 'philadelphia', fetchedAt: new Date().toISOString() };
     } catch {
-      return { incidents: [], coords, coverage: 'unavailable' };
+      return { incidents: [], coords, coverage: 'unavailable', fetchedAt: null };
     } finally {
       window.clearTimeout(timer);
     }

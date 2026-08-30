@@ -39,6 +39,18 @@ function tileUrl(x, y, z) {
   return `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/${z}/${x}/${y}@2x.png`;
 }
 
+function formatMapPulled(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 function applyZoom(currentZoom, currentView, nextZoom, size, anchor) {
   const clamped = clamp(nextZoom, MIN_ZOOM, MAX_ZOOM);
   if (clamped === currentZoom) {
@@ -76,6 +88,7 @@ export default function AlertsMap({
   alerts,
   selectedId,
   onSelect,
+  updatedAt,
 }) {
   const wrapRef = useRef(null);
   const dragRef = useRef(null);
@@ -329,7 +342,8 @@ export default function AlertsMap({
           <a href="https://opendataphilly.org/datasets/crime-incidents/" target="_blank" rel="noreferrer">
             Philadelphia Police Department via OpenDataPhilly
           </a>
-          {' '}· past 30 days, updated daily
+          {' '}· past 30 days, published daily by PPD
+          {updatedAt ? ` · last pulled ${formatMapPulled(updatedAt)}` : ''}
         </div>
       </div>
     </div>
