@@ -7,8 +7,11 @@
     "dev": "vite",
     "dev:api": "vercel dev --listen 3001",
     "dev:full": "node dev-with-api.cjs",
-    "build": "vite build",
+    "build": "node ./node_modules/vite/bin/vite.js build",
     "preview": "vite preview"
+  },
+  "allowScripts": {
+    "esbuild": true
   },
   "dependencies": {
     "@meteocons/svg": "^0.1.0",

@@ -1,5 +1,6 @@
 {
   "framework": null,
+  "installCommand": "rm -rf node_modules && npm install",
   "devCommand": "node scripts/vercel-api-only.cjs",
   "crons": [
     {
