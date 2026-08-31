@@ -23,6 +23,25 @@ import { ALL_NEIGHBORHOODS, resolveSavedHomeNeighborhood } from '../lib/homeNeig
 import { FEED_LOAD_TIMEOUT_MS, withTimeoutRetry } from '../lib/loadWithTimeout.js';
 import { alertUnlessLoginRequired, redirectToSignup } from '../lib/requireSignup.js';
 
+function useMinWidth(px) {
+  const [matches, setMatches] = useState(() => window.matchMedia(`(min-width: ${px}px)`).matches);
+
+  useEffect(() => {
+    const media = window.matchMedia(`(min-width: ${px}px)`);
+    const onChange = (event) => setMatches(event.matches);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, [px]);
+
+  return matches;
+}
+
+function weatherAlertProps(neighborhoodName) {
+  return neighborhoodName
+    ? { neighborhood: neighborhoodName, locationLabel: neighborhoodName }
+    : { neighborhood: 'Center City', locationLabel: 'Philadelphia' };
+}
+
 function CommunityLeftSidebar({ isLoggedIn, user, profile, neighborhoodName }) {
   const displayName = profile?.name || user?.name || 'Neighbor';
   const profileTo = isLoggedIn && user?.id ? `/profile/${user.id}` : '/login';
@@ -94,6 +113,103 @@ function CommunityLeftSidebar({ isLoggedIn, user, profile, neighborhoodName }) {
   );
 }
 
+function CommunityMobileExtras() {
+  const [openPanel, setOpenPanel] = useState(null);
+
+  function toggle(panel) {
+    setOpenPanel((current) => (current === panel ? null : panel));
+  }
+
+  return (
+    <div className="feed-mobile-extras">
+      <div className="feed-mobile-extras-toggles">
+        <button
+          type="button"
+          className={`feed-mobile-extras-toggle${openPanel === 'sports' ? ' is-open' : ''}`}
+          aria-expanded={openPanel === 'sports'}
+          aria-controls="feed-mobile-extras-sports"
+          onClick={() => toggle('sports')}
+        >
+          Sports
+        </button>
+        <button
+          type="button"
+          className={`feed-mobile-extras-toggle feed-mobile-extras-toggle--trending${openPanel === 'trending' ? ' is-open' : ''}`}
+          aria-expanded={openPanel === 'trending'}
+          aria-controls="feed-mobile-extras-trending"
+          onClick={() => toggle('trending')}
+        >
+          Trending
+        </button>
+      </div>
+
+      {openPanel === 'sports' && (
+        <div id="feed-mobile-extras-sports" className="feed-mobile-extras-panel feed-mobile-sports">
+          <PhillySportsWidget />
+        </div>
+      )}
+      {openPanel === 'trending' && (
+        <div id="feed-mobile-extras-trending" className="feed-mobile-extras-panel feed-mobile-trending">
+          <TrendingPostsWidget />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CommunityMobileRail({ isLoggedIn, user, profile, neighborhoodName }) {
+  const displayName = profile?.name || user?.name || 'Neighbor';
+  const profileTo = isLoggedIn && user?.id ? `/profile/${user.id}` : '/login';
+  const profileLinkState = isLoggedIn ? undefined : { from: '/community' };
+  const homeNeighborhood = neighborhoodName || '';
+
+  return (
+    <aside className="feed-mobile-rail" aria-label="Your neighborhood and local info">
+      <div className="feed-mobile-identity">
+        <div className="feed-mobile-identity-row">
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt="" className="feed-left-avatar" draggable={false} />
+          ) : (
+            <div
+              className="feed-left-avatar feed-left-avatar-placeholder"
+              style={{ backgroundColor: getUserAvatarColor(user?.id, displayName) }}
+            >
+              {displayName.charAt(0) || 'Y'}
+            </div>
+          )}
+          <div className="feed-left-profile-copy">
+            <strong className="feed-left-profile-name">{displayName}</strong>
+            <Link to={profileTo} state={profileLinkState} className="feed-left-profile-link">
+              View your profile
+            </Link>
+          </div>
+        </div>
+
+        <div className="feed-mobile-neighborhood">
+          <MapPin size={18} aria-hidden="true" />
+          <div className="feed-left-neighborhood-copy">
+            <span className="feed-left-neighborhood-label">Your Neighborhood</span>
+            <strong className="feed-left-neighborhood-name">{homeNeighborhood || 'Not set yet'}</strong>
+            {isLoggedIn ? (
+              <Link to="/settings" className="feed-left-profile-link">
+                {homeNeighborhood ? 'Change' : 'Set your neighborhood'}
+              </Link>
+            ) : (
+              <Link to="/login" state={{ from: '/community' }} className="feed-left-profile-link">
+                Sign in to set yours
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {isLoggedIn && user?.id && (
+          <InviteNeighborButton userId={user.id} className="feed-mobile-invite-button" />
+        )}
+      </div>
+    </aside>
+  );
+}
+
 const SEARCH_EXAMPLES = ['Plumber', 'House Cleaner', 'Roof Repair', 'Contractor', 'House Painter', 'Electrician'];
 
 function AnimatedPlaceholder() {
@@ -115,6 +231,8 @@ function Community() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isLoggedIn, user, profile } = useAuth();
+  const showDesktopLeftSidebar = useMinWidth(1280);
+  const showDesktopRightSidebar = useMinWidth(1025);
   const [posts, setPosts] = useState([]);
   const [homeNeighborhood, setHomeNeighborhood] = useState(() => resolveSavedHomeNeighborhood(profile));
   const [neighborhood, setNeighborhood] = useState(() => resolveSavedHomeNeighborhood(profile) || ALL_NEIGHBORHOODS);
@@ -278,10 +396,25 @@ function Community() {
 
       <section className="page-section browse-content community-content">
         <div className="feed-layout">
-          <CommunityLeftSidebar isLoggedIn={isLoggedIn} user={user} profile={profile} neighborhoodName={homeNeighborhood} />
+          {showDesktopLeftSidebar && (
+            <CommunityLeftSidebar isLoggedIn={isLoggedIn} user={user} profile={profile} neighborhoodName={homeNeighborhood} />
+          )}
 
           {/* Main Feed Column */}
           <div className="feed-main-column">
+            <CommunityMobileRail
+              isLoggedIn={isLoggedIn}
+              user={user}
+              profile={profile}
+              neighborhoodName={homeNeighborhood}
+            />
+
+            <div className="feed-mobile-weather">
+              <NeighborhoodWeatherAlert {...weatherAlertProps(homeNeighborhood)} />
+            </div>
+
+            <CommunityMobileExtras />
+
             {/* Filter Tabs */}
             <div className="feed-filter-toolbar">
               <NeighborhoodSelect
@@ -296,6 +429,7 @@ function Community() {
               />
               <div className="feed-filter-tabs">
                 <button
+                  data-filter="all"
                   className={`feed-filter-tab ${filterTab === 'all' ? 'active' : ''}`}
                   onClick={() => {
                     browseOverrideRef.current = true;
@@ -306,12 +440,14 @@ function Community() {
                   All Neighborhoods
                 </button>
                 <button
+                  data-filter="recent"
                   className={`feed-filter-tab ${filterTab === 'recent' ? 'active' : ''}`}
                   onClick={() => setFilterTab('recent')}
                 >
                   Recent
                 </button>
                 <button
+                  data-filter="nearby"
                   className={`feed-filter-tab ${filterTab === 'nearby' ? 'active' : ''}`}
                   onClick={() => {
                     browseOverrideRef.current = true;
@@ -322,6 +458,7 @@ function Community() {
                   Nearby
                 </button>
                 <button
+                  data-filter="popular"
                   className={`feed-filter-tab ${filterTab === 'popular' ? 'active' : ''}`}
                   onClick={() => setFilterTab('popular')}
                 >
@@ -361,11 +498,13 @@ function Community() {
               }}
             />
 
-            <NeighborhoodWeatherAlert
-              variant="feed"
-              neighborhood={homeNeighborhood || 'Center City'}
-              locationLabel={homeNeighborhood || 'Philadelphia'}
-            />
+            {showDesktopLeftSidebar && (
+              <NeighborhoodWeatherAlert
+                variant="feed"
+                neighborhood={homeNeighborhood || 'Center City'}
+                locationLabel={homeNeighborhood || 'Philadelphia'}
+              />
+            )}
 
             {loading && <Skeleton variant="feed" count={4} />}
             {error && <p className="empty-state error-state">{error}</p>}
@@ -408,10 +547,11 @@ function Community() {
             )}
           </div>
 
-          {/* Sidebar */}
-          <div className="feed-sidebar">
-            <TrendingPostsWidget />
-          </div>
+          {showDesktopRightSidebar && (
+            <div className="feed-sidebar">
+              <TrendingPostsWidget />
+            </div>
+          )}
         </div>
       </section>
     </>

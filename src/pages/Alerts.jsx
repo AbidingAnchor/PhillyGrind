@@ -391,6 +391,7 @@ export default function Alerts() {
             type="button"
             role="tab"
             aria-selected={tab === item.id}
+            data-filter={item.id}
             className={`alerts-tab${tab === item.id ? ' is-active' : ''}`}
             onClick={() => setTab(item.id)}
           >

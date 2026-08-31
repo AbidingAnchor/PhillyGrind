@@ -747,7 +747,7 @@ function MarketplaceDetail() {
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
-          color: #22c55e;
+          color: var(--green);
           text-decoration: none;
           font-size: 14px;
           font-weight: 500;
@@ -756,7 +756,7 @@ function MarketplaceDetail() {
         }
 
         .mp-detail-back:hover {
-          color: #16a34a;
+          color: var(--green-dark);
         }
 
         .mp-detail-card {
@@ -818,7 +818,7 @@ function MarketplaceDetail() {
         }
 
         .mp-detail-thumb-selected {
-          border-color: #22c55e;
+          border-color: var(--green);
         }
 
         .mp-detail-no-photos {
@@ -861,7 +861,7 @@ function MarketplaceDetail() {
         .mp-detail-price {
           font-size: 36px;
           font-weight: 800;
-          color: #22c55e;
+          color: var(--green);
           margin: 0 0 16px 0;
         }
 
@@ -880,7 +880,7 @@ function MarketplaceDetail() {
           color: white;
         }
 
-        .mp-detail-condition-new { background: #22c55e; }
+        .mp-detail-condition-new { background: var(--green); }
         .mp-detail-condition-like-new { background: #14b8a6; }
         .mp-detail-condition-good { background: #3b82f6; }
         .mp-detail-condition-fair { background: #f59e0b; }
@@ -956,7 +956,7 @@ function MarketplaceDetail() {
           width: 48px;
           height: 48px;
           border-radius: 50%;
-          background: #22c55e;
+          background: var(--green);
           color: white;
           display: flex;
           align-items: center;
@@ -1014,8 +1014,8 @@ function MarketplaceDetail() {
           width: 32px;
           height: 32px;
           border-radius: 50%;
-          background: #dcfce7;
-          color: #22c55e;
+          background: color-mix(in srgb, var(--green) 16%, #fff);
+          color: var(--green);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1055,7 +1055,7 @@ function MarketplaceDetail() {
 
         .mp-detail-buy-btn {
           width: 100%;
-          background: #22c55e;
+          background: var(--green);
           color: white;
           border: none;
           border-radius: 10px;
@@ -1071,7 +1071,7 @@ function MarketplaceDetail() {
         }
 
         .mp-detail-buy-btn:hover {
-          background: #16a34a;
+          background: var(--green-dark);
         }
 
         .mp-detail-message-btn {
@@ -1142,15 +1142,15 @@ function MarketplaceDetail() {
           flex-direction: column;
           gap: 10px;
           padding: 12px;
-          background: #f0fdf4;
-          border: 1px solid #bbf7d0;
+          background: color-mix(in srgb, var(--green) 8%, #fff);
+          border: 1px solid color-mix(in srgb, var(--green) 35%, #fff);
           border-radius: 10px;
         }
 
         .mp-detail-stripe-setup p {
           margin: 0;
           font-size: 13px;
-          color: #166534;
+          color: var(--green-dark);
           line-height: 1.5;
         }
 

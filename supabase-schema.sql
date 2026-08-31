@@ -225,6 +225,9 @@ alter table profiles
   add column if not exists accent_color text not null default '#22c55e';
 
 alter table profiles
+  add column if not exists theme text not null default 'light';
+
+alter table profiles
   add column if not exists is_adult_confirmed boolean not null default false;
 
 alter table profiles

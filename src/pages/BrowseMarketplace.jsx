@@ -232,6 +232,7 @@ function BrowseMarketplace() {
                 <button
                   key={cat}
                   type="button"
+                  data-filter={cat.toLowerCase().replace(/&/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}
                   className={`marketplace-category-pill ${category === cat ? 'selected' : ''}`}
                   onClick={() => setCategory(cat)}
                 >
@@ -353,17 +354,17 @@ function BrowseMarketplace() {
     padding: 2rem 1rem;
   }
   .marketplace-filter-card {
-    background: white;
+    background: var(--card-wash);
     border: 1px solid #e5e7eb;
     border-radius: 16px;
     padding: 20px 24px;
     box-shadow: 0 4px 24px rgba(0,0,0,0.08);
     margin-bottom: 2rem;
   }
-  [data-theme="dark"] .marketplace-content {
+  [data-scheme="dark"] .marketplace-content {
     background-color: #1a1a1a;
   }
-  [data-theme="dark"] .marketplace-filter-card {
+  [data-scheme="dark"] .marketplace-filter-card {
     background: #1e1e1e;
     border-color: rgba(255, 255, 255, 0.10);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
@@ -388,7 +389,7 @@ function BrowseMarketplace() {
     font-weight: 600;
     color: #1a2332;
   }
-  [data-theme="dark"] .marketplace-filter-inputs label {
+  [data-scheme="dark"] .marketplace-filter-inputs label {
     color: var(--ink);
   }
   .marketplace-filter-input {
@@ -401,7 +402,7 @@ function BrowseMarketplace() {
     transition: border-color 0.2s ease;
     margin-top: 4px;
   }
-  [data-theme="dark"] .marketplace-filter-input {
+  [data-scheme="dark"] .marketplace-filter-input {
     background: #1e1e1e;
     border-color: rgba(255, 255, 255, 0.15);
     color: var(--ink);
@@ -410,11 +411,11 @@ function BrowseMarketplace() {
     outline: none;
     border-color: #1a2332;
   }
-  [data-theme="dark"] .marketplace-filter-input:focus {
-    border-color: #4ade80;
+  [data-scheme="dark"] .marketplace-filter-input:focus {
+    border-color: var(--green);
   }
   .marketplace-post-btn {
-    background-color: #22c55e !important;
+    background-color: var(--green) !important;
     border: none !important;
     white-space: nowrap;
     padding: 10px 20px !important;
@@ -430,14 +431,14 @@ function BrowseMarketplace() {
     flex-shrink: 0;
   }
   .marketplace-post-btn:hover {
-    background-color: #16a34a !important;
+    background-color: var(--green-dark) !important;
   }
   .marketplace-filter-divider {
     height: 1px;
     background: #e5e7eb;
     margin: 0 -24px 1rem -24px;
   }
-  [data-theme="dark"] .marketplace-filter-divider {
+  [data-scheme="dark"] .marketplace-filter-divider {
     background: rgba(255, 255, 255, 0.10);
   }
   .marketplace-filter-bottom-row {
@@ -454,9 +455,10 @@ function BrowseMarketplace() {
     align-items: flex-start;
   }
   .marketplace-category-pill {
-    background: var(--card);
-    border: 1px solid var(--line);
-    color: var(--ink);
+    --filter-accent: var(--green);
+    background: color-mix(in srgb, var(--filter-accent) 22%, #fff);
+    border: 1px solid color-mix(in srgb, var(--filter-accent) 48%, #c5ddd0);
+    color: color-mix(in srgb, var(--filter-accent) 72%, #0c1726);
     font-size: 13px;
     padding: 6px 14px;
     border-radius: 9999px;
@@ -464,25 +466,43 @@ function BrowseMarketplace() {
     transition: all 0.2s ease;
   }
   .marketplace-category-pill:hover {
-    background: var(--background);
+    background: color-mix(in srgb, var(--filter-accent) 22%, #fff);
+    border-color: var(--filter-accent);
   }
   .marketplace-category-pill.selected {
-    background: var(--green);
+    background: var(--filter-accent);
     color: #fff;
-    border-color: var(--green);
+    border-color: var(--filter-accent);
+  }
+  [data-scheme="dark"] .marketplace-category-pill {
+    background: color-mix(in srgb, var(--filter-accent) 32%, var(--card));
+    border-color: color-mix(in srgb, var(--filter-accent) 52%, var(--line));
+    color: color-mix(in srgb, var(--filter-accent) 70%, #e8eef8);
+  }
+  [data-scheme="dark"] .marketplace-category-pill:hover {
+    background: color-mix(in srgb, var(--filter-accent) 42%, var(--card));
+    border-color: var(--filter-accent);
+  }
+  [data-scheme="dark"] .marketplace-category-pill.selected {
+    background: var(--filter-accent);
+    color: #fff;
+    border-color: var(--filter-accent);
   }
   [data-theme="dark"] .marketplace-category-pill {
-    background: #1e1e1e;
-    border-color: rgba(255, 255, 255, 0.15);
-    color: var(--ink);
+    --filter-accent: var(--green);
+    background: color-mix(in srgb, var(--green) 22%, #121212);
+    border-color: rgba(var(--green-rgb), 0.45);
+    color: var(--green);
   }
   [data-theme="dark"] .marketplace-category-pill:hover {
-    background: #2a2a2a;
+    background: color-mix(in srgb, var(--green) 32%, #121212);
+    border-color: var(--green);
+    color: var(--green);
   }
   [data-theme="dark"] .marketplace-category-pill.selected {
-    background: #4ade80;
-    color: #000;
-    border-color: #4ade80;
+    background: var(--filter-accent);
+    color: #fff;
+    border-color: var(--filter-accent);
   }
   .marketplace-condition-select {
     display: flex;
@@ -494,7 +514,7 @@ function BrowseMarketplace() {
     color: #1a2332;
     font-size: 14px;
   }
-  [data-theme="dark"] .marketplace-condition-select label {
+  [data-scheme="dark"] .marketplace-condition-select label {
     color: var(--ink);
   }
   .marketplace-condition-select select {
@@ -505,7 +525,7 @@ function BrowseMarketplace() {
     font-size: 14px;
     background: #f9fafb;
   }
-  [data-theme="dark"] .marketplace-condition-select select {
+  [data-scheme="dark"] .marketplace-condition-select select {
     background: #1e1e1e;
     border-color: rgba(255, 255, 255, 0.15);
     color: var(--ink);
@@ -534,11 +554,11 @@ function BrowseMarketplace() {
     transform: translateY(-4px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   }
-  [data-theme="dark"] .marketplace-card {
+  [data-scheme="dark"] .marketplace-card {
     background: #1e1e1e;
     box-shadow: 0 1px 3px rgba(0,0,0,0.3);
   }
-  [data-theme="dark"] .marketplace-card:hover {
+  [data-scheme="dark"] .marketplace-card:hover {
     box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   }
   .marketplace-card-photo {
@@ -555,7 +575,7 @@ function BrowseMarketplace() {
     display: flex; align-items: center; justify-content: center;
     color: #9ca3af;
   }
-  [data-theme="dark"] .marketplace-card-photo-placeholder {
+  [data-scheme="dark"] .marketplace-card-photo-placeholder {
     background: #2a2a2a;
     color: #6b7280;
   }
@@ -564,15 +584,15 @@ function BrowseMarketplace() {
     font-size: 1rem; font-weight: 700; color: #1a2332;
     margin: 0 0 0.5rem 0; line-height: 1.4;
   }
-  [data-theme="dark"] .marketplace-card-title {
+  [data-scheme="dark"] .marketplace-card-title {
     color: var(--ink);
   }
   .marketplace-card-price {
-    font-size: 1.25rem; font-weight: 700; color: #22c55e;
+    font-size: 1.25rem; font-weight: 700; color: var(--green);
     margin: 0 0 0.75rem 0;
   }
-  [data-theme="dark"] .marketplace-card-price {
-    color: #4ade80;
+  [data-scheme="dark"] .marketplace-card-price {
+    color: var(--green);
   }
   .marketplace-card-badges {
     display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap;
@@ -585,11 +605,11 @@ function BrowseMarketplace() {
     display: flex; align-items: center; gap: 0.25rem;
     font-size: 0.875rem; color: #6b7280;
   }
-  [data-theme="dark"] .marketplace-card-location {
+  [data-scheme="dark"] .marketplace-card-location {
     color: #a3a3a3;
   }
   .marketplace-login-hint { text-align: center; color: #6b7280; font-size: 14px; margin-top: 1rem; }
-  [data-theme="dark"] .marketplace-login-hint { color: #a3a3a3; }
+  [data-scheme="dark"] .marketplace-login-hint { color: #a3a3a3; }
   @media (max-width: 768px) {
     .marketplace-filter-top-row { flex-direction: column; }
     .marketplace-filter-inputs { flex-direction: column; width: 100%; }

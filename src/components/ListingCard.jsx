@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Gavel, MapPin, Zap } from 'lucide-react';
 import StarRating from './StarRating.jsx';
 import { getUserAvatarColor } from '../lib/reactions.js';
+import { filterKey } from './CategoryFilters.jsx';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -44,7 +45,7 @@ function ListingCard({ listing, onQuickApply, showQuickApply = false }) {
         </span>
         <div>
           <div className="listing-badge-row">
-            <span className="pill">{listing.category}</span>
+            <span className="pill" data-filter={filterKey(listing.category)}>{listing.category}</span>
             {boostBadge && <span className={`boost-badge ${listing.boost_tier}`}>{boostBadge}</span>}
             {gigBadge && <span className={`post-type-badge ${listing.post_type}`}>{gigBadge}</span>}
           </div>

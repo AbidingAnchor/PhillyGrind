@@ -5,6 +5,7 @@ import EmptyState from '../components/EmptyState.jsx';
 import Skeleton from '../components/Skeleton.jsx';
 import { COMMUNITY_NEIGHBORHOODS } from '../lib/communityApi.js';
 import { GROUP_CATEGORIES, listPublicGroups } from '../lib/groupsApi.js';
+import { filterKey } from '../components/CategoryFilters.jsx';
 import { FEED_LOAD_TIMEOUT_MS, withTimeoutRetry } from '../lib/loadWithTimeout.js';
 
 const DESCRIPTION_PREVIEW_LENGTH = 140;
@@ -96,6 +97,7 @@ function BrowseGroups() {
             <button
               key={option}
               type="button"
+              data-filter={filterKey(option)}
               className={`filter groups-browse-category ${category === option ? 'active' : ''}`}
               onClick={() => setCategory(option)}
             >

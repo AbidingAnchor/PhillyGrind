@@ -9,7 +9,7 @@ import { HOME_NEIGHBORHOODS } from '../lib/homeNeighborhood.js';
 import { requestAccountDeletion } from '../lib/deletionRequestsApi.js';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
-import ThemeToggle from '../components/ThemeToggle.jsx';
+import ThemePicker from '../components/ThemePicker.jsx';
 import SettingsToggle from '../components/SettingsToggle.jsx';
 import Skeleton from '../components/Skeleton.jsx';
 import DeleteAccountModal from '../components/DeleteAccountModal.jsx';
@@ -469,7 +469,7 @@ function Settings() {
       </section>
 
       <section className="settings-row-card">
-        <div className="settings-row-content">
+        <div className="settings-row-content settings-row-content--stack">
           <div className="settings-row-left">
             <div className="section-icon-wrapper">
               <Palette size={20} />
@@ -477,10 +477,12 @@ function Settings() {
             <div className="settings-row-text">
               <span className="eyebrow">Appearance</span>
               <h2>Theme</h2>
-              <p className="settings-row-description">Switch between light and dark mode to match your preference.</p>
+              <p className="settings-row-description">
+                Pick a look for PhillyGrind. It applies immediately and saves to your account so it follows you on other devices.
+              </p>
             </div>
           </div>
-          <ThemeToggle />
+          <ThemePicker />
         </div>
       </section>
 

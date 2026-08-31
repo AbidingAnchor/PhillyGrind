@@ -82,6 +82,7 @@ function BrowseGigs() {
           <button
             key={value}
             type="button"
+            data-filter={value}
             className={postType === value ? 'filter active' : 'filter'}
             onClick={() => setPostType(value)}
           >

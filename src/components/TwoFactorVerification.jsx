@@ -89,7 +89,7 @@ export default function TwoFactorVerification({ email, onVerified, onCancel }) {
             type="button"
             onClick={handleResend}
             disabled={resendCooldown > 0 || sending}
-            style={{ background: 'none', border: 'none', padding: 0, color: '#4ade80', fontWeight: '600', cursor: resendCooldown > 0 || sending ? 'not-allowed' : 'pointer' }}
+            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--green)', fontWeight: '600', cursor: resendCooldown > 0 || sending ? 'not-allowed' : 'pointer' }}
           >
             {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
           </button>

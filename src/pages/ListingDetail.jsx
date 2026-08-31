@@ -26,6 +26,7 @@ import { getProfileRating } from '../lib/reviewsApi.js';
 import { getBidsForListing, updateBidStatus } from '../lib/bidsApi.js';
 import { getApplicationsForJob, getApplicationResumeUrl } from '../lib/applicationsApi.js';
 import { gigCategories, jobCategories } from '../data/listings.js';
+import { filterKey } from '../components/CategoryFilters.jsx';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -438,7 +439,7 @@ function ListingDetail({ type }) {
       <Link className="text-link" to={`/${plural}`}><ArrowLeft size={16} /> Back to {plural}</Link>
       <article className="detail-card">
         <div className="listing-badge-row">
-          <span className="pill">{listing.category}</span>
+          <span className="pill" data-filter={filterKey(listing.category)}>{listing.category}</span>
           {type === 'gig' && (
             <span className={`post-type-badge ${listing.post_type}`}>
               {listing.post_type === 'offering' ? 'Service offered' : 'Help wanted'}
