@@ -228,8 +228,8 @@ function Contact() {
       <div className="contact-chat-container">
         <div className="contact-chat-header">
           <div className="contact-chat-bot-info">
-            <Bot size={24} />
-            <div>
+            <Bot size={24} aria-hidden="true" />
+            <div className="contact-chat-bot-copy">
               <span className="eyebrow">PhillyGrind Support</span>
               <h2>GrindBot</h2>
             </div>

@@ -2,6 +2,28 @@
 
 html {
   font-size: var(--root-font-size, 16px);
+  background: var(--background, #e4e8e4);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+html.is-app-shell {
+  touch-action: pan-y;
+  overscroll-behavior: none;
+}
+
+@media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  html {
+    touch-action: pan-y;
+    overscroll-behavior: none;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  html {
+    touch-action: manipulation;
+  }
 }
 
 :root {
@@ -109,10 +131,12 @@ html {
 
 body {
   margin: 0;
+  width: 100%;
+  max-width: 100%;
   background: var(--background);
   color: var(--ink);
   transition: background-color 0.2s ease, color 0.2s ease;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 a {
@@ -131,7 +155,11 @@ textarea {
   display: flex;
   flex-direction: column;
   flex: 1 0 auto;
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: clip;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -811,14 +839,18 @@ main {
 
 .auth-page {
   position: relative;
-  min-height: calc(100vh - 73px);
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  min-height: calc(100dvh - var(--site-header-height, 72px));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   background: #0a0a0a;
   overflow: hidden;
-  padding: 40px 24px;
+  padding: 40px max(24px, env(safe-area-inset-right)) 40px max(24px, env(safe-area-inset-left));
+  box-sizing: border-box;
 }
 
 .bg-blob {
@@ -2991,7 +3023,6 @@ a.bid-card {
   .page-section,
   .split-section,
   .form-page,
-  .auth-page,
   .detail-page {
     width: min(100% - 28px, 1160px);
     padding: 40px 0;
@@ -3007,17 +3038,16 @@ a.bid-card {
 /* Premium refresh */
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
-}
-
-body {
-  overflow-x: hidden;
 }
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
+  overflow-x: clip;
 }
 
 body {
@@ -3025,6 +3055,9 @@ body {
 }
 
 main {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
   animation: pageFade 420ms ease both;
 }
 
@@ -4426,9 +4459,11 @@ body {
 
 .contact-chat-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
+  gap: 12px 16px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--line);
   background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
 }
@@ -4442,40 +4477,62 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .contact-chat-bot-info svg {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
   color: var(--green);
   background: var(--mint);
   padding: 8px;
+  box-sizing: content-box;
   border-radius: 12px;
 }
 
+.contact-chat-bot-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
 .contact-chat-bot-info .eyebrow {
-  font-size: 0.75rem;
+  margin: 0;
+  width: fit-content;
+  max-width: 100%;
+  font-size: 0.72rem;
   color: var(--green);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
   text-transform: uppercase;
 }
 
 .contact-chat-bot-info h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
+  line-height: 1.2;
   color: var(--ink);
   font-weight: 700;
 }
 
 .contact-ticket-button {
-  padding: 13px 18px;
+  flex: 0 0 auto;
+  padding: 12px 16px;
   font-size: 0.875rem;
   font-weight: 850;
+  line-height: 1.2;
   border: 0;
   border-radius: 999px;
   background: linear-gradient(135deg, var(--green), var(--green-dark));
   color: white;
   box-shadow: 0 12px 26px rgba(var(--green-rgb), 0.24);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .contact-ticket-button:hover:not(:disabled) {
@@ -4487,6 +4544,32 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+@media (max-width: 640px) {
+  .contact-chat-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .contact-chat-bot-info {
+    flex: none;
+    width: 100%;
+  }
+
+  .contact-chat-bot-info .eyebrow {
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    padding: 5px 9px;
+  }
+
+  .contact-ticket-button {
+    width: 100%;
+    white-space: normal;
+    text-align: center;
+  }
 }
 
 .contact-chat-thread {
@@ -5348,6 +5431,16 @@ body {
   }
 }
 
+@media (min-width: 769px) {
+  .profile-cover-bleed,
+  .skeleton-profile-cover-wrap {
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+  }
+}
+
 @media (max-width: 640px) {
   .profile-page {
     padding: 0 0 70px;
@@ -5385,9 +5478,9 @@ body {
 /* Full-bleed Facebook-style cover */
 .profile-cover-bleed {
   position: relative;
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
   margin-bottom: 12px;
   padding-bottom: 72px;
   overflow: visible;
@@ -10965,11 +11058,11 @@ input[type="datetime-local"]:focus {
   }
 
   .app-shell {
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   .site-header {
-    padding: 12px 16px;
+    padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
     gap: 10px;
   }
 
@@ -11091,12 +11184,19 @@ input[type="datetime-local"]:focus {
   .page-section,
   .split-section,
   .form-page,
-  .auth-page,
   .detail-page,
   .browse-content,
   .hiring-events-page,
   .marketplace-content {
     width: min(100% - 32px, 1160px);
+  }
+
+  .auth-page {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding-left: max(24px, env(safe-area-inset-left));
+    padding-right: max(24px, env(safe-area-inset-right));
   }
 
   .community-content,
@@ -17373,8 +17473,8 @@ input[type="datetime-local"]:focus {
 
 .skeleton-profile-cover-wrap {
   position: relative;
-  margin: 0 calc(50% - 50vw);
-  width: 100vw;
+  margin: 0;
+  width: 100%;
   padding-bottom: 64px;
 }
 
