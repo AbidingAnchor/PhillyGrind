@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { MASCOT_STEPS, markMascotOnboardingComplete } from '../lib/mascotOnboardingStorage.js';
+import {
+  MASCOT_STEPS,
+  markMascotOnboardingComplete,
+  preloadMascotImages,
+} from '../lib/mascotOnboardingStorage.js';
 
 export default function MascotOnboarding({ userId, persist = true, onComplete }) {
   const [step, setStep] = useState(0);
   const [failedImages, setFailedImages] = useState({});
   const [loadedImages, setLoadedImages] = useState({});
+  const [assetsReady, setAssetsReady] = useState(false);
   const titleId = useId();
   const descId = useId();
   const total = MASCOT_STEPS.length;
@@ -14,19 +19,41 @@ export default function MascotOnboarding({ userId, persist = true, onComplete })
   const isLast = step === total - 1;
 
   useEffect(() => {
-    MASCOT_STEPS.forEach((item) => {
-      const preload = new Image();
-      preload.src = item.image;
-    });
+    let cancelled = false;
+
+    preloadMascotImages()
+      .then((results) => {
+        if (cancelled) return;
+
+        const nextLoaded = {};
+        const nextFailed = {};
+        results.forEach((result) => {
+          if (result.ok) nextLoaded[result.id] = true;
+          else nextFailed[result.id] = true;
+        });
+
+        setLoadedImages(nextLoaded);
+        setFailedImages(nextFailed);
+        setAssetsReady(true);
+      })
+      .catch(() => {
+        if (!cancelled) setAssetsReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
+    if (!assetsReady) return undefined;
+
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, []);
+  }, [assetsReady]);
 
   const finish = useCallback(() => {
     if (persist) markMascotOnboardingComplete(userId);
@@ -35,6 +62,8 @@ export default function MascotOnboarding({ userId, persist = true, onComplete })
   }, [persist, userId, onComplete]);
 
   useEffect(() => {
+    if (!assetsReady) return undefined;
+
     function onKey(event) {
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -55,7 +84,7 @@ export default function MascotOnboarding({ userId, persist = true, onComplete })
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [finish, isLast, total]);
+  }, [assetsReady, finish, isLast, total]);
 
   function handleImageError(id) {
     setFailedImages((currentFailed) => (
@@ -70,6 +99,8 @@ export default function MascotOnboarding({ userId, persist = true, onComplete })
   }
 
   const currentImageReady = Boolean(loadedImages[current.id] && !failedImages[current.id]);
+
+  if (!assetsReady) return null;
 
   return createPortal(
     <div

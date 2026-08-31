@@ -45,6 +45,57 @@ export const MASCOT_STEPS = [
   },
 ];
 
+let mascotPreloadPromise;
+
+function loadMascotImage(src) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (ok) => {
+      if (settled) return;
+      settled = true;
+      resolve(ok);
+    };
+
+    const image = new Image();
+    const succeed = () => {
+      if (typeof image.decode === 'function') {
+        image.decode().then(() => finish(true)).catch(() => finish(true));
+        return;
+      }
+      finish(true);
+    };
+
+    image.onload = succeed;
+    image.onerror = () => finish(false);
+    image.src = src;
+
+    if (image.complete && image.naturalWidth > 0) succeed();
+  });
+}
+
+export function preloadMascotImages() {
+  if (!mascotPreloadPromise) {
+    mascotPreloadPromise = Promise.all(
+      MASCOT_STEPS.map(async (step) => ({
+        id: step.id,
+        ok: await loadMascotImage(step.image),
+      })),
+    );
+  }
+  return mascotPreloadPromise;
+}
+
+if (typeof window !== 'undefined') {
+  try {
+    const preview = new URLSearchParams(window.location.search).get('mascot') === 'preview';
+    if (preview || window.localStorage.getItem(STORAGE_KEY) !== '1') {
+      preloadMascotImages();
+    }
+  } catch {
+    preloadMascotImages();
+  }
+}
+
 const AUTH_PREFIXES = ['/login', '/signup', '/join', '/account-recovery'];
 
 export function shouldHideMascotOnboarding(pathname) {
