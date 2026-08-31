@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { Menu, Shield } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from './lib/auth.jsx';
 import { persistReferral } from './lib/referral.js';
@@ -15,6 +15,10 @@ import {
   hasCompletedMascotOnboarding,
   shouldHideMascotOnboarding,
 } from './lib/mascotOnboardingStorage.js';
+import {
+  hasFinishedNeighborhoodStep,
+  NEIGHBORHOOD_STEP_EVENT,
+} from './lib/onboardingSequence.js';
 
 const navItems = [
   { to: '/', label: 'Community', tour: 'community', id: 'nav-community' },
@@ -29,19 +33,37 @@ const navItems = [
 function App() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const menuButtonRef = useRef(null);
+  const mobileNavRef = useRef(null);
   const [toastMessage, setToastMessage] = useState('');
   const [mascotDismissed, setMascotDismissed] = useState(false);
+  const [neighborhoodStepDone, setNeighborhoodStepDone] = useState(false);
   const { isLoggedIn, profile, signOut, user } = useAuth();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const displayName = profile?.name || 'My Profile';
   const showAdminLink = isAdminUser(user);
-  const shouldShowOnboarding = Boolean(isLoggedIn && profile && profile.onboarding_complete === false && location.pathname === '/');
   const previewMascot = searchParams.get('mascot') === 'preview';
+  const installParam = searchParams.get('install');
+  const previewInstall = installParam === 'preview' || installParam === 'ios' || installParam === 'native';
+  const mascotFinished = Boolean(
+    mascotDismissed || hasCompletedMascotOnboarding(user?.id),
+  );
+  const needsFirstRunOnboarding = Boolean(
+    isLoggedIn && profile && profile.onboarding_complete === false,
+  );
   const shouldShowMascotOnboarding = Boolean(
     !mascotDismissed
+    && !previewInstall
     && !shouldHideMascotOnboarding(location.pathname)
-    && (previewMascot || !hasCompletedMascotOnboarding(user?.id)),
+    && (previewMascot || (needsFirstRunOnboarding && !hasCompletedMascotOnboarding(user?.id))),
+  );
+  const shouldShowOnboarding = Boolean(
+    needsFirstRunOnboarding
+    && location.pathname === '/'
+    && mascotFinished
+    && !neighborhoodStepDone
+    && !hasFinishedNeighborhoodStep(profile),
   );
 
   useEffect(() => {
@@ -57,6 +79,48 @@ function App() {
   useEffect(() => {
     setOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (hasFinishedNeighborhoodStep(profile)) {
+      setNeighborhoodStepDone(true);
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    function onNeighborhoodDone() {
+      setNeighborhoodStepDone(true);
+    }
+
+    window.addEventListener(NEIGHBORHOOD_STEP_EVENT, onNeighborhoodDone);
+    return () => window.removeEventListener(NEIGHBORHOOD_STEP_EVENT, onNeighborhoodDone);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function isInsideMenu(target) {
+      return Boolean(
+        menuButtonRef.current?.contains(target)
+        || mobileNavRef.current?.contains(target),
+      );
+    }
+
+    function handlePointerDown(event) {
+      if (isInsideMenu(event.target)) return;
+      setOpen(false);
+    }
+
+    function handleScrollClose() {
+      setOpen(false);
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('scroll', handleScrollClose, { passive: true, capture: true });
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('scroll', handleScrollClose, { capture: true });
+    };
+  }, [open]);
 
   useEffect(() => {
     persistReferral(searchParams.get('ref'));
@@ -174,6 +238,7 @@ function App() {
 
         {/* Mobile hamburger button */}
         <button
+          ref={menuButtonRef}
           className="menu-button"
           type="button"
           onClick={() => setOpen((value) => !value)}
@@ -186,7 +251,7 @@ function App() {
 
       {/* Mobile nav - Portal-rendered for mobile only */}
       {createPortal(
-        <nav className={open ? 'site-nav mobile-nav open' : 'site-nav mobile-nav'}>
+        <nav ref={mobileNavRef} className={open ? 'site-nav mobile-nav open' : 'site-nav mobile-nav'}>
           {navItems.map((item) => (
             <NavLink key={item.to} to={item.to} id={item.id} data-tour={item.tour} onClick={() => setOpen(false)}>
               {item.label}
@@ -229,7 +294,9 @@ function App() {
         <Outlet />
       </main>
 
-      {shouldShowOnboarding && <OnboardingModal />}
+      {shouldShowOnboarding && (
+        <OnboardingModal onComplete={() => setNeighborhoodStepDone(true)} />
+      )}
       {shouldShowMascotOnboarding && (
         <MascotOnboarding
           userId={user?.id}

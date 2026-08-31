@@ -2,6 +2,10 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { hasSupabaseConfig, supabase } from './supabase.js';
 import { completeOwnOnboarding, ensureOwnProfile } from './profileApi.js';
 import { hasCompletedMascotOnboarding } from './mascotOnboardingStorage.js';
+import {
+  hasFinishedNeighborhoodStep,
+  NEIGHBORHOOD_STEP_EVENT,
+} from './onboardingSequence.js';
 import { claimStoredReferral } from './referral.js';
 import OnboardingTour from '../components/OnboardingTour.jsx';
 import Skeleton from '../components/Skeleton.jsx';
@@ -47,6 +51,9 @@ export function AuthProvider({ children }) {
   const [mascotOnboardingDone, setMascotOnboardingDone] = useState(() => (
     hasCompletedMascotOnboarding()
   ));
+  const [neighborhoodStepDone, setNeighborhoodStepDone] = useState(() => (
+    hasFinishedNeighborhoodStep()
+  ));
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
@@ -73,12 +80,27 @@ export function AuthProvider({ children }) {
   }, [session?.user?.id]);
 
   useEffect(() => {
+    if (hasFinishedNeighborhoodStep(profile)) {
+      setNeighborhoodStepDone(true);
+    }
+  }, [profile]);
+
+  useEffect(() => {
     function onMascotDone() {
       setMascotOnboardingDone(true);
     }
 
     window.addEventListener('phillygrind:mascot-onboarding-complete', onMascotDone);
     return () => window.removeEventListener('phillygrind:mascot-onboarding-complete', onMascotDone);
+  }, []);
+
+  useEffect(() => {
+    function onNeighborhoodDone() {
+      setNeighborhoodStepDone(true);
+    }
+
+    window.addEventListener(NEIGHBORHOOD_STEP_EVENT, onNeighborhoodDone);
+    return () => window.removeEventListener(NEIGHBORHOOD_STEP_EVENT, onNeighborhoodDone);
   }, []);
 
   useEffect(() => {
@@ -378,7 +400,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={value}>
       {children}
-      {showOnboarding && mascotOnboardingDone && (
+      {showOnboarding && mascotOnboardingDone && neighborhoodStepDone && (
         <OnboardingTour
           onComplete={handleOnboardingComplete}
           onSkip={handleOnboardingSkip}

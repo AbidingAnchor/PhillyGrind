@@ -87,12 +87,11 @@ export function preloadMascotImages() {
 
 if (typeof window !== 'undefined') {
   try {
-    const preview = new URLSearchParams(window.location.search).get('mascot') === 'preview';
-    if (preview || window.localStorage.getItem(STORAGE_KEY) !== '1') {
+    if (new URLSearchParams(window.location.search).get('mascot') === 'preview') {
       preloadMascotImages();
     }
   } catch {
-    preloadMascotImages();
+    // Ignore preview preload failures.
   }
 }
 

@@ -48,7 +48,11 @@ import Alerts from './pages/Alerts.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AuthProvider } from './lib/auth.jsx';
 import { ThemeProvider } from './lib/theme.jsx';
+import { capturePwaInstallPrompt } from './lib/pwaInstall.js';
+import { PwaInstallPreview } from './components/PwaInstallGuide.jsx';
 import './styles.css';
+
+capturePwaInstallPrompt();
 
 function RedirectToHomePreservingQuery() {
   const location = useLocation();
@@ -63,8 +67,9 @@ function RedirectCommunityPost() {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
+      <BrowserRouter>
+        <PwaInstallPreview />
+        <AuthProvider>
           <Routes>
             <Route element={<App />}>
               <Route path="/" element={<Community />} />
@@ -119,14 +124,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
-        </BrowserRouter>
-      </AuthProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </ThemeProvider>
   </React.StrictMode>,
 );
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js');
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
   });
 }

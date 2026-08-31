@@ -1,0 +1,83 @@
+const listeners = new Set();
+
+let deferredPrompt = null;
+let installed = false;
+let capturing = false;
+
+function notify() {
+  listeners.forEach((listener) => listener());
+}
+
+export function getPwaInstallContext() {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return 'desktop';
+  }
+
+  const ua = navigator.userAgent || '';
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches
+    || window.matchMedia('(display-mode: fullscreen)').matches
+    || window.matchMedia('(display-mode: minimal-ui)').matches
+    || window.navigator.standalone === true;
+
+  if (isStandalone) return 'installed';
+
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (isIOS) return 'ios';
+
+  if (deferredPrompt) return 'native';
+  if (/Android/i.test(ua)) return 'android';
+  return 'desktop';
+}
+
+export function capturePwaInstallPrompt() {
+  if (typeof window === 'undefined' || capturing) return;
+  capturing = true;
+
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    deferredPrompt = event;
+    notify();
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    installed = true;
+    notify();
+  });
+}
+
+export function hasNativeInstallPrompt() {
+  return Boolean(deferredPrompt);
+}
+
+export function isPwaInstalled() {
+  return installed || getPwaInstallContext() === 'installed';
+}
+
+export function subscribeToPwaInstall(listener) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+export async function promptNativeInstall() {
+  if (!deferredPrompt) return { outcome: 'unavailable' };
+
+  const promptEvent = deferredPrompt;
+  deferredPrompt = null;
+  notify();
+
+  try {
+    await promptEvent.prompt();
+    const choice = await promptEvent.userChoice;
+    if (choice?.outcome === 'accepted') {
+      installed = true;
+    }
+    notify();
+    return choice || { outcome: 'dismissed' };
+  } catch {
+    return { outcome: 'dismissed' };
+  }
+}

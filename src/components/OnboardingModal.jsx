@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { MapPin, X, ArrowRight, Navigation } from 'lucide-react';
 import { useAuth } from '../lib/auth.jsx';
+import { saveHomeNeighborhood } from '../lib/profileApi.js';
+import { markNeighborhoodStepComplete } from '../lib/onboardingSequence.js';
 import { HOME_NEIGHBORHOODS, snapToHomeNeighborhood } from '../lib/homeNeighborhood.js';
 
-function OnboardingModal() {
+function OnboardingModal({ onComplete }) {
   const [neighborhood, setNeighborhood] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState('');
   const [locating, setLocating] = useState(false);
   const [suggestedNeighborhood, setSuggestedNeighborhood] = useState(null);
-  const { profile, completeOnboarding, refreshProfile } = useAuth();
+  const { refreshProfile } = useAuth();
 
   const filteredNeighborhoods = HOME_NEIGHBORHOODS.filter((n) =>
     n.toLowerCase().includes(searchQuery.toLowerCase())
@@ -78,8 +80,10 @@ function OnboardingModal() {
     setStatus('');
 
     try {
-      await completeOnboarding(neighborhood);
-      await refreshProfile();
+      const data = await saveHomeNeighborhood(neighborhood);
+      if (data) await refreshProfile();
+      markNeighborhoodStepComplete();
+      onComplete?.();
     } catch (error) {
       setStatus(error.message || 'Could not save neighborhood.');
     } finally {
@@ -90,9 +94,8 @@ function OnboardingModal() {
   async function handleSkip() {
     setSaving(true);
     try {
-      await completeOnboarding();
-    } catch (error) {
-      setStatus(error.message || 'Could not skip onboarding.');
+      markNeighborhoodStepComplete();
+      onComplete?.();
     } finally {
       setSaving(false);
     }
