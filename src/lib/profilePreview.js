@@ -19,11 +19,19 @@ export async function fetchProfilePreview(userId) {
       return null;
     }
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('profiles_public')
-      .select('id,name,bio,neighborhood,neighborhoods,avatar_url')
+      .select('id,name,bio,neighborhood,neighborhoods,avatar_url,staff_title')
       .eq('id', userId)
       .maybeSingle();
+
+    if (error && String(error.message || '').includes('staff_title')) {
+      ({ data, error } = await supabase
+        .from('profiles_public')
+        .select('id,name,bio,neighborhood,neighborhoods,avatar_url')
+        .eq('id', userId)
+        .maybeSingle());
+    }
 
     if (error) throw error;
 
@@ -34,6 +42,7 @@ export async function fetchProfilePreview(userId) {
           bio: String(data.bio || '').trim(),
           neighborhood: resolveHomeNeighborhood(data),
           avatarUrl: data.avatar_url || '',
+          staffTitle: data.staff_title || null,
         }
       : null;
 

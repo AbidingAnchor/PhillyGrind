@@ -5,6 +5,7 @@ import { checkCommunitySafety } from './moderationService.js';
 import { getFilteredUsers } from './moderationApi.js';
 import { REACTIONS } from './reactions.js';
 import { HOME_NEIGHBORHOODS } from './homeNeighborhood.js';
+import { normalizeStaffTitle } from './staffTitles.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -76,9 +77,29 @@ function normalizePost(post) {
     posterName: authorName,
     authorAvatarUrl: profile.avatar_url || '',
     authorId: post.user_id,
+    authorStaffTitle: normalizeStaffTitle(profile.staff_title || post.authorStaffTitle),
     relativeTime: formatRelativeTime(post.created_at),
     like_count: post.like_count || 0, // Ensure like_count is never undefined
   };
+}
+
+async function fetchPublicAuthorProfiles(userIds) {
+  const { data, error } = await supabase
+    .from('profiles_public')
+    .select('id,name,avatar_url,staff_title')
+    .in('id', userIds);
+
+  if (error && String(error.message || '').includes('staff_title')) {
+    const retry = await supabase
+      .from('profiles_public')
+      .select('id,name,avatar_url')
+      .in('id', userIds);
+    if (retry.error) throw retry.error;
+    return retry.data ?? [];
+  }
+
+  if (error) throw error;
+  return data ?? [];
 }
 
 async function attachAuthorInfo(posts) {
@@ -92,12 +113,7 @@ async function attachAuthorInfo(posts) {
 
   if (!userIds.length) return list.map(normalizePost);
 
-  const { data, error } = await supabase
-    .from('profiles_public')
-    .select('id,name,avatar_url')
-    .in('id', userIds);
-
-  if (error) throw error;
+  const data = await fetchPublicAuthorProfiles(userIds);
 
   console.log('[attachAuthorInfo] profiles returned from profiles_public:', data);
   console.log('[attachAuthorInfo] Profile for 22271450-758a-4a46-843b-195eae5b8079 found:', data?.find(p => p.id === '22271450-758a-4a46-843b-195eae5b8079'));
@@ -322,16 +338,12 @@ export async function getCommunityComments(postId) {
       ...comment,
       authorName: 'PhillyGrind user',
       authorAvatarUrl: '',
+      authorStaffTitle: null,
       replies: [],
     }));
   }
 
-  const { data: profiles, error: profileError } = await supabase
-    .from('profiles_public')
-    .select('id,name,avatar_url')
-    .in('id', userIds);
-
-  if (profileError) throw profileError;
+  const profiles = await fetchPublicAuthorProfiles(userIds);
 
   console.log('[getCommunityComments] profiles fetched:', profiles?.length, 'profiles:', profiles);
   
@@ -346,6 +358,7 @@ export async function getCommunityComments(postId) {
       ...comment,
       authorName,
       authorAvatarUrl: profile?.avatar_url || '',
+      authorStaffTitle: normalizeStaffTitle(profile?.staff_title),
       relativeTime: formatRelativeTime(comment.created_at),
       replies: [],
     };

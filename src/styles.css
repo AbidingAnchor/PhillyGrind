@@ -4985,6 +4985,7 @@ body {
 .profile-name-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -5072,6 +5073,108 @@ body {
 [data-scheme="dark"] .verified-badge-small {
   background: rgba(59, 130, 246, 0.20);
   color: #93c5fd;
+}
+
+.staff-title-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+  white-space: nowrap;
+  vertical-align: middle;
+  border: 1px solid color-mix(in srgb, currentColor 32%, transparent);
+}
+
+.staff-title-badge--profile {
+  font-size: 0.92rem;
+  padding: 5px 12px;
+  letter-spacing: 0.01em;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.profile-name-row .staff-title-badge--profile {
+  margin-top: 2px;
+}
+
+.staff-title-badge--founder {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.staff-title-badge--cto {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.staff-title-badge--head_moderator {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+
+.staff-title-badge--operations {
+  background: #ccfbf1;
+  color: #0d5c56;
+}
+
+.staff-title-badge--community_manager {
+  background: #ffe4e6;
+  color: #be123c;
+}
+
+.staff-title-badge--moderator {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+[data-scheme="dark"] .staff-title-badge--founder {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+[data-scheme="dark"] .staff-title-badge--cto {
+  background: rgba(59, 130, 246, 0.24);
+  color: #93c5fd;
+}
+
+[data-scheme="dark"] .staff-title-badge--head_moderator {
+  background: rgba(168, 85, 247, 0.24);
+  color: #e9d5ff;
+}
+
+[data-scheme="dark"] .staff-title-badge--operations {
+  background: rgba(20, 184, 166, 0.22);
+  color: #5eead4;
+}
+
+[data-scheme="dark"] .staff-title-badge--community_manager {
+  background: rgba(251, 113, 133, 0.22);
+  color: #fda4af;
+}
+
+[data-scheme="dark"] .staff-title-badge--moderator {
+  background: rgba(167, 139, 250, 0.18);
+  color: #c4b5fd;
+}
+
+[data-theme="sixers"] .staff-title-badge--cto {
+  background: rgba(191, 219, 254, 0.92);
+  color: #1e3a8a;
+}
+
+[data-theme="phillies"] .staff-title-badge--community_manager,
+[data-theme="classic"] .staff-title-badge--community_manager {
+  background: #ffe4e6;
+  color: #9f1239;
+}
+
+[data-theme="eagles"] .staff-title-badge--operations {
+  background: rgba(45, 212, 191, 0.22);
+  color: #99f6e4;
 }
 
 .two-factor-verification {
@@ -5478,6 +5581,8 @@ body {
 
 .profile-identity-main .profile-name-row h1 {
   margin: 0;
+  width: fit-content;
+  max-width: 100%;
   font-size: clamp(1.75rem, 3vw, 2.25rem);
   font-weight: 800;
   line-height: 1.15;
@@ -8410,6 +8515,16 @@ a.join-page-cta {
 
 .admin-detail-row:last-child {
   border-bottom: none;
+}
+
+.admin-staff-title-select {
+  width: min(100%, 280px);
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card, #fff);
+  color: var(--ink);
+  font-size: 14px;
 }
 
 .admin-detail-label {
@@ -12318,6 +12433,10 @@ input[type="datetime-local"]:focus {
 }
 
 .profile-hover-card-name {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
   font-size: 0.98rem;
   font-weight: 700;
   line-height: 1.25;
@@ -12374,6 +12493,10 @@ input[type="datetime-local"]:focus {
 }
 
 .feed-post-author-name {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
   font-weight: 600;
   color: var(--ink);
   font-size: 1rem;
@@ -12749,6 +12872,10 @@ input[type="datetime-local"]:focus {
 }
 
 .shared-post-author {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
   font-weight: 600;
   font-size: 0.95rem;
   color: var(--ink);
@@ -13202,6 +13329,11 @@ input[type="datetime-local"]:focus {
   font-weight: 600;
   font-size: 0.8125rem;
   color: var(--ink);
+}
+
+.feed-comment-header .staff-title-badge {
+  position: relative;
+  top: -1px;
 }
 
 .feed-comment-time {
@@ -16097,6 +16229,33 @@ input[type="datetime-local"]:focus {
   color: var(--muted);
   font-size: 0.85rem;
   white-space: nowrap;
+  margin-left: auto;
+}
+
+.feed-post-reaction-summary .reaction-summary {
+  width: auto;
+  justify-content: flex-start;
+}
+
+.feed-post-reaction-trigger,
+.feed-post-stats-link {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.feed-post-reaction-trigger {
+  display: inline-flex;
+  align-items: center;
+}
+
+.feed-post-stats-link:hover {
+  color: var(--ink);
+  text-decoration: underline;
 }
 
 .reaction-summary {

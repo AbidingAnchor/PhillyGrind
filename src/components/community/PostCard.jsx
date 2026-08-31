@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { MessageCircle, MoreHorizontal, X, Flag, AlertCircle, Shield, Ban, AlertTriangle, EyeOff, MessageSquareOff, ArrowLeft } from 'lucide-react';
@@ -17,13 +17,13 @@ import {
   getReactionBreakdown as getReactionBreakdown,
   getCommentReactionBreakdown as getCommentReactionBreakdown,
   shareCommunityPost as shareCommunityPost,
-  getPostReactorsList as getPostReactorsList,
-  REACTION_EMOJI,
 } from '../../lib/communityApi.js';
 import { muteUser, blockUser, unblockUser, isUserBlocked } from '../../lib/moderationApi.js';
 import { useAuth } from '../../lib/auth.jsx';
 import { getReactionTotalCount as getReactionTotalCount, getUserAvatarColor as getUserAvatarColor } from '../../lib/reactions.js';
 import ReactionBreakdown from '../ReactionBreakdown.jsx';
+import ReactionsListModal from './ReactionsListModal.jsx';
+import StaffTitleBadge from '../StaffTitleBadge.jsx';
 import PostReactionControl from '../PostReactionControl.jsx';
 import Skeleton from '../Skeleton.jsx';
 import { alertUnlessLoginRequired, redirectToSignup } from '../../lib/requireSignup.js';
@@ -565,6 +565,7 @@ function CommentItem({
       <div className="feed-comment-body">
         <div className="feed-comment-header">
           <span className="feed-comment-author">{comment.authorName}</span>
+          <StaffTitleBadge title={comment.authorStaffTitle} />
           <span className="feed-comment-time">{comment.relativeTime}</span>
           <div className="feed-comment-actions">
             <button
@@ -819,62 +820,6 @@ function ShareComposerModal({ isOpen, onClose, originalPost, currentUser, onShar
   );
 }
 
-function ReactionsListModal({ postId, onClose }) {
-  const [reactors, setReactors] = useState([]);
-  const [activeTab, setActiveTab] = useState('all');
-
-  useEffect(() => {
-    getPostReactorsList(postId).then(setReactors);
-  }, [postId]);
-
-  const counts = reactors.reduce((acc, r) => {
-    acc[r.reactionType] = (acc[r.reactionType] || 0) + 1;
-    return acc;
-  }, {});
-
-  const filtered = activeTab === 'all' ? reactors : reactors.filter(r => r.reactionType === activeTab);
-
-  return createPortal(
-    (
-      <div className="reactions-modal-overlay" onClick={onClose}>
-        <div className="reactions-modal" onClick={e => e.stopPropagation()}>
-          <button className="reactions-modal-close" onClick={onClose}>
-            <X size={20} />
-          </button>
-          <div className="reactions-modal-tabs">
-            <button className={activeTab === 'all' ? 'active' : ''} onClick={() => setActiveTab('all')}>
-              All {reactors.length}
-            </button>
-            {Object.entries(counts).map(([type, count]) => (
-              <button key={type} className={activeTab === type ? 'active' : ''} onClick={() => setActiveTab(type)}>
-                {REACTION_EMOJI[type] || '❓'} {count}
-              </button>
-            ))}
-          </div>
-          <div className="reactions-modal-list">
-            {filtered.map(r => (
-              <Link key={r.userId} to={`/profile/${r.userId}`} className="reactions-modal-user" onClick={onClose}>
-                {r.avatarUrl ? (
-                  <img src={r.avatarUrl} className="reactions-modal-avatar" alt={r.name} draggable={false} />
-                ) : (
-                  <div
-                    className="reactions-modal-avatar-placeholder"
-                    style={{ backgroundColor: getUserAvatarColor(r.userId, r.name) }}
-                  >
-                    {r.name?.charAt(0) || '?'}
-                  </div>
-                )}
-                <span>{r.name}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
-    ),
-    document.body
-  );
-}
-
 function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allowShare = true, highlighted = false, autoOpenComments = false }) {
   const navigate = useNavigate();
   const { profile } = useAuth();
@@ -897,6 +842,8 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
   const [reactionsLoaded, setReactionsLoaded] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [showReactionsModal, setShowReactionsModal] = useState(false);
+  const commentsRef = useRef(null);
+  const scrollCommentsOnOpen = useRef(false);
 
   const reactionTotal = getReactionTotalCount(reactionBreakdown);
 
@@ -1077,36 +1024,54 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
   const totalCommentCount = comments.reduce((total, comment) => {
     return total + 1 + (comment.replies?.length || 0);
   }, 0);
+  const visibleCommentCount = showComments ? totalCommentCount : post.comment_count;
+
+  function collectCommenterNames(commentList) {
+    const commenterNames = new Set();
+    const extractCommenters = (list) => {
+      list.forEach((comment) => {
+        if (comment.authorName) commenterNames.add(comment.authorName);
+        if (comment.replies?.length) extractCommenters(comment.replies);
+      });
+    };
+    extractCommenters(commentList);
+    return Array.from(commenterNames);
+  }
+
+  async function ensureCommentsLoaded() {
+    if (comments.length > 0 || loadingComments) return;
+    setLoadingComments(true);
+    try {
+      const loadedComments = await getCommunityComments(post.id);
+      setComments(loadedComments);
+      setAllCommenters(collectCommenterNames(loadedComments));
+    } catch (error) {
+      console.error('Failed to load comments:', error);
+    } finally {
+      setLoadingComments(false);
+    }
+  }
 
   async function handleToggleComments() {
-    if (!showComments && comments.length === 0) {
-      setLoadingComments(true);
-      try {
-        const loadedComments = await getCommunityComments(post.id);
-        setComments(loadedComments);
-        
-        // Extract distinct commenter names for @mention autocomplete
-        const commenterNames = new Set();
-        const extractCommenters = (commentList) => {
-          commentList.forEach(comment => {
-            if (comment.authorName) {
-              commenterNames.add(comment.authorName);
-            }
-            if (comment.replies && comment.replies.length > 0) {
-              extractCommenters(comment.replies);
-            }
-          });
-        };
-        extractCommenters(loadedComments);
-        setAllCommenters(Array.from(commenterNames));
-      } catch (error) {
-        console.error('Failed to load comments:', error);
-      } finally {
-        setLoadingComments(false);
-      }
+    if (showComments) {
+      setShowComments(false);
+      return;
     }
-    setShowComments(!showComments);
+    await ensureCommentsLoaded();
+    setShowComments(true);
   }
+
+  async function openCommentsAndScroll() {
+    scrollCommentsOnOpen.current = true;
+    await ensureCommentsLoaded();
+    setShowComments(true);
+  }
+
+  useEffect(() => {
+    if (!showComments || !scrollCommentsOnOpen.current || loadingComments) return;
+    scrollCommentsOnOpen.current = false;
+    commentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [showComments, loadingComments]);
 
   async function handleSubmitComment(e) {
     e.preventDefault();
@@ -1222,6 +1187,40 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
 
   const isOwnPost = currentUser?.id === post.authorId;
 
+  function renderReactionSummary() {
+    const hasComments = visibleCommentCount > 0;
+    const hasShares = post.share_count > 0;
+    if (!(reactionTotal > 0 || hasComments || hasShares)) return null;
+
+    return (
+      <div className="feed-post-reaction-summary">
+        {reactionTotal > 0 && (
+          <button
+            type="button"
+            className="feed-post-reaction-trigger"
+            onClick={() => setShowReactionsModal(true)}
+            aria-label={`${reactionTotal} reactions. See who reacted.`}
+          >
+            <ReactionBreakdown breakdown={reactionBreakdown} userReaction={userReaction} />
+          </button>
+        )}
+        <span className="feed-post-stats">
+          {hasComments && (
+            <button
+              type="button"
+              className="feed-post-stats-link"
+              onClick={openCommentsAndScroll}
+            >
+              {visibleCommentCount} comments
+            </button>
+          )}
+          {hasComments && hasShares && ' · '}
+          {hasShares && `${post.share_count} shares`}
+        </span>
+      </div>
+    );
+  }
+
   console.log('[PostCard] isOwnPost check:', {
     currentUserId: currentUser?.id,
     postAuthorId: post.authorId,
@@ -1243,7 +1242,10 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
               avatarUrl={post.authorAvatarUrl}
             />
             <div className="feed-post-author-info">
-              <span className="feed-post-author-name">{post.authorName}</span>
+              <span className="feed-post-author-name">
+                {post.authorName}
+                <StaffTitleBadge title={post.authorStaffTitle} />
+              </span>
               <div className="feed-post-meta">
                 <span className="feed-post-neighborhood">{post.neighborhood}</span>
                 <span className="feed-post-time">· {post.relativeTime}</span>
@@ -1258,7 +1260,10 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
               avatarUrl={post.authorAvatarUrl}
             />
             <div className="feed-post-author-info">
-              <span className="feed-post-author-name">{post.authorName}</span>
+              <span className="feed-post-author-name">
+                {post.authorName}
+                <StaffTitleBadge title={post.authorStaffTitle} />
+              </span>
               <div className="feed-post-meta">
                 <span className="feed-post-neighborhood">{post.neighborhood}</span>
                 <span className="feed-post-time">· {post.relativeTime}</span>
@@ -1330,7 +1335,10 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
               avatarUrl={post.original_post.authorAvatarUrl}
             />
             <div className="shared-post-author-info">
-              <span className="shared-post-author">{post.original_post.authorName}</span>
+              <span className="shared-post-author">
+                {post.original_post.authorName}
+                <StaffTitleBadge title={post.original_post.authorStaffTitle} />
+              </span>
               <span className="shared-post-time">{new Date(post.original_post.created_at).toLocaleDateString()}</span>
             </div>
           </div>
@@ -1349,20 +1357,7 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
 
       {post.photo_url ? (
         <>
-          {(reactionTotal > 0 || (showComments ? totalCommentCount : post.comment_count) > 0 || post.share_count > 0) && (
-            <div
-              className="feed-post-reaction-summary"
-              onClick={() => setShowReactionsModal(true)}
-              style={{ cursor: 'pointer' }}
-            >
-              <ReactionBreakdown breakdown={reactionBreakdown} userReaction={userReaction} />
-              <span className="feed-post-stats">
-                {(showComments ? totalCommentCount : post.comment_count) > 0 && `${showComments ? totalCommentCount : post.comment_count} comments`}
-                {(showComments ? totalCommentCount : post.comment_count) > 0 && post.share_count > 0 && ' · '}
-                {post.share_count > 0 && `${post.share_count} shares`}
-              </span>
-            </div>
-          )}
+          {renderReactionSummary()}
           <div className="feed-post-divider" />
           <div className="feed-post-photo-actions">
             {!readOnly && (
@@ -1399,20 +1394,7 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
         </>
       ) : (
         <>
-          {(reactionTotal > 0 || (showComments ? totalCommentCount : post.comment_count) > 0 || post.share_count > 0) && (
-            <div
-              className="feed-post-reaction-summary"
-              onClick={() => setShowReactionsModal(true)}
-              style={{ cursor: 'pointer' }}
-            >
-              <ReactionBreakdown breakdown={reactionBreakdown} userReaction={userReaction} />
-              <span className="feed-post-stats">
-                {(showComments ? totalCommentCount : post.comment_count) > 0 && `${showComments ? totalCommentCount : post.comment_count} comments`}
-                {(showComments ? totalCommentCount : post.comment_count) > 0 && post.share_count > 0 && ' · '}
-                {post.share_count > 0 && `${post.share_count} shares`}
-              </span>
-            </div>
-          )}
+          {renderReactionSummary()}
           <div className="feed-post-divider" />
           <div className="feed-post-actions">
             {!readOnly && (
@@ -1450,7 +1432,7 @@ function PostCard({ post, currentUser, onLike, onDelete, readOnly = false, allow
       )}
 
       {showComments && (
-        <div className="feed-post-comments">
+        <div className="feed-post-comments" ref={commentsRef}>
           {loadingComments ? (
             <Skeleton variant="comments" count={3} />
           ) : comments.length === 0 ? (

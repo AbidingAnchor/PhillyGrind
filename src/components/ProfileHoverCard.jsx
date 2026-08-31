@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { MapPin } from 'lucide-react';
 import { fetchProfilePreview, isProfileUserId } from '../lib/profilePreview.js';
 import { getUserAvatarColor } from '../lib/reactions.js';
+import StaffTitleBadge from './StaffTitleBadge.jsx';
 
 const SHOW_DELAY_MS = 260;
 const HIDE_DELAY_MS = 200;
@@ -167,7 +168,10 @@ export default function ProfileHoverTrigger({
                 </div>
               )}
               <div className="profile-hover-card-identity">
-                <strong className="profile-hover-card-name">{name}</strong>
+                <strong className="profile-hover-card-name">
+                  {name}
+                  <StaffTitleBadge title={preview?.staffTitle} />
+                </strong>
                 {neighborhood ? (
                   <span className="profile-hover-card-location">
                     <MapPin size={13} aria-hidden="true" />

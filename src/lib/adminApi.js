@@ -517,6 +517,13 @@ export async function adminVerifyLandlord(userId) {
   });
 }
 
+export async function setUserStaffTitle(userId, staffTitle) {
+  return adminRequest('admin-set-staff-title', {
+    method: 'POST',
+    body: { user_id: userId, staff_title: staffTitle || null },
+  });
+}
+
 export async function getAdminCommunityPosts() {
   return adminRequest('admin-community-posts', { method: 'GET' });
 }

@@ -197,10 +197,20 @@ async function handleAdminUsers(req, res) {
   const admin = await requireAdmin(req, res);
   if (!admin) return;
 
-  const { data: profiles, error } = await supabaseAdmin
+  const userSelect = 'id,name,email,created_at,landlord_verified,landlord_warning,last_active_at,account_reference,staff_title';
+  const userSelectFallback = 'id,name,email,created_at,landlord_verified,landlord_warning,last_active_at,account_reference';
+
+  let { data: profiles, error } = await supabaseAdmin
     .from('profiles')
-    .select('id,name,email,created_at,landlord_verified,landlord_warning,last_active_at,account_reference')
+    .select(userSelect)
     .order('created_at', { ascending: false });
+
+  if (error && String(error.message || '').includes('staff_title')) {
+    ({ data: profiles, error } = await supabaseAdmin
+      .from('profiles')
+      .select(userSelectFallback)
+      .order('created_at', { ascending: false }));
+  }
 
   if (error) throw error;
 
@@ -701,6 +711,38 @@ async function handleAdminVerifyLandlord(req, res) {
   sendJson(res, 200, { profile: data });
 }
 
+async function handleAdminSetStaffTitle(req, res) {
+  const { user_id: userId, staff_title: staffTitle } = req.body ?? {};
+  if (!userId) {
+    sendJson(res, 400, { error: 'user_id is required.' });
+    return;
+  }
+
+  const allowed = new Set([
+    'founder',
+    'cto',
+    'head_moderator',
+    'operations',
+    'community_manager',
+    'moderator',
+  ]);
+  const next = staffTitle == null || staffTitle === '' ? null : String(staffTitle).trim();
+  if (next !== null && !allowed.has(next)) {
+    sendJson(res, 400, { error: 'Invalid staff title.' });
+    return;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .update({ staff_title: next })
+    .eq('id', userId)
+    .select('id,staff_title')
+    .single();
+
+  if (error) throw error;
+  sendJson(res, 200, { profile: data });
+}
+
 async function handleAdminCommunityPosts(req, res) {
   const admin = await requireAdmin(req, res);
   if (!admin) return;
@@ -858,6 +900,7 @@ const adminPostActions = new Set([
   'admin-report-action',
   'admin-deactivate-housing',
   'admin-verify-landlord',
+  'admin-set-staff-title',
   'admin-delete-community-post',
   'admin-dismiss-community-report',
   'admin-recovery-approve',
@@ -933,6 +976,9 @@ export default async function handler(req, res) {
           break;
         case 'admin-verify-landlord':
           await handleAdminVerifyLandlord(req, res, admin);
+          break;
+        case 'admin-set-staff-title':
+          await handleAdminSetStaffTitle(req, res);
           break;
         case 'admin-delete-community-post':
           await handleAdminDeleteCommunityPost(req, res);

@@ -170,34 +170,43 @@ export async function createReview({
   return data;
 }
 
+const PUBLIC_PROFILE_BASE = 'id,name,bio,skills,availability,neighborhood,neighborhoods,avatar_url,banner_url,profile_tags,identity_verified,created_at';
+
+async function fetchPublicProfile(userId) {
+  const selects = [
+    `${PUBLIC_PROFILE_BASE},staff_title`,
+    `${PUBLIC_PROFILE_BASE},neighbors_invited,staff_title`,
+    `${PUBLIC_PROFILE_BASE},neighbors_invited`,
+    PUBLIC_PROFILE_BASE,
+  ];
+
+  let lastError = null;
+  for (const select of selects) {
+    const result = await supabase
+      .from('profiles_public')
+      .select(select)
+      .eq('id', userId)
+      .maybeSingle();
+    if (!result.error) return result;
+    lastError = result.error;
+  }
+
+  return { data: null, error: lastError };
+}
+
 export async function getUserReviews(userId) {
   if (!hasSupabaseConfig) {
     throw new Error('Supabase credentials are missing.');
   }
 
-  const publicProfileSelect = 'id,name,bio,skills,availability,neighborhood,neighborhoods,avatar_url,banner_url,profile_tags,identity_verified,created_at,neighbors_invited';
-  const publicProfileSelectFallback = 'id,name,bio,skills,availability,neighborhood,neighborhoods,avatar_url,banner_url,profile_tags,identity_verified,created_at';
-
-  let [profileResult, reviewsResult] = await Promise.all([
-    supabase
-      .from('profiles_public')
-      .select(publicProfileSelect)
-      .eq('id', userId)
-      .maybeSingle(),
+  const [profileResult, reviewsResult] = await Promise.all([
+    fetchPublicProfile(userId),
     supabase
       .from('reviews')
       .select('id,listing_id,order_id,listing_type,reviewer_id,reviewee_id,rating,comment,created_at')
       .eq('reviewee_id', userId)
       .order('created_at', { ascending: false }),
   ]);
-
-  if (profileResult.error && String(profileResult.error.message || '').includes('neighbors_invited')) {
-    profileResult = await supabase
-      .from('profiles_public')
-      .select(publicProfileSelectFallback)
-      .eq('id', userId)
-      .maybeSingle();
-  }
 
   if (profileResult.error) throw profileResult.error;
   if (reviewsResult.error) throw reviewsResult.error;

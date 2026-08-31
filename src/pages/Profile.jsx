@@ -6,6 +6,8 @@ import { InviteNeighborButton } from '../components/InviteNeighborSheet.jsx';
 import FacebookShareIcon from '../components/FacebookShareIcon.jsx';
 import PostReactionControl from '../components/PostReactionControl.jsx';
 import ReactionBreakdown from '../components/ReactionBreakdown.jsx';
+import ReactionsListModal from '../components/community/ReactionsListModal.jsx';
+import StaffTitleBadge from '../components/StaffTitleBadge.jsx';
 import ListingCard from '../components/ListingCard.jsx';
 import StarRating from '../components/StarRating.jsx';
 import ChatModal from '../components/ChatModal.jsx';
@@ -19,7 +21,7 @@ import { getMyBids } from '../lib/bidsApi.js';
 import { getHousingListings, HOUSING_NEIGHBORHOODS } from '../lib/housingApi.js';
 import { supabase } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
-import { getUserAvatarColor } from '../lib/reactions.js';
+import { getReactionTotalCount, getUserAvatarColor } from '../lib/reactions.js';
 import { getUserCommunityPosts, canViewActivity } from '../lib/communityApi.js';
 import { getOrCreateProfileConversation, sendMessage } from '../lib/messagesApi.js';
 import { getUserReaction, toggleCommunityPostReaction, getReactionBreakdown } from '../lib/communityApi.js';
@@ -156,6 +158,7 @@ function Profile() {
   const [activeTab, setActiveTab] = useState('activity');
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [postReactions, setPostReactions] = useState({});
+  const [reactionsPostId, setReactionsPostId] = useState(null);
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [profileConversation, setProfileConversation] = useState(null);
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
@@ -488,7 +491,11 @@ function Profile() {
       });
       setProfileData((current) => current ? {
         ...current,
-        profile: nextProfile,
+        profile: {
+          ...(current.profile || {}),
+          ...nextProfile,
+          staff_title: nextProfile.staff_title ?? current.profile?.staff_title,
+        },
         profileName: nextProfile.name,
       } : current);
       setEditing(false);
@@ -497,7 +504,11 @@ function Profile() {
       if (refreshedProfile) {
         setProfileData((current) => current ? {
           ...current,
-          profile: refreshedProfile,
+          profile: {
+            ...(current.profile || {}),
+            ...refreshedProfile,
+            staff_title: refreshedProfile.staff_title ?? current.profile?.staff_title,
+          },
           profileName: refreshedProfile.name,
         } : current);
       }
@@ -767,6 +778,7 @@ function Profile() {
               <div className="profile-identity-main">
                 <div className="profile-name-row">
                   <h1>{profileData.profileName}</h1>
+                  <StaffTitleBadge title={profileData.profile?.staff_title} variant="profile" />
                   {profileData.profile?.identity_verified && <span className="verified-badge-small">✓</span>}
                 </div>
                 {profileData.profile?.profile_tags && profileData.profile.profile_tags.length > 0 && (
@@ -1030,7 +1042,10 @@ function Profile() {
                                   </div>
                                 )}
                                 <div className="feed-post-author-info">
-                                  <span className="feed-post-author-name">{post.authorName}</span>
+                                  <span className="feed-post-author-name">
+                                    {post.authorName}
+                                    <StaffTitleBadge title={post.authorStaffTitle} />
+                                  </span>
                                   <div className="feed-post-meta">
                                     <span className="feed-post-neighborhood">{post.neighborhood}</span>
                                     <span className="feed-post-time">· {post.relativeTime}</span>
@@ -1048,11 +1063,28 @@ function Profile() {
                                 />
                               )}
                             </div>
-                            {(postReactions[post.id]?.breakdown?.length > 0 || post.comment_count > 0 || post.share_count > 0) && (
+                            {(getReactionTotalCount(postReactions[post.id]?.breakdown) > 0 || post.comment_count > 0 || post.share_count > 0) && (
                               <div className="feed-post-reaction-summary">
-                                <ReactionBreakdown breakdown={postReactions[post.id]?.breakdown || []} userReaction={postReactions[post.id]?.userReaction} />
+                                {getReactionTotalCount(postReactions[post.id]?.breakdown) > 0 && (
+                                  <button
+                                    type="button"
+                                    className="feed-post-reaction-trigger"
+                                    onClick={() => setReactionsPostId(post.id)}
+                                    aria-label="See who reacted"
+                                  >
+                                    <ReactionBreakdown breakdown={postReactions[post.id]?.breakdown || []} userReaction={postReactions[post.id]?.userReaction} />
+                                  </button>
+                                )}
                                 <span className="feed-post-stats">
-                                  {post.comment_count > 0 && `${post.comment_count} comments`}
+                                  {post.comment_count > 0 && (
+                                    <button
+                                      type="button"
+                                      className="feed-post-stats-link"
+                                      onClick={() => navigate(`/?post=${encodeURIComponent(post.id)}`)}
+                                    >
+                                      {post.comment_count} comments
+                                    </button>
+                                  )}
                                   {post.comment_count > 0 && post.share_count > 0 && ' · '}
                                   {post.share_count > 0 && `${post.share_count} shares`}
                                 </span>
@@ -1472,6 +1504,12 @@ function Profile() {
           </div>
         </div>,
         document.body,
+      )}
+      {reactionsPostId && (
+        <ReactionsListModal
+          postId={reactionsPostId}
+          onClose={() => setReactionsPostId(null)}
+        />
       )}
       {chatModalOpen && profileConversation && (
         <ChatModal

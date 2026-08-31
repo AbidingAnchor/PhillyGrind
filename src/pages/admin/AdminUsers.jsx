@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, ShieldOff, ShieldBan, ShieldCheck, Users, BadgeCheck, Ban, UserX, Unlock } from 'lucide-react';
-import { adminVerifyLandlord, getAdminUsers, liftSuspension, suspendUser, banUser, ipBanUser, getUserSuspensionStatus } from '../../lib/adminApi.js';
+import { adminVerifyLandlord, getAdminUsers, liftSuspension, suspendUser, banUser, ipBanUser, getUserSuspensionStatus, setUserStaffTitle } from '../../lib/adminApi.js';
+import { STAFF_TITLES } from '../../lib/staffTitles.js';
 import { supabase } from '../../lib/supabase.js';
 import { useAuth } from '../../lib/auth.jsx';
 import KebabMenu from '../../components/KebabMenu.jsx';
@@ -23,6 +24,7 @@ export default function AdminUsers() {
   const [moderationReason, setModerationReason] = useState('');
   const [moderationAction, setModerationAction] = useState(null);
   const [processingModeration, setProcessingModeration] = useState(false);
+  const [savingStaffTitle, setSavingStaffTitle] = useState(false);
 
   // Refresh profile to get role if not loaded
   useEffect(() => {
@@ -177,6 +179,25 @@ export default function AdminUsers() {
       setError(err.message);
     } finally {
       setActionUserId('');
+    }
+  }
+
+  async function handleStaffTitleChange(userId, staffTitle) {
+    setSavingStaffTitle(true);
+    setError('');
+    try {
+      const { profile } = await setUserStaffTitle(userId, staffTitle);
+      const nextTitle = profile?.staff_title ?? null;
+      setUsers((current) => current.map((user) => (
+        user.id === userId ? { ...user, staff_title: nextTitle } : user
+      )));
+      setSelectedUser((current) => (
+        current?.id === userId ? { ...current, staff_title: nextTitle } : current
+      ));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingStaffTitle(false);
     }
   }
 
@@ -339,6 +360,25 @@ export default function AdminUsers() {
               <span className="admin-detail-label">Landlord Verified</span>
               <span className="admin-detail-value">{selectedUser.landlord_verified ? 'Yes' : 'No'}</span>
             </div>
+            {isAdmin && (
+              <div className="admin-detail-row">
+                <span className="admin-detail-label">Staff title</span>
+                <span className="admin-detail-value">
+                  <select
+                    className="admin-staff-title-select"
+                    value={selectedUser.staff_title || ''}
+                    disabled={savingStaffTitle}
+                    onChange={(event) => handleStaffTitleChange(selectedUser.id, event.target.value)}
+                    aria-label="Assign staff title"
+                  >
+                    <option value="">None</option>
+                    {STAFF_TITLES.map((title) => (
+                      <option key={title.id} value={title.id}>{title.profile}</option>
+                    ))}
+                  </select>
+                </span>
+              </div>
+            )}
             {loadingSuspension ? (
               <div className="admin-detail-row">
                 <span className="admin-detail-label">Status</span>

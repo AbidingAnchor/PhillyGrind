@@ -310,6 +310,26 @@ end $$;
 alter table profiles
   add column if not exists role text not null default 'user' check (role in ('owner', 'admin', 'user'));
 
+alter table profiles
+  add column if not exists staff_title text;
+
+alter table profiles
+  drop constraint if exists profiles_staff_title_check;
+
+alter table profiles
+  add constraint profiles_staff_title_check
+  check (
+    staff_title is null
+    or staff_title in (
+      'founder',
+      'cto',
+      'head_moderator',
+      'operations',
+      'community_manager',
+      'moderator'
+    )
+  );
+
 -- Create admin_action_log table for moderation logging
 create table if not exists admin_action_log (
   id uuid primary key default gen_random_uuid(),
