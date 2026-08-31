@@ -841,7 +841,9 @@ main {
   position: relative;
   width: 100%;
   max-width: none;
+  min-width: 100%;
   margin: 0;
+  align-self: stretch;
   min-height: calc(100dvh - var(--site-header-height, 72px));
   display: flex;
   flex-direction: column;
@@ -853,19 +855,40 @@ main {
   box-sizing: border-box;
 }
 
+html:has(.auth-page),
+body:has(.auth-page),
+#root:has(.auth-page),
+.app-shell:has(.auth-page),
+main:has(.auth-page) {
+  background: #0a0a0a;
+  background-image: none;
+}
+
+main:has(.auth-page) {
+  animation: none;
+  transform: none;
+  overflow: visible;
+  width: 100%;
+  max-width: none;
+}
+
 .bg-blob {
   position: absolute;
-  width: 900px;
-  height: 900px;
-  top: -420px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: -40%;
+  left: -40%;
+  width: 180%;
+  height: 120%;
   background: radial-gradient(circle, rgba(var(--green-rgb),0.13) 0%, transparent 65%);
   filter: blur(60px);
   pointer-events: none;
 }
 
-.auth-wordmark-wrap { position: relative; display: inline-block; }
+.auth-wordmark-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  min-width: 0;
+}
 
 .auth-wordmark, .auth-wordmark-shine {
   font-family: 'Space Grotesk', sans-serif;
@@ -11192,11 +11215,27 @@ input[type="datetime-local"]:focus {
   }
 
   .auth-page {
-    width: 100%;
-    max-width: none;
-    margin: 0;
+    width: 100vw;
+    max-width: 100vw;
+    min-width: 100%;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
     padding-left: max(24px, env(safe-area-inset-left));
     padding-right: max(24px, env(safe-area-inset-right));
+  }
+
+  @supports (width: 100dvw) {
+    .auth-page {
+      width: 100dvw;
+      max-width: 100dvw;
+      margin-left: calc(50% - 50dvw);
+      margin-right: calc(50% - 50dvw);
+    }
+  }
+
+  .auth-wordmark,
+  .auth-wordmark-shine {
+    font-size: clamp(2.35rem, 11vw, 4.5rem);
   }
 
   .community-content,
