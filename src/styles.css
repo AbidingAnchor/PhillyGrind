@@ -4218,6 +4218,18 @@ body {
   padding-bottom: 88px;
 }
 
+.page-section:not(.browse-content):not(.community-content),
+.split-section,
+.form-page,
+.detail-page,
+.legal-page {
+  padding-top: 32px;
+}
+
+.page-section.browse-content:not(.community-content) {
+  padding-top: 34px;
+}
+
 .listing-card,
 .detail-card,
 .listing-form,
@@ -4461,7 +4473,7 @@ body {
 .contact-page {
   width: min(800px, calc(100% - 36px));
   margin: 0 auto;
-  padding: 88px 0;
+  padding: 32px 0 48px;
 }
 
 .contact-chat-container {
@@ -4473,6 +4485,8 @@ body {
   display: flex;
   flex-direction: column;
   height: 600px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 [data-scheme="dark"] .contact-chat-container {
@@ -4504,15 +4518,23 @@ body {
   flex: 1 1 auto;
 }
 
-.contact-chat-bot-info svg {
+.contact-chat-bot-info .grindbot-avatar {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  color: var(--green);
-  background: var(--mint);
-  padding: 8px;
-  box-sizing: content-box;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: none;
   border-radius: 12px;
+  display: block;
+  box-sizing: border-box;
+}
+
+.grindbot-avatar .gb-bg {
+  fill: var(--navy, #0b1620);
+}
+
+.grindbot-avatar .gb-accent {
+  fill: var(--brand-grind, #14c47c);
 }
 
 .contact-chat-bot-copy {
@@ -4570,6 +4592,17 @@ body {
 }
 
 @media (max-width: 640px) {
+  .contact-page {
+    width: calc(100% - 24px);
+    max-width: none;
+    padding: 16px 0 24px;
+  }
+
+  .contact-chat-container {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .contact-chat-header {
     flex-direction: column;
     align-items: stretch;
@@ -4592,6 +4625,22 @@ body {
     width: 100%;
     white-space: normal;
     text-align: center;
+  }
+
+  .contact-chat-form {
+    padding: 12px 16px 16px;
+    gap: 8px;
+  }
+
+  .contact-chat-form input {
+    padding: 12px 14px;
+    font-size: 16px;
+  }
+
+  .contact-chat-form button {
+    padding: 12px 14px;
+    font-size: 0.875rem;
+    gap: 4px;
   }
 }
 
@@ -4728,8 +4777,12 @@ body {
 
 .contact-chat-form {
   display: flex;
-  gap: 12px;
-  padding: 18px 24px;
+  align-items: stretch;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
   border-top: 1px solid var(--line);
   background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
 }
@@ -4740,7 +4793,9 @@ body {
 }
 
 .contact-chat-form input {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
   padding: 14px 18px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -4749,6 +4804,8 @@ body {
   background: #fff;
   color: var(--ink);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: all 0.2s ease;
 }
 
@@ -4770,16 +4827,19 @@ body {
 }
 
 .contact-chat-form button {
-  padding: 13px 18px;
+  flex: 0 0 auto;
+  padding: 13px 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 6px;
   background: linear-gradient(135deg, var(--green), var(--green-dark));
   color: white;
   border: none;
   border-radius: 999px;
   font-weight: 850;
   font-size: 0.95rem;
+  white-space: nowrap;
   box-shadow: 0 12px 26px rgba(var(--green-rgb), 0.24);
   transition: transform 170ms ease, box-shadow 170ms ease, background 170ms ease;
 }
@@ -6680,7 +6740,7 @@ body {
 @media (max-width: 768px) {
   .settings-page {
     width: calc(100% - 24px);
-    margin-top: 20px;
+    margin-top: 16px;
   }
 
   .settings-row-content {
@@ -7429,6 +7489,12 @@ body {
   box-shadow: 0 18px 44px rgba(17, 24, 39, 0.28);
   cursor: pointer;
   transition: transform 170ms ease, background 170ms ease, box-shadow 170ms ease;
+}
+
+.grindbot-bubble .grindbot-avatar {
+  display: block;
+  border-radius: 9px;
+  box-shadow: 0 2px 8px rgba(6, 21, 36, 0.25);
 }
 
 .grindbot-bubble:hover {
@@ -11212,6 +11278,24 @@ input[type="datetime-local"]:focus {
   .hiring-events-page,
   .marketplace-content {
     width: min(100% - 32px, 1160px);
+  }
+
+  .page-section:not(.browse-content):not(.community-content),
+  .split-section,
+  .form-page,
+  .detail-page,
+  .legal-page,
+  .contact-page,
+  .hiring-events-page {
+    padding-top: 8px;
+  }
+
+  .settings-page {
+    margin-top: 16px;
+  }
+
+  .alerts-page {
+    padding-top: 16px;
   }
 
   .auth-page {
@@ -15480,11 +15564,7 @@ input[type="datetime-local"]:focus {
   cursor: not-allowed;
 }
 
-/* Sticky Composer */
 .feed-composer-wrapper {
-  position: sticky;
-  top: 84px;
-  z-index: 5;
   margin-bottom: 16px;
 }
 
@@ -17666,7 +17746,7 @@ input[type="datetime-local"]:focus {
 .alerts-page {
   width: min(1280px, calc(100% - 32px));
   margin: 0 auto 48px;
-  padding-top: 18px;
+  padding-top: 16px;
 }
 
 .alerts-header {
@@ -18692,6 +18772,34 @@ input[type="datetime-local"]:focus {
   position: relative;
   isolation: isolate;
   overflow: hidden;
+}
+
+.messages-page.page-section,
+.groups-browse-page.page-section,
+.group-page.page-section,
+.contact-page {
+  padding-top: 20px;
+}
+
+@media (max-width: 820px) {
+  .messages-page.page-section:not(.browse-content),
+  .groups-browse-page.page-section:not(.browse-content),
+  .group-page.page-section:not(.browse-content),
+  .contact-page {
+    padding-top: 8px;
+  }
+
+  .messages-page .page-heading,
+  .contact-page .page-heading,
+  .groups-browse-hero {
+    margin-top: 0;
+  }
+
+  .messages-page .page-heading .eyebrow,
+  .contact-page .page-heading .eyebrow,
+  .groups-browse-hero .group-create-kicker {
+    margin-top: 0;
+  }
 }
 
 .groups-browse-page::before {

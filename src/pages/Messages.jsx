@@ -28,7 +28,7 @@ function Messages() {
   }, [user?.id]);
 
   return (
-    <section className="page-section">
+    <section className="page-section messages-page">
       <div className="page-heading">
         <span className="eyebrow">Inbox</span>
         <h1>Messages</h1>

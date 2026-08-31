@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { Bot, Send, X } from 'lucide-react';
+import { Send, X } from 'lucide-react';
+import GrindBotAvatar from './GrindBotAvatar.jsx';
 import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../lib/auth.jsx';
 import { hasSupabaseConfig, supabase } from '../lib/supabase.js';
@@ -394,7 +395,7 @@ function GrindBot() {
         </section>
       )}
       <button className="grindbot-bubble" type="button" onClick={() => setOpen((value) => !value)} aria-label="Open GrindBot">
-        <Bot size={24} />
+        <GrindBotAvatar size={30} />
       </button>
     </div>
   );

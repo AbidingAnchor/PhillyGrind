@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Send, Bot } from 'lucide-react';
+import { Send } from 'lucide-react';
+import GrindBotAvatar from '../components/GrindBotAvatar.jsx';
 import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../lib/auth.jsx';
 import { sendContactSubmission } from '../lib/contactApi.js';
@@ -228,7 +229,7 @@ function Contact() {
       <div className="contact-chat-container">
         <div className="contact-chat-header">
           <div className="contact-chat-bot-info">
-            <Bot size={24} aria-hidden="true" />
+            <GrindBotAvatar size={40} />
             <div className="contact-chat-bot-copy">
               <span className="eyebrow">PhillyGrind Support</span>
               <h2>GrindBot</h2>
