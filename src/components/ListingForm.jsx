@@ -4,6 +4,7 @@ import { createBoostCheckout } from '../lib/boostsApi.js';
 import { createListing } from '../lib/listingsApi.js';
 import { hasSupabaseConfig } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
+import NeighborhoodSelect from './NeighborhoodSelect.jsx';
 
 const initialState = {
   title: '',
@@ -91,10 +92,13 @@ function ListingForm({ type, categories, postType, labels = {} }) {
           ))}
         </select>
       </label>
-      <label>
-        Neighborhood
-        <input name="neighborhood" value={form.neighborhood} onChange={updateField} placeholder="South Philly" required />
-      </label>
+      <NeighborhoodSelect
+        id="listing-neighborhood"
+        value={form.neighborhood}
+        onChange={(neighborhood) => setForm((current) => ({ ...current, neighborhood }))}
+        allowAll={false}
+        required
+      />
       <label>
         {labels.pay || 'Pay'}
         <input name="pay" value={form.pay} onChange={updateField} placeholder={labels.payPlaceholder || '$22/hr or $150 flat'} required />

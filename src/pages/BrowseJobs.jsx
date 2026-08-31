@@ -12,6 +12,8 @@ import { attachPosterRatings } from '../lib/reviewsApi.js';
 import { useAuth } from '../lib/auth.jsx';
 import { redirectToSignup } from '../lib/requireSignup.js';
 import { getUserAvatarColor } from '../lib/reactions.js';
+import NeighborhoodSelect from '../components/NeighborhoodSelect.jsx';
+import { ALL_NEIGHBORHOODS } from '../lib/homeNeighborhood.js';
 
 // Helper function to format salary in thousands
 const formatSalary = (num) => {
@@ -284,14 +286,11 @@ function BrowseJobs() {
             placeholder="Search title or description"
           />
         </label>
-        <label>
-          Neighborhood
-          <input
-            value={neighborhood}
-            onChange={(event) => setNeighborhood(event.target.value)}
-            placeholder="South Philly, Fishtown, Center City..."
-          />
-        </label>
+        <NeighborhoodSelect
+          id="jobs-neighborhood"
+          value={neighborhood}
+          onChange={(next) => setNeighborhood(next === ALL_NEIGHBORHOODS ? '' : next)}
+        />
         <label>
           Job Type
           <select value={jobType} onChange={(event) => setJobType(event.target.value)}>

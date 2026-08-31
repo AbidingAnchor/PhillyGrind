@@ -7,6 +7,8 @@ import { gigCategories } from '../data/listings.js';
 import { getListings } from '../lib/listingsApi.js';
 import { attachPosterRatings } from '../lib/reviewsApi.js';
 import { FEED_LOAD_TIMEOUT_MS, withTimeoutRetry } from '../lib/loadWithTimeout.js';
+import NeighborhoodSelect from '../components/NeighborhoodSelect.jsx';
+import { ALL_NEIGHBORHOODS } from '../lib/homeNeighborhood.js';
 
 function BrowseGigs() {
   const [gigs, setGigs] = useState([]);
@@ -65,14 +67,11 @@ function BrowseGigs() {
             placeholder="Search title or description"
           />
         </label>
-        <label>
-          Neighborhood
-          <input
-            value={neighborhood}
-            onChange={(event) => setNeighborhood(event.target.value)}
-            placeholder="South Philly, Fishtown, Center City..."
-          />
-        </label>
+        <NeighborhoodSelect
+          id="gigs-neighborhood"
+          value={neighborhood}
+          onChange={(next) => setNeighborhood(next === ALL_NEIGHBORHOODS ? '' : next)}
+        />
       </div>
       <div className="gig-type-tabs" aria-label="Gig type filters">
         {[

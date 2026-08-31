@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { updateListing } from '../lib/listingsApi.js';
+import NeighborhoodSelect from './NeighborhoodSelect.jsx';
 
 function EditListingModal({ categories, listing, type, onClose, onSaved }) {
   const [form, setForm] = useState({
@@ -65,10 +66,13 @@ function EditListingModal({ categories, listing, type, onClose, onSaved }) {
               ))}
             </select>
           </label>
-          <label>
-            Neighborhood
-            <input name="neighborhood" value={form.neighborhood} onChange={updateField} required />
-          </label>
+          <NeighborhoodSelect
+            id="edit-listing-neighborhood"
+            value={form.neighborhood}
+            onChange={(neighborhood) => setForm((current) => ({ ...current, neighborhood }))}
+            allowAll={false}
+            required
+          />
           <label>
             Pay
             <input name="pay" value={form.pay} onChange={updateField} required />
