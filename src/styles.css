@@ -20000,3 +20000,273 @@ html:not([data-theme="dark"])[data-scheme="dark"] .post-type-badge.seeking {
   color: var(--green);
 }
 
+/* Mascot feature onboarding */
+.mascot-onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: max(12px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px));
+}
+
+.mascot-onboarding-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(11, 22, 32, 0.72) 0%, rgba(11, 22, 32, 0.92) 100%);
+  backdrop-filter: blur(10px);
+}
+
+[data-scheme="light"] .mascot-onboarding-scrim {
+  background: linear-gradient(180deg, rgba(11, 22, 32, 0.45) 0%, rgba(11, 22, 32, 0.78) 100%);
+}
+
+.mascot-onboarding-sheet {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 12px 8px 8px;
+  max-height: 100%;
+}
+
+.mascot-onboarding-skip {
+  position: absolute;
+  top: 0;
+  right: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.92rem;
+  font-weight: 650;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.mascot-onboarding-skip:hover,
+.mascot-onboarding-skip:focus-visible {
+  color: #fff;
+}
+
+.mascot-onboarding-counter {
+  margin: 4px 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.mascot-onboarding-stage {
+  width: min(100%, 320px);
+  margin: 0 auto;
+}
+
+.mascot-onboarding-bob {
+  animation: mascot-onboarding-bob 3.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+.mascot-onboarding-stack {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  max-height: min(52vh, 340px);
+  margin: 0 auto;
+}
+
+.mascot-onboarding-fallback,
+.mascot-onboarding-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.mascot-onboarding-fallback {
+  fill: #1a2c38;
+  transition: opacity 0.35s ease, fill 0.45s ease;
+}
+
+.mascot-onboarding-fallback-eye {
+  fill: #14c47c;
+  animation: mascot-onboarding-fallback-eyes 2.4s ease-in-out infinite;
+}
+
+.mascot-onboarding-fallback.is-hidden {
+  opacity: 0;
+}
+
+.mascot-onboarding-stage[data-step="jobs"] .mascot-onboarding-fallback { fill: #1a3344; }
+.mascot-onboarding-stage[data-step="gigs"] .mascot-onboarding-fallback { fill: #1d3a2a; }
+.mascot-onboarding-stage[data-step="housing"] .mascot-onboarding-fallback { fill: #1b3348; }
+.mascot-onboarding-stage[data-step="community"] .mascot-onboarding-fallback { fill: #143326; }
+.mascot-onboarding-stage[data-step="sports"] .mascot-onboarding-fallback { fill: #3a1d24; }
+.mascot-onboarding-stage[data-step="boost"] .mascot-onboarding-fallback { fill: #3a2e12; }
+.mascot-onboarding-stage[data-step="support"] .mascot-onboarding-fallback { fill: #10281f; }
+
+.mascot-onboarding-img {
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  pointer-events: none;
+  user-select: none;
+}
+
+.mascot-onboarding-img.is-active {
+  opacity: 1;
+}
+
+.mascot-onboarding-img.is-failed {
+  opacity: 0 !important;
+  visibility: hidden;
+}
+
+.mascot-onboarding-eye-glow {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  width: 42%;
+  height: 18%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(20, 196, 124, 0.55) 0%, rgba(20, 196, 124, 0.12) 48%, transparent 72%);
+  filter: blur(10px);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: mascot-onboarding-glow 2.4s ease-in-out infinite;
+}
+
+.mascot-onboarding-headline {
+  margin: 12px 0 6px;
+  font-family: 'Plus Jakarta Sans', 'Syne', Inter, sans-serif;
+  font-size: clamp(1.45rem, 5vw, 1.85rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.mascot-onboarding-copy {
+  margin: 0 8px 18px;
+  max-width: 34ch;
+  font-size: 0.98rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.mascot-onboarding-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mascot-onboarding-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+  transition: width 0.25s ease, background 0.25s ease;
+}
+
+.mascot-onboarding-dot.is-done {
+  background: rgba(20, 196, 124, 0.7);
+}
+
+.mascot-onboarding-dot.is-active {
+  width: 22px;
+  background: #14c47c;
+}
+
+.mascot-onboarding-actions {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+}
+
+.mascot-onboarding-back,
+.mascot-onboarding-next {
+  flex: 1;
+  min-height: 48px;
+  border-radius: 12px;
+  font-family: 'Plus Jakarta Sans', Inter, sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mascot-onboarding-back {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: #fff;
+}
+
+.mascot-onboarding-back:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.mascot-onboarding-next {
+  border: none;
+  background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(var(--green-rgb), 0.3);
+}
+
+.mascot-onboarding-next:hover,
+.mascot-onboarding-next:focus-visible {
+  box-shadow: 0 8px 28px rgba(var(--green-rgb), 0.42);
+}
+
+@keyframes mascot-onboarding-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2.5px); }
+}
+
+@keyframes mascot-onboarding-glow {
+  0%, 100% { opacity: 0.55; filter: blur(10px) brightness(0.92); }
+  50% { opacity: 0.95; filter: blur(12px) brightness(1.18); }
+}
+
+@keyframes mascot-onboarding-fallback-eyes {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+@media (min-width: 720px) {
+  .mascot-onboarding {
+    align-items: center;
+    padding: 24px;
+  }
+
+  .mascot-onboarding-sheet {
+    padding: 20px 16px 16px;
+  }
+
+  .mascot-onboarding-stack {
+    max-height: 380px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot-onboarding-bob,
+  .mascot-onboarding-eye-glow,
+  .mascot-onboarding-fallback-eye {
+    animation: none;
+  }
+
+  .mascot-onboarding-img {
+    transition: none;
+  }
+}
+

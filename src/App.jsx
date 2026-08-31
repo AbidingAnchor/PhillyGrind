@@ -8,8 +8,13 @@ import { isAdminUser } from './lib/adminApi.js';
 import { touchOwnLastActive } from './lib/profileApi.js';
 import { subscribeToToasts } from './lib/toast.js';
 import OnboardingModal from './components/OnboardingModal.jsx';
+import MascotOnboarding from './components/MascotOnboarding.jsx';
 import NotificationBell from './components/NotificationBell.jsx';
 import Toast from './components/Toast.jsx';
+import {
+  hasCompletedMascotOnboarding,
+  shouldHideMascotOnboarding,
+} from './lib/mascotOnboardingStorage.js';
 
 const navItems = [
   { to: '/', label: 'Community', tour: 'community', id: 'nav-community' },
@@ -25,12 +30,19 @@ function App() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [mascotDismissed, setMascotDismissed] = useState(false);
   const { isLoggedIn, profile, signOut, user } = useAuth();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const displayName = profile?.name || 'My Profile';
   const showAdminLink = isAdminUser(user);
   const shouldShowOnboarding = Boolean(isLoggedIn && profile && profile.onboarding_complete === false && location.pathname === '/');
+  const previewMascot = searchParams.get('mascot') === 'preview';
+  const shouldShowMascotOnboarding = Boolean(
+    !mascotDismissed
+    && !shouldHideMascotOnboarding(location.pathname)
+    && (previewMascot || !hasCompletedMascotOnboarding(user?.id)),
+  );
 
   useEffect(() => {
     function handleScroll() {
@@ -218,6 +230,13 @@ function App() {
       </main>
 
       {shouldShowOnboarding && <OnboardingModal />}
+      {shouldShowMascotOnboarding && (
+        <MascotOnboarding
+          userId={user?.id}
+          persist={!previewMascot}
+          onComplete={() => setMascotDismissed(true)}
+        />
+      )}
       {toastMessage && (
         <Toast message={toastMessage} onClose={() => setToastMessage('')} />
       )}

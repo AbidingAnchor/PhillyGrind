@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { hasSupabaseConfig, supabase } from './supabase.js';
 import { completeOwnOnboarding, ensureOwnProfile } from './profileApi.js';
+import { hasCompletedMascotOnboarding } from './mascotOnboardingStorage.js';
 import { claimStoredReferral } from './referral.js';
 import OnboardingTour from '../components/OnboardingTour.jsx';
 import Skeleton from '../components/Skeleton.jsx';
@@ -43,6 +44,9 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [mascotOnboardingDone, setMascotOnboardingDone] = useState(() => (
+    hasCompletedMascotOnboarding()
+  ));
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
@@ -61,6 +65,21 @@ export function AuthProvider({ children }) {
       }
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (hasCompletedMascotOnboarding(session?.user?.id)) {
+      setMascotOnboardingDone(true);
+    }
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    function onMascotDone() {
+      setMascotOnboardingDone(true);
+    }
+
+    window.addEventListener('phillygrind:mascot-onboarding-complete', onMascotDone);
+    return () => window.removeEventListener('phillygrind:mascot-onboarding-complete', onMascotDone);
+  }, []);
 
   useEffect(() => {
     if (!hasSupabaseConfig) {
@@ -359,7 +378,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={value}>
       {children}
-      {showOnboarding && (
+      {showOnboarding && mascotOnboardingDone && (
         <OnboardingTour
           onComplete={handleOnboardingComplete}
           onSkip={handleOnboardingSkip}
