@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet, useLocation, useSearchParams } from 'react-route
 import { Menu, Shield } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { useAuth } from './lib/auth.jsx';
 import { persistReferral } from './lib/referral.js';
 import { isAdminUser } from './lib/adminApi.js';
@@ -320,6 +321,7 @@ function App() {
           <Link to="/privacy">Privacy</Link>
         </nav>
       </footer>
+      <Analytics />
     </div>
   );
 }
