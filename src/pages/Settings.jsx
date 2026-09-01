@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CreditCard, Shield, BadgeCheck, Palette, User, Bell, Mail, FileText, Trash2, MapPin, CloudLightning, Newspaper } from 'lucide-react';
+import { CreditCard, Shield, BadgeCheck, Palette, User, Bell, Mail, FileText, Trash2, MapPin, CloudLightning, Newspaper, Smartphone, Download } from 'lucide-react';
 import { sendTwoFactorCode, toggleTwoFactorAuth, verifyTwoFactorCode } from '../lib/twoFactorApi.js';
 import { createConnectAccount } from '../lib/ordersApi.js';
 import { getResumeUrl, uploadResume, removeResume, saveHomeNeighborhood } from '../lib/profileApi.js';
@@ -13,6 +13,8 @@ import ThemePicker from '../components/ThemePicker.jsx';
 import SettingsToggle from '../components/SettingsToggle.jsx';
 import Skeleton from '../components/Skeleton.jsx';
 import DeleteAccountModal from '../components/DeleteAccountModal.jsx';
+import PwaInstallGuide from '../components/PwaInstallGuide.jsx';
+import { isPwaInstalled, subscribeToPwaInstall } from '../lib/pwaInstall.js';
 
 function resumeFilename(path) {
   if (!path) return '';
@@ -48,6 +50,8 @@ function Settings() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [showPwaInstallGuide, setShowPwaInstallGuide] = useState(false);
+  const [pwaInstalled, setPwaInstalled] = useState(false);
 
   const hasStripeAccount = Boolean(authProfile?.stripe_account_id);
   const payoutsConnected = Boolean(hasStripeAccount && authProfile?.stripe_onboarding_complete);
@@ -115,6 +119,15 @@ function Settings() {
       loadHousingData();
     }
   }, [user?.id]);
+
+  // Detect PWA installation status
+  useEffect(() => {
+    setPwaInstalled(isPwaInstalled());
+    const unsubscribe = subscribeToPwaInstall(() => {
+      setPwaInstalled(isPwaInstalled());
+    });
+    return unsubscribe;
+  }, []);
 
   function resetTwoFactorFlow() {
     setTwoFactorStep('idle');
@@ -560,6 +573,36 @@ function Settings() {
           <ThemePicker />
         </div>
       </section>
+
+      {!pwaInstalled && (
+        <section className="settings-row-card">
+          <div className="settings-row-content">
+            <div className="settings-row-left">
+              <div className="section-icon-wrapper">
+                <Smartphone size={20} />
+              </div>
+              <div className="settings-row-text">
+                <span className="eyebrow">App</span>
+                <h2>Install PhillyGrind App</h2>
+                <p className="settings-row-description">Add PhillyGrind to your home screen for faster access, alerts, and no browser bar.</p>
+              </div>
+            </div>
+            <button className="primary-button" type="button" onClick={() => setShowPwaInstallGuide(true)}>
+              <Download size={16} style={{ marginRight: 8 }} />
+              Install
+            </button>
+          </div>
+        </section>
+      )}
+
+      {showPwaInstallGuide && (
+        <PwaInstallGuide
+          overlay
+          onContinue={() => setShowPwaInstallGuide(false)}
+          onDismiss={() => setShowPwaInstallGuide(false)}
+          continueLabel="Got it"
+        />
+      )}
 
       <section className="settings-row-card">
         <div className="settings-row-content">
