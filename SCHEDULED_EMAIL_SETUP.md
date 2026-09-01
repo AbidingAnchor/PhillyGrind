@@ -7,6 +7,23 @@ Due to Vercel Hobby plan limitations (cron jobs can only run once per day), sche
 1. **Weather Alert Checks** - Every 30 minutes for real-time weather warnings
 2. **Weekly Digest** - Once per week (recommended: Sunday 9 AM or Monday 9 AM)
 
+## ⚠️ MANUAL SETUP REQUIRED
+
+Both services require manual setup after deployment:
+
+1. **Set environment variables in Supabase**
+2. **Deploy Edge Functions**
+3. **Configure external cron services**
+
+See detailed setup steps below.
+
+## Overview
+Due to Vercel Hobby plan limitations (cron jobs can only run once per day), scheduled email checks have been moved to Supabase Edge Functions that can be called more frequently.
+
+## Services
+1. **Weather Alert Checks** - Every 30 minutes for real-time weather warnings
+2. **Weekly Digest** - Once per week (recommended: Sunday 9 AM or Monday 9 AM)
+
 ## Weather Alert Setup
 
 ### 1. Set Environment Variable in Supabase
