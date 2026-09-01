@@ -7,7 +7,6 @@ import { persistReferral } from './lib/referral.js';
 import { isAdminUser } from './lib/adminApi.js';
 import { touchOwnLastActive } from './lib/profileApi.js';
 import { subscribeToToasts } from './lib/toast.js';
-import OnboardingModal from './components/OnboardingModal.jsx';
 import MascotOnboarding from './components/MascotOnboarding.jsx';
 import NotificationBell from './components/NotificationBell.jsx';
 import Toast from './components/Toast.jsx';
@@ -15,10 +14,6 @@ import {
   hasCompletedMascotOnboarding,
   shouldHideMascotOnboarding,
 } from './lib/mascotOnboardingStorage.js';
-import {
-  hasFinishedNeighborhoodStep,
-  NEIGHBORHOOD_STEP_EVENT,
-} from './lib/onboardingSequence.js';
 
 const navItems = [
   { to: '/', label: 'Community', tour: 'community', id: 'nav-community' },
@@ -37,7 +32,6 @@ function App() {
   const mobileNavRef = useRef(null);
   const [toastMessage, setToastMessage] = useState('');
   const [mascotDismissed, setMascotDismissed] = useState(false);
-  const [neighborhoodStepDone, setNeighborhoodStepDone] = useState(false);
   const { isLoggedIn, profile, signOut, user } = useAuth();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -46,6 +40,9 @@ function App() {
   const previewMascot = searchParams.get('mascot') === 'preview';
   const installParam = searchParams.get('install');
   const previewInstall = installParam === 'preview' || installParam === 'ios' || installParam === 'native';
+
+  // Trace mascot onboarding state
+  const localStorageMascotValue = typeof window !== 'undefined' ? window.localStorage.getItem('phillygrind-mascot-onboarding-v1') : 'window undefined';
   const mascotFinished = Boolean(
     mascotDismissed || hasCompletedMascotOnboarding(user?.id),
   );
@@ -58,13 +55,22 @@ function App() {
     && !shouldHideMascotOnboarding(location.pathname)
     && (previewMascot || (needsFirstRunOnboarding && !hasCompletedMascotOnboarding(user?.id))),
   );
-  const shouldShowOnboarding = Boolean(
-    needsFirstRunOnboarding
-    && location.pathname === '/'
-    && mascotFinished
-    && !neighborhoodStepDone
-    && !hasFinishedNeighborhoodStep(profile),
-  );
+
+  console.log('[MASCOT ONBOARDING DEBUG]', {
+    localStorageMascotValue,
+    mascotDismissed,
+    hasCompletedMascotOnboarding: hasCompletedMascotOnboarding(user?.id),
+    mascotFinished,
+    isLoggedIn,
+    profileOnboardingComplete: profile?.onboarding_complete,
+    needsFirstRunOnboarding,
+    previewMascot,
+    previewInstall,
+    shouldHideMascotOnboarding: shouldHideMascotOnboarding(location.pathname),
+    shouldShowMascotOnboarding,
+    userId: user?.id,
+    pathname: location.pathname,
+  });
 
   useEffect(() => {
     function handleScroll() {
@@ -79,21 +85,6 @@ function App() {
   useEffect(() => {
     setOpen(false);
   }, [location.pathname]);
-
-  useEffect(() => {
-    if (hasFinishedNeighborhoodStep(profile)) {
-      setNeighborhoodStepDone(true);
-    }
-  }, [profile]);
-
-  useEffect(() => {
-    function onNeighborhoodDone() {
-      setNeighborhoodStepDone(true);
-    }
-
-    window.addEventListener(NEIGHBORHOOD_STEP_EVENT, onNeighborhoodDone);
-    return () => window.removeEventListener(NEIGHBORHOOD_STEP_EVENT, onNeighborhoodDone);
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -187,6 +178,12 @@ function App() {
     await signOut();
     setOpen(false);
   }
+
+  const willShowPwaGuide = Boolean(
+    isLoggedIn && profile && !profile.onboarding_complete && mascotFinished
+  );
+
+  console.log(`[FLOW DECISION] mascotFinished=${mascotFinished}, willShowMascot=${shouldShowMascotOnboarding}, willShowPwaGuide=${willShowPwaGuide}, localStorage_raw='${localStorageMascotValue}'`);
 
   return (
     <div className="app-shell">
@@ -294,9 +291,6 @@ function App() {
         <Outlet />
       </main>
 
-      {shouldShowOnboarding && (
-        <OnboardingModal onComplete={() => setNeighborhoodStepDone(true)} />
-      )}
       {shouldShowMascotOnboarding && (
         <MascotOnboarding
           userId={user?.id}

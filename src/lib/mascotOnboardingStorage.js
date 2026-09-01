@@ -121,6 +121,16 @@ function writeFlag(key) {
 }
 
 export function hasCompletedMascotOnboarding(userId) {
+  const globalFlag = readFlag(STORAGE_KEY);
+  const userFlag = userId ? readFlag(`${STORAGE_KEY}:${userId}`) : false;
+  const result = userFlag || globalFlag;
+  console.log('[MASCOT STORAGE CHECK] hasCompletedMascotOnboarding:', {
+    userId,
+    globalFlag,
+    userFlag,
+    result,
+    storageKey: STORAGE_KEY,
+  });
   if (userId && readFlag(`${STORAGE_KEY}:${userId}`)) return true;
   return readFlag(STORAGE_KEY);
 }

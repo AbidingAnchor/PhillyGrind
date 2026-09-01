@@ -8,19 +8,26 @@ function notify() {
   listeners.forEach((listener) => listener());
 }
 
-export function getPwaInstallContext() {
+export function getPwaInstallContext(forcePreview = false) {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
     return 'desktop';
   }
 
-  const ua = navigator.userAgent || '';
-  const isStandalone =
-    window.matchMedia('(display-mode: standalone)').matches
-    || window.matchMedia('(display-mode: fullscreen)').matches
-    || window.matchMedia('(display-mode: minimal-ui)').matches
-    || window.navigator.standalone === true;
+  // Allow force-preview for QA testing
+  if (forcePreview) {
+    return 'preview';
+  }
 
-  if (isStandalone) return 'installed';
+  const ua = navigator.userAgent || '';
+  
+  // iOS: rely on navigator.standalone (most reliable)
+  const isIOSStandalone = window.navigator.standalone === true;
+  
+  // Other platforms: only check display-mode: standalone specifically
+  // Don't include fullscreen or minimal-ui as they don't indicate PWA installation
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
+  if (isIOSStandalone || isStandalone) return 'installed';
 
   const isIOS =
     /iPad|iPhone|iPod/.test(ua)

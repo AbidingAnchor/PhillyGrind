@@ -1,14 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import { X, ArrowRight, MessageSquare, Briefcase, Hammer, ShoppingBag, Home, Sparkles } from 'lucide-react';
 import { completeOwnOnboarding } from '../lib/profileApi.js';
 import { getPwaInstallContext } from '../lib/pwaInstall.js';
 import PwaInstallGuide from './PwaInstallGuide.jsx';
 
 export default function OnboardingTour({ onComplete, onSkip }) {
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [installContext] = useState(() => getPwaInstallContext());
+  const forcePreviewInstall = searchParams.get('install') === 'preview';
+  const [installContext] = useState(() => getPwaInstallContext(forcePreviewInstall));
 
   const tourSteps = useMemo(() => {
     const steps = [
@@ -76,11 +79,12 @@ export default function OnboardingTour({ onComplete, onSkip }) {
       },
     ];
 
-    if (installContext === 'installed') {
+    // Only filter out install step if genuinely installed (not force-preview)
+    if (installContext === 'installed' && !forcePreviewInstall) {
       return steps.filter((item) => item.type !== 'install');
     }
     return steps;
-  }, [installContext]);
+  }, [installContext, forcePreviewInstall]);
 
   const currentStep = tourSteps[step];
   const isCardStep = currentStep?.type === 'spotlight';
@@ -203,6 +207,7 @@ export default function OnboardingTour({ onComplete, onSkip }) {
       {currentStep.type === 'install' && (
         <PwaInstallGuide
           overlay
+          forceContext={forcePreviewInstall ? 'preview' : undefined}
           onContinue={nextStep}
           onDismiss={handleSkip}
           continueLabel="Next"

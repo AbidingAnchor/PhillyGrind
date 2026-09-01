@@ -6,6 +6,8 @@ import { markNeighborhoodStepComplete } from '../lib/onboardingSequence.js';
 import { HOME_NEIGHBORHOODS, snapToHomeNeighborhood } from '../lib/homeNeighborhood.js';
 
 function OnboardingModal({ onComplete }) {
+  console.log('[ONBOARDING MODAL RENDER] OnboardingModal is being rendered - this should NOT happen in simplified onboarding flow');
+  console.trace('[ONBOARDING MODAL RENDER] Call stack:');
   const [neighborhood, setNeighborhood] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [saving, setSaving] = useState(false);

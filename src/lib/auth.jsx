@@ -2,12 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { hasSupabaseConfig, supabase } from './supabase.js';
 import { completeOwnOnboarding, ensureOwnProfile } from './profileApi.js';
 import { hasCompletedMascotOnboarding } from './mascotOnboardingStorage.js';
-import {
-  hasFinishedNeighborhoodStep,
-  NEIGHBORHOOD_STEP_EVENT,
-} from './onboardingSequence.js';
 import { claimStoredReferral } from './referral.js';
-import OnboardingTour from '../components/OnboardingTour.jsx';
+import PwaInstallGuide from '../components/PwaInstallGuide.jsx';
 import Skeleton from '../components/Skeleton.jsx';
 
 const AuthContext = createContext(null);
@@ -47,43 +43,51 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showPwaInstall, setShowPwaInstall] = useState(false);
   const [mascotOnboardingDone, setMascotOnboardingDone] = useState(() => (
     hasCompletedMascotOnboarding()
   ));
-  const [neighborhoodStepDone, setNeighborhoodStepDone] = useState(() => (
-    hasFinishedNeighborhoodStep()
-  ));
 
-  const handleOnboardingComplete = () => {
-    setShowOnboarding(false);
+  const handlePwaInstallComplete = async () => {
+    setShowPwaInstall(false);
+    await completeOwnOnboarding();
   };
 
-  const handleOnboardingSkip = () => {
-    setShowOnboarding(false);
+  const handlePwaInstallSkip = async () => {
+    setShowPwaInstall(false);
+    await completeOwnOnboarding();
   };
 
   useEffect(() => {
     if (profile) {
       setLoading(false);
-      // Show onboarding tour if not completed
-      if (!profile.onboarding_complete) {
-        setShowOnboarding(true);
+      // Show PWA install guide after mascot completes if onboarding not done
+      const shouldShow = !profile.onboarding_complete && mascotOnboardingDone;
+      console.log('[PWA INSTALL GUIDE DEBUG]', {
+        profileOnboardingComplete: profile.onboarding_complete,
+        mascotOnboardingDone,
+        shouldShowPwaInstall: shouldShow,
+        showPwaInstall,
+        profileId: profile.id,
+      });
+      if (shouldShow) {
+        setShowPwaInstall(true);
       }
     }
-  }, [profile]);
+  }, [profile, mascotOnboardingDone]);
 
   useEffect(() => {
-    if (hasCompletedMascotOnboarding(session?.user?.id)) {
+    const userId = session?.user?.id;
+    const completed = hasCompletedMascotOnboarding(userId);
+    console.log('[AUTH MASCOT CHECK] Session user ID changed:', {
+      userId,
+      hasCompletedMascotOnboarding: completed,
+      mascotOnboardingDone,
+    });
+    if (completed) {
       setMascotOnboardingDone(true);
     }
   }, [session?.user?.id]);
-
-  useEffect(() => {
-    if (hasFinishedNeighborhoodStep(profile)) {
-      setNeighborhoodStepDone(true);
-    }
-  }, [profile]);
 
   useEffect(() => {
     function onMascotDone() {
@@ -92,15 +96,6 @@ export function AuthProvider({ children }) {
 
     window.addEventListener('phillygrind:mascot-onboarding-complete', onMascotDone);
     return () => window.removeEventListener('phillygrind:mascot-onboarding-complete', onMascotDone);
-  }, []);
-
-  useEffect(() => {
-    function onNeighborhoodDone() {
-      setNeighborhoodStepDone(true);
-    }
-
-    window.addEventListener(NEIGHBORHOOD_STEP_EVENT, onNeighborhoodDone);
-    return () => window.removeEventListener(NEIGHBORHOOD_STEP_EVENT, onNeighborhoodDone);
   }, []);
 
   useEffect(() => {
@@ -400,10 +395,12 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={value}>
       {children}
-      {showOnboarding && mascotOnboardingDone && neighborhoodStepDone && (
-        <OnboardingTour
-          onComplete={handleOnboardingComplete}
-          onSkip={handleOnboardingSkip}
+      {showPwaInstall && mascotOnboardingDone && (
+        <PwaInstallGuide
+          overlay
+          onContinue={handlePwaInstallComplete}
+          onDismiss={handlePwaInstallSkip}
+          continueLabel="Get started"
         />
       )}
     </AuthContext.Provider>
