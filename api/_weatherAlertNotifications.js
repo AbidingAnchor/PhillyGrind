@@ -1,5 +1,7 @@
 import { sendJson, supabaseAdmin } from './_utils.js';
 import { getActiveAlertsForNeighborhood } from './_weatherAlerts.js';
+import { sendEmail } from './_utils/email.js';
+import { createWeatherAlertEmail } from './_utils/emailTemplate.js';
 
 const NEW_ALERT_WINDOW_MS = 2 * 60 * 60 * 1000;
 const PROFILE_PAGE_SIZE = 1000;
@@ -44,7 +46,7 @@ async function loadNotifiableUsers() {
   while (true) {
     const { data, error } = await supabaseAdmin
       .from('profiles')
-      .select('id, neighborhood, neighborhoods, notifications_enabled')
+      .select('id, neighborhood, neighborhoods, notifications_enabled, email, weather_alert_email_notifications')
       .or('notifications_enabled.eq.true,notifications_enabled.is.null')
       .range(from, from + PROFILE_PAGE_SIZE - 1);
 
@@ -59,6 +61,8 @@ async function loadNotifiableUsers() {
     .map((profile) => ({
       id: profile.id,
       neighborhood: homeNeighborhood(profile),
+      email: profile.email,
+      weatherAlertEmailEnabled: profile.weather_alert_email_notifications !== false,
     }))
     .filter((user) => user.id && user.neighborhood);
 }
@@ -73,17 +77,22 @@ async function existingReceiptKeys(pairs) {
   for (const userChunk of chunk(userIds, 200)) {
     const { data, error } = await supabaseAdmin
       .from('alert_notification_receipts')
-      .select('user_id, alert_id')
+      .select('user_id, alert_id, email_sent')
       .in('user_id', userChunk)
       .in('alert_id', alertIds);
 
     if (error) throw error;
     for (const row of data || []) {
-      keys.add(`${row.user_id}::${row.alert_id}`);
+      keys.add(`${row.user_id}::${row.alert_id}::${row.email_sent ? 'emailed' : 'not-emailed'}`);
     }
   }
 
   return keys;
+}
+
+function getSiteUrl() {
+  const raw = process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://www.phillygrind.work';
+  return String(raw).replace(/\/+$/, '');
 }
 
 export async function handleDispatchWeatherAlertNotifications(req, res) {
@@ -114,18 +123,23 @@ export async function handleDispatchWeatherAlertNotifications(req, res) {
             neighborhood,
             title: alert.title || alert.event || 'Weather alert',
             issuedAt: alert.issuedAt,
+            description: alert.description || alert.summary || '',
+            expires: alert.until || alert.expires || '',
+            email: user.email,
+            weatherAlertEmailEnabled: user.weatherAlertEmailEnabled,
           });
         }
       }
     }
 
     const alreadySent = await existingReceiptKeys(pending);
-    const fresh = pending.filter((item) => !alreadySent.has(`${item.userId}::${item.alertId}`));
+    const fresh = pending.filter((item) => !alreadySent.has(`${item.userId}::${item.alertId}::not-emailed`));
     const toNotify = seedOnly ? [] : fresh.filter((item) => isFreshAlert(item));
     const receipts = fresh.map((item) => ({
       user_id: item.userId,
       alert_id: item.alertId,
       neighborhood: item.neighborhood,
+      email_sent: false,
     }));
     const notifications = toNotify.map((item) => ({
       user_id: item.userId,
@@ -135,6 +149,14 @@ export async function handleDispatchWeatherAlertNotifications(req, res) {
       read: false,
     }));
 
+    // Send in-app notifications
+    for (const group of chunk(notifications, INSERT_CHUNK)) {
+      if (!group.length) continue;
+      const { error } = await supabaseAdmin.from('notifications').insert(group);
+      if (error) throw error;
+    }
+
+    // Write receipts
     for (const group of chunk(receipts, INSERT_CHUNK)) {
       if (!group.length) continue;
       const { error } = await supabaseAdmin
@@ -143,10 +165,39 @@ export async function handleDispatchWeatherAlertNotifications(req, res) {
       if (error) throw error;
     }
 
-    for (const group of chunk(notifications, INSERT_CHUNK)) {
-      if (!group.length) continue;
-      const { error } = await supabaseAdmin.from('notifications').insert(group);
-      if (error) throw error;
+    // Send email notifications for fresh alerts with email enabled
+    const siteUrl = getSiteUrl();
+    let emailsSent = 0;
+    for (const item of toNotify) {
+      if (!item.weatherAlertEmailEnabled || !item.email) continue;
+
+      const { subject, html } = createWeatherAlertEmail({
+        alertType: item.title,
+        neighborhood: item.neighborhood,
+        description: item.description,
+        expires: item.expires,
+        alertUrl: `${siteUrl}/alerts?id=${encodeURIComponent(item.alertId)}`,
+        settingsUrl: `${siteUrl}/settings`,
+        userId: item.userId,
+      });
+
+      try {
+        await sendEmail({
+          to: item.email,
+          subject,
+          html,
+        });
+        emailsSent++;
+
+        // Update receipt to mark email as sent
+        await supabaseAdmin
+          .from('alert_notification_receipts')
+          .update({ email_sent: true })
+          .eq('user_id', item.userId)
+          .eq('alert_id', item.alertId);
+      } catch (emailError) {
+        console.warn('[weather-alert-email]', `Failed to send email to ${item.email}:`, emailError.message);
+      }
     }
 
     sendJson(res, 200, {
@@ -157,6 +208,7 @@ export async function handleDispatchWeatherAlertNotifications(req, res) {
       livePairs: pending.length,
       receiptsWritten: receipts.length,
       notified: notifications.length,
+      emailsSent,
     });
   } catch (error) {
     console.warn('[weather-alert-notifications]', error.message);

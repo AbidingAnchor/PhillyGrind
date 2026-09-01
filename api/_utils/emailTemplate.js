@@ -283,3 +283,45 @@ export function createAccountRecoveryDeniedEmail() {
     `,
   });
 }
+
+export function createWeatherAlertEmail({ alertType, neighborhood, description, expires, alertUrl, settingsUrl, userId }) {
+  const safeAlertType = escapeHtml(alertType || 'Weather Alert');
+  const safeNeighborhood = escapeHtml(neighborhood || 'your area');
+  const safeDescription = escapeHtml(description || '');
+  const safeExpires = escapeHtml(expires || '');
+  const subject = `${safeAlertType} in ${safeNeighborhood}`;
+
+  return {
+    subject,
+    html: createEmailTemplate({
+      subject: escapeHtml(subject),
+      userId,
+      content: `
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; color: #111827;">${safeAlertType} in ${safeNeighborhood}</h2>
+      ${safeDescription ? `
+      <div style="background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 16px 0;">
+        <p style="margin: 0; color: #92400e; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">${safeDescription}</p>
+      </div>
+      ` : ''}
+      ${safeExpires ? `
+      <p style="margin: 0 0 16px 0; color: #374151; font-size: 15px; line-height: 1.6;">
+        <strong>Expires:</strong> ${safeExpires}
+      </p>
+      ` : ''}
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 24px 0;">
+        <tr>
+          <td align="center" style="padding: 8px 0;">
+            <a href="${alertUrl}" style="display: inline-block; background: #22c55e; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+              View Alert Details
+            </a>
+          </td>
+        </tr>
+      </table>
+      <p style="margin: 0; color: #6b7280; font-size: 13px; line-height: 1.6;">
+        You can turn off weather alert emails in
+        <a href="${settingsUrl}" style="color: #22c55e; text-decoration: none;">Settings</a>.
+      </p>
+    `,
+    }),
+  };
+}

@@ -10,7 +10,7 @@ const IMAGE_ALLOWED_TYPES = new Set([
   'image/png',
   'image/webp',
 ]);
-const profileSelect = 'id,name,bio,skills,availability,neighborhood,neighborhoods,resume_path,resume_url,avatar_url,banner_url,profile_tags,created_at,account_reference';
+const PROFILE_SELECT = 'id,name,bio,skills,availability,neighborhood,neighborhoods,resume_path,resume_url,avatar_url,banner_url,profile_tags,created_at,account_reference,weather_alert_email_notifications';
 
 function displayNameFromUser(user) {
   return user?.user_metadata?.name
@@ -32,7 +32,7 @@ export async function ensureOwnProfile() {
 
   const existing = await supabase
     .from('profiles')
-    .select(profileSelect)
+    .select(PROFILE_SELECT)
     .eq('id', user.id)
     .maybeSingle();
 
@@ -55,13 +55,13 @@ export async function ensureOwnProfile() {
       onboarding_complete: false,
       is_adult_confirmed: false,
     })
-    .select(profileSelect)
+    .select(PROFILE_SELECT)
     .single();
 
   if (error) {
     const retry = await supabase
       .from('profiles')
-      .select(profileSelect)
+      .select(PROFILE_SELECT)
       .eq('id', user.id)
       .maybeSingle();
     if (retry.data) return retry.data;
@@ -237,7 +237,7 @@ export async function updateProfile({ name, bio, skills, availability, neighborh
       neighborhood,
     })
     .eq('id', userData.user.id)
-    .select(profileSelect)
+    .select(PROFILE_SELECT)
     .single();
 
   console.log('[Profile API] Update profile response:', { error, data });
@@ -262,7 +262,7 @@ export async function saveHomeNeighborhood(neighborhood) {
     .from('profiles')
     .update({ neighborhood: next })
     .eq('id', userData.user.id)
-    .select(profileSelect)
+    .select(PROFILE_SELECT)
     .single();
 
   if (error) throw error;
@@ -431,7 +431,7 @@ export async function uploadAvatar(file) {
     .from('profiles')
     .update({ avatar_url: cacheBustedUrl })
     .eq('id', userData.user.id)
-    .select(profileSelect)
+    .select(PROFILE_SELECT)
     .single();
 
   if (error) {
@@ -493,7 +493,7 @@ export async function uploadBanner(file) {
     .from('profiles')
     .update({ banner_url: cacheBustedUrl })
     .eq('id', userData.user.id)
-    .select(profileSelect)
+    .select(PROFILE_SELECT)
     .single();
 
   if (error) {

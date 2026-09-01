@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, Shield, BadgeCheck, Palette, User, Bell, Mail, FileText, Trash2, MapPin } from 'lucide-react';
+import { CreditCard, Shield, BadgeCheck, Palette, User, Bell, Mail, FileText, Trash2, MapPin, CloudLightning } from 'lucide-react';
 import { sendTwoFactorCode, toggleTwoFactorAuth, verifyTwoFactorCode } from '../lib/twoFactorApi.js';
 import { createConnectAccount } from '../lib/ordersApi.js';
 import { getResumeUrl, uploadResume, removeResume, saveHomeNeighborhood } from '../lib/profileApi.js';
@@ -40,6 +40,7 @@ function Settings() {
   const [showAvailableNow, setShowAvailableNow] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emailCommentNotifications, setEmailCommentNotifications] = useState(true);
+  const [weatherAlertEmailNotifications, setWeatherAlertEmailNotifications] = useState(true);
   const [homeNeighborhood, setHomeNeighborhood] = useState('');
   const [savingNeighborhood, setSavingNeighborhood] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -56,6 +57,7 @@ function Settings() {
     setShowAvailableNow(Boolean(authProfile.show_available_now));
     setNotificationsEnabled(authProfile.notifications_enabled !== false);
     setEmailCommentNotifications(authProfile.email_comment_notifications !== false);
+    setWeatherAlertEmailNotifications(authProfile.weather_alert_email_notifications !== false);
     setHomeNeighborhood(authProfile.neighborhood || '');
     const resumeStoragePath = getProfileResumePath(authProfile);
     if (resumeStoragePath) {
@@ -247,6 +249,27 @@ function Settings() {
       await refreshProfile();
     } catch (err) {
       setProfileStatus(err.message || 'Could not update comment email settings.');
+    }
+  }
+
+  async function handleToggleWeatherAlertEmailNotifications() {
+    setProfileStatus('');
+    const nextValue = !weatherAlertEmailNotifications;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ weather_alert_email_notifications: nextValue })
+        .eq('id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setWeatherAlertEmailNotifications(nextValue);
+      setProfileStatus(`Weather alert emails ${nextValue ? 'enabled' : 'disabled'}.`);
+      await refreshProfile();
+    } catch (err) {
+      setProfileStatus(err.message || 'Could not update weather alert email settings.');
     }
   }
 
@@ -546,6 +569,26 @@ function Settings() {
             checked={emailCommentNotifications}
             onChange={handleToggleEmailCommentNotifications}
             ariaLabel={emailCommentNotifications ? 'Disable comment emails' : 'Enable comment emails'}
+          />
+        </div>
+      </section>
+
+      <section className="settings-row-card">
+        <div className="settings-row-content">
+          <div className="settings-row-left">
+            <div className="section-icon-wrapper">
+              <CloudLightning size={20} />
+            </div>
+            <div className="settings-row-text">
+              <span className="eyebrow">Weather Alerts</span>
+              <h2>Weather alert emails</h2>
+              <p className="settings-row-description">Email me when a NWS Warning-level alert is issued for my neighborhood.</p>
+            </div>
+          </div>
+          <SettingsToggle
+            checked={weatherAlertEmailNotifications}
+            onChange={handleToggleWeatherAlertEmailNotifications}
+            ariaLabel={weatherAlertEmailNotifications ? 'Disable weather alert emails' : 'Enable weather alert emails'}
           />
         </div>
       </section>
