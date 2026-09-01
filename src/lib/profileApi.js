@@ -10,7 +10,7 @@ const IMAGE_ALLOWED_TYPES = new Set([
   'image/png',
   'image/webp',
 ]);
-const PROFILE_SELECT = 'id,name,bio,skills,availability,neighborhood,neighborhoods,resume_path,resume_url,avatar_url,banner_url,profile_tags,created_at,account_reference,weather_alert_email_notifications';
+const PROFILE_SELECT = 'id,name,bio,skills,availability,neighborhood,neighborhoods,resume_path,resume_url,avatar_url,banner_url,profile_tags,created_at,account_reference,weather_alert_email_notifications,weekly_digest_email_notifications';
 
 function displayNameFromUser(user) {
   return user?.user_metadata?.name

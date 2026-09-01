@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CreditCard, Shield, BadgeCheck, Palette, User, Bell, Mail, FileText, Trash2, MapPin, CloudLightning } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { CreditCard, Shield, BadgeCheck, Palette, User, Bell, Mail, FileText, Trash2, MapPin, CloudLightning, Newspaper } from 'lucide-react';
 import { sendTwoFactorCode, toggleTwoFactorAuth, verifyTwoFactorCode } from '../lib/twoFactorApi.js';
 import { createConnectAccount } from '../lib/ordersApi.js';
 import { getResumeUrl, uploadResume, removeResume, saveHomeNeighborhood } from '../lib/profileApi.js';
@@ -27,6 +27,8 @@ function getProfileResumePath(profile) {
 function Settings() {
   const { user, isLoggedIn, profile: authProfile, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const unsubscribeProcessedRef = useRef(false);
   const [connectingPayouts, setConnectingPayouts] = useState(false);
   const [resumeUrl, setResumeUrl] = useState('');
   const [profileStatus, setProfileStatus] = useState('');
@@ -41,6 +43,7 @@ function Settings() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [emailCommentNotifications, setEmailCommentNotifications] = useState(true);
   const [weatherAlertEmailNotifications, setWeatherAlertEmailNotifications] = useState(true);
+  const [weeklyDigestEmailNotifications, setWeeklyDigestEmailNotifications] = useState(false);
   const [homeNeighborhood, setHomeNeighborhood] = useState('');
   const [savingNeighborhood, setSavingNeighborhood] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -58,12 +61,40 @@ function Settings() {
     setNotificationsEnabled(authProfile.notifications_enabled !== false);
     setEmailCommentNotifications(authProfile.email_comment_notifications !== false);
     setWeatherAlertEmailNotifications(authProfile.weather_alert_email_notifications !== false);
+    setWeeklyDigestEmailNotifications(authProfile.weekly_digest_email_notifications || false);
     setHomeNeighborhood(authProfile.neighborhood || '');
     const resumeStoragePath = getProfileResumePath(authProfile);
     if (resumeStoragePath) {
       getResumeUrl(resumeStoragePath).then(setResumeUrl).catch(console.warn);
     }
   }, [authProfile]);
+
+  // Handle unsubscribe from weekly digest via email link
+  useEffect(() => {
+    const unsubscribeAction = searchParams.get('action');
+    if (unsubscribeAction === 'unsubscribe-digest' && user?.id && !unsubscribeProcessedRef.current) {
+      unsubscribeProcessedRef.current = true;
+      const unsubscribe = async () => {
+        try {
+          const { error } = await supabase
+            .from('profiles')
+            .update({ weekly_digest_email_notifications: false })
+            .eq('id', user.id);
+
+          if (!error) {
+            setWeeklyDigestEmailNotifications(false);
+            setProfileStatus('Weekly digest emails disabled.');
+            await refreshProfile();
+            // Clear the action param to prevent re-processing
+            navigate('/settings', { replace: true });
+          }
+        } catch (err) {
+          console.error('Failed to unsubscribe from digest:', err);
+        }
+      };
+      unsubscribe();
+    }
+  }, [searchParams, user?.id, supabase, refreshProfile, navigate]);
 
   useEffect(() => {
     async function loadHousingData() {
@@ -270,6 +301,27 @@ function Settings() {
       await refreshProfile();
     } catch (err) {
       setProfileStatus(err.message || 'Could not update weather alert email settings.');
+    }
+  }
+
+  async function handleToggleWeeklyDigestEmailNotifications() {
+    setProfileStatus('');
+    const nextValue = !weeklyDigestEmailNotifications;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ weekly_digest_email_notifications: nextValue })
+        .eq('id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setWeeklyDigestEmailNotifications(nextValue);
+      setProfileStatus(`Weekly digest emails ${nextValue ? 'enabled' : 'disabled'}.`);
+      await refreshProfile();
+    } catch (err) {
+      setProfileStatus(err.message || 'Could not update weekly digest email settings.');
     }
   }
 
@@ -589,6 +641,26 @@ function Settings() {
             checked={weatherAlertEmailNotifications}
             onChange={handleToggleWeatherAlertEmailNotifications}
             ariaLabel={weatherAlertEmailNotifications ? 'Disable weather alert emails' : 'Enable weather alert emails'}
+          />
+        </div>
+      </section>
+
+      <section className="settings-row-card">
+        <div className="settings-row-content">
+          <div className="settings-row-left">
+            <div className="section-icon-wrapper">
+              <Newspaper size={20} />
+            </div>
+            <div className="settings-row-text">
+              <span className="eyebrow">Weekly Digest</span>
+              <h2>Weekly digest emails</h2>
+              <p className="settings-row-description">Email me a weekly digest of new jobs, gigs, and community posts in my neighborhood.</p>
+            </div>
+          </div>
+          <SettingsToggle
+            checked={weeklyDigestEmailNotifications}
+            onChange={handleToggleWeeklyDigestEmailNotifications}
+            ariaLabel={weeklyDigestEmailNotifications ? 'Disable weekly digest emails' : 'Enable weekly digest emails'}
           />
         </div>
       </section>

@@ -325,3 +325,92 @@ export function createWeatherAlertEmail({ alertType, neighborhood, description, 
     }),
   };
 }
+
+export function createWeeklyDigestEmail({ neighborhood, jobs, gigs, communityPosts, siteUrl, userId }) {
+  const safeNeighborhood = escapeHtml(neighborhood || 'your area');
+  const subject = `What's new in ${safeNeighborhood} this week`;
+  
+  const jobItems = (jobs || []).slice(0, 3).map(job => `
+    <tr>
+      <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+        <a href="${siteUrl}/jobs/${job.id}" style="color: #111827; text-decoration: none; font-weight: 600; font-size: 15px;">
+          ${escapeHtml(job.title)}
+        </a>
+        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">${escapeHtml(job.company || '')}</p>
+      </td>
+    </tr>
+  `).join('');
+
+  const gigItems = (gigs || []).slice(0, 3).map(gig => `
+    <tr>
+      <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+        <a href="${siteUrl}/gigs/${gig.id}" style="color: #111827; text-decoration: none; font-weight: 600; font-size: 15px;">
+          ${escapeHtml(gig.title)}
+        </a>
+        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">${escapeHtml(gig.pay || '')}</p>
+      </td>
+    </tr>
+  `).join('');
+
+  const communityItems = (communityPosts || []).slice(0, 3).map(post => `
+    <tr>
+      <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+        <a href="${siteUrl}/?post=${encodeURIComponent(post.id)}" style="color: #111827; text-decoration: none; font-weight: 600; font-size: 15px;">
+          ${escapeHtml(post.content?.slice(0, 60) || 'Community post')}
+        </a>
+        <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 13px;">${post.like_count || 0} likes</p>
+      </td>
+    </tr>
+  `).join('');
+
+  const totalItems = (jobs?.length || 0) + (gigs?.length || 0) + (communityPosts?.length || 0);
+
+  return {
+    subject,
+    html: createEmailTemplate({
+      subject: escapeHtml(subject),
+      userId,
+      content: `
+      <h2 style="margin: 0 0 16px 0; font-size: 20px; color: #111827;">What's new in ${safeNeighborhood} this week</h2>
+      <p style="margin: 0 0 24px 0; color: #374151; font-size: 15px; line-height: 1.6;">
+        Here are ${totalItems} new opportunities and conversations from your neighborhood this week.
+      </p>
+
+      ${jobs?.length ? `
+      <h3 style="margin: 24px 0 12px 0; font-size: 16px; color: #111827;">New Jobs (${jobs.length})</h3>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        ${jobItems}
+      </table>
+      ` : ''}
+
+      ${gigs?.length ? `
+      <h3 style="margin: 24px 0 12px 0; font-size: 16px; color: #111827;">New Gigs (${gigs.length})</h3>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        ${gigItems}
+      </table>
+      ` : ''}
+
+      ${communityPosts?.length ? `
+      <h3 style="margin: 24px 0 12px 0; font-size: 16px; color: #111827;">Community Posts (${communityPosts.length})</h3>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        ${communityItems}
+      </table>
+      ` : ''}
+
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 32px 0;">
+        <tr>
+          <td align="center" style="padding: 8px 0;">
+            <a href="${siteUrl}/" style="display: inline-block; background: #22c55e; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+              Explore More on PhillyGrind
+            </a>
+          </td>
+        </tr>
+      </table>
+
+      <p style="margin: 24px 0 0 0; color: #6b7280; font-size: 13px; line-height: 1.6;">
+        <a href="${siteUrl}/settings?action=unsubscribe-digest" style="color: #22c55e; text-decoration: none;">Unsubscribe from weekly digest</a>
+      </p>
+    `,
+    }),
+  };
+}
