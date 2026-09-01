@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CreditCard, Shield, BadgeCheck, Palette, User, Bell, Mail, FileText, Trash2, MapPin, CloudLightning, Newspaper } from 'lucide-react';
 import { sendTwoFactorCode, toggleTwoFactorAuth, verifyTwoFactorCode } from '../lib/twoFactorApi.js';
@@ -28,7 +28,6 @@ function Settings() {
   const { user, isLoggedIn, profile: authProfile, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const unsubscribeProcessedRef = useRef(false);
   const [connectingPayouts, setConnectingPayouts] = useState(false);
   const [resumeUrl, setResumeUrl] = useState('');
   const [profileStatus, setProfileStatus] = useState('');
@@ -72,8 +71,7 @@ function Settings() {
   // Handle unsubscribe from weekly digest via email link
   useEffect(() => {
     const unsubscribeAction = searchParams.get('action');
-    if (unsubscribeAction === 'unsubscribe-digest' && user?.id && !unsubscribeProcessedRef.current) {
-      unsubscribeProcessedRef.current = true;
+    if (unsubscribeAction === 'unsubscribe-digest' && user?.id) {
       const unsubscribe = async () => {
         try {
           const { error } = await supabase
@@ -94,7 +92,9 @@ function Settings() {
       };
       unsubscribe();
     }
-  }, [searchParams, user?.id, supabase, refreshProfile, navigate]);
+  // Only run when searchParams changes (to prevent re-processing)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   useEffect(() => {
     async function loadHousingData() {
