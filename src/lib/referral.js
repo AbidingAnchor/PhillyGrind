@@ -1,23 +1,16 @@
 import { supabase } from './supabase.js';
+import { isReferralId } from './referralLink.js';
 
 const STORAGE_KEY = 'pg_referral';
 const TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export const INVITE_SHARE_PREFIX = 'Hey, check out PhillyGrind — ';
-
-export function isReferralId(value) {
-  return UUID_RE.test(String(value || '').trim());
-}
-
-export function getInviteLink(userId, origin = window.location.origin) {
-  if (!isReferralId(userId)) return `${origin}/signup`;
-  return `${origin}/join?ref=${encodeURIComponent(userId)}`;
-}
-
-export function getInviteShareText(userId, origin = window.location.origin) {
-  return `${INVITE_SHARE_PREFIX}${getInviteLink(userId, origin)}`;
-}
+export {
+  DEFAULT_INVITE_ORIGIN,
+  INVITE_SHARE_PREFIX,
+  getInviteLink,
+  getInviteShareText,
+  isReferralId,
+} from './referralLink.js';
 
 export function persistReferral(ref) {
   const id = String(ref || '').trim();
