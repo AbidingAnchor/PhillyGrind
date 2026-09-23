@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Send, X } from 'lucide-react';
 import GrindBotAvatar from './GrindBotAvatar.jsx';
 import ReactMarkdown from 'react-markdown';
@@ -7,11 +7,7 @@ import { hasSupabaseConfig, supabase } from '../lib/supabase.js';
 import { grindBotUserFacingError } from '../lib/grindbotErrors.js';
 import { sendGrindBotMessage } from '../lib/grindbotApi.js';
 import { getPendingTicketHint } from '../lib/grindbotConfirm.js';
-
-const welcomeMessage = {
-  role: 'assistant',
-  content: "Yo, I'm GrindBot. Ask me how PhillyGrind works, how bids and escrow work, or how to post your next job or gig.",
-};
+import { PERSONAS } from '../lib/grindbotPersonas.js';
 
 const workTypeOptions = [
   { label: 'Jobs (steady work)', value: 'jobs' },
@@ -73,11 +69,20 @@ function routeForListing(listing) {
   return listing.type === 'gig' ? `/gigs/${listing.id}` : `/jobs/${listing.id}`;
 }
 
-function GrindBot() {
-  console.log('[DEBUG] GrindBot component mounted/rendered');
+const GrindBot = forwardRef(function GrindBot(props, ref) {
   const { session } = useAuth();
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState([welcomeMessage]);
+  const [persona, setPersona] = useState('hustle');
+  const [messagesByPersona, setMessagesByPersona] = useState(() =>
+    Object.fromEntries(Object.keys(PERSONAS).map((id) => [id, []])),
+  );
+  const messages = messagesByPersona[persona] || [];
+  function setMessages(updater) {
+    setMessagesByPersona((current) => ({
+      ...current,
+      [persona]: typeof updater === 'function' ? updater(current[persona] || []) : updater,
+    }));
+  }
   const [input, setInput] = useState('');
   const [neighborhoodInput, setNeighborhoodInput] = useState('');
   const [status, setStatus] = useState('');
@@ -86,6 +91,46 @@ function GrindBot() {
   const [matchStep, setMatchStep] = useState('idle');
   const [matchPrefs, setMatchPrefs] = useState({});
   const threadRef = useRef(null);
+  const widgetRef = useRef(null);
+
+  const currentPersona = PERSONAS[persona];
+  const welcome = messages.length === 0 ? currentPersona.welcome : null;
+
+  function selectPersona(next) {
+    if (next === persona) return;
+    setPersona(next);
+    setInput('');
+    setStatus('');
+    setMatchStep('idle');
+    setMatchPrefs({});
+    setNeighborhoodInput('');
+    scrollThread();
+  }
+
+  function openWithPersona(next) {
+    setOpen(true);
+    if (next !== persona) {
+      selectPersona(next);
+    }
+  }
+
+  useImperativeHandle(ref, () => ({
+    openWithPersona,
+  }));
+
+  useEffect(() => {
+    const welcomeContents = new Set(Object.values(PERSONAS).map((p) => p.welcome));
+    setMessagesByPersona((current) => {
+      const next = {};
+      for (const id of Object.keys(current)) {
+        next[id] = (current[id] || []).filter(
+          (m) =>
+            !(m.role === 'assistant' && welcomeContents.has(m.content) && m.kind === undefined && m.meta === undefined),
+        );
+      }
+      return next;
+    });
+  }, []);
 
   async function removeUnavailableJobMatches(listings) {
     const listingIds = listings.map((listing) => listing.id).filter(Boolean);
@@ -94,9 +139,7 @@ function GrindBot() {
     try {
       const response = await fetch('/api/listing-actions?action=unavailable-listings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ listing_ids: listingIds }),
       });
       const payload = await response.json();
@@ -116,6 +159,26 @@ function GrindBot() {
     }, 50);
   }
 
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const widget = widgetRef.current;
+    if (!vv || !widget) return undefined;
+
+    function updateViewport() {
+      const inset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      widget.style.setProperty('--grindbot-visible-height', `${vv.height}px`);
+      widget.style.setProperty('--grindbot-keyboard-inset', `${inset}px`);
+    }
+
+    updateViewport();
+    vv.addEventListener('resize', updateViewport);
+    vv.addEventListener('scroll', updateViewport);
+    return () => {
+      vv.removeEventListener('resize', updateViewport);
+      vv.removeEventListener('scroll', updateViewport);
+    };
+  }, []);
+
   function addAssistantMessage(content, extra = {}) {
     setMessages((current) => [...current, { role: 'assistant', content, ...extra }]);
     scrollThread();
@@ -131,10 +194,7 @@ function GrindBot() {
     setMatchPrefs({});
     setNeighborhoodInput('');
     setMatchStep('workType');
-    addAssistantMessage('Bet. What kind of work are you looking for?', {
-      kind: 'choices',
-      choices: workTypeOptions,
-    });
+    addAssistantMessage('Bet. What kind of work are you looking for?', { kind: 'choices', choices: workTypeOptions });
   }
 
   function chooseWorkType(option) {
@@ -163,10 +223,7 @@ function GrindBot() {
     setMatchPrefs((current) => ({ ...current, neighborhood }));
     setNeighborhoodInput('');
     setMatchStep('pay');
-    addAssistantMessage('What pay range are you aiming for?', {
-      kind: 'choices',
-      choices: payOptions,
-    });
+    addAssistantMessage('What pay range are you aiming for?', { kind: 'choices', choices: payOptions });
   }
 
   async function loadListingsForMatch(type, prefs) {
@@ -181,17 +238,9 @@ function GrindBot() {
       .order('created_at', { ascending: false })
       .limit(30);
 
-    if (mappedCategories.length) {
-      query = query.in('category', mappedCategories);
-    }
-
-    if (prefs.neighborhood) {
-      query = query.ilike('neighborhood', `%${prefs.neighborhood}%`);
-    }
-
-    if (type === 'gig') {
-      query = query.eq('status', 'open');
-    }
+    if (mappedCategories.length) query = query.in('category', mappedCategories);
+    if (prefs.neighborhood) query = query.ilike('neighborhood', `%${prefs.neighborhood}%`);
+    if (type === 'gig') query = query.eq('status', 'open');
 
     const { data, error } = await query;
     if (error) throw error;
@@ -212,9 +261,7 @@ function GrindBot() {
     addAssistantMessage('I got you. Searching PhillyGrind for the best matches now...');
 
     try {
-      if (!hasSupabaseConfig) {
-        throw new Error('Supabase is not configured.');
-      }
+      if (!hasSupabaseConfig) throw new Error('Supabase is not configured.');
 
       const searchJobs = prefs.workType === 'jobs' || prefs.workType === 'both';
       const searchGigs = prefs.workType === 'gigs' || prefs.workType === 'both';
@@ -231,10 +278,7 @@ function GrindBot() {
         return;
       }
 
-      addAssistantMessage(`Found ${results.length} solid match${results.length === 1 ? '' : 'es'} for you.`, {
-        kind: 'matches',
-        results,
-      });
+      addAssistantMessage(`Found ${results.length} solid match${results.length === 1 ? '' : 'es'} for you.`, { kind: 'matches', results });
     } catch (error) {
       setStatus(error.message || 'Could not find matches right now.');
     } finally {
@@ -242,28 +286,31 @@ function GrindBot() {
     }
   }
 
-  async function handleSubmit(event) {
-    console.log('[DEBUG] handleSubmit CALLED - function entry');
-    event.preventDefault();
-    const trimmed = input.trim();
-    if (!trimmed || sending) return;
+  function submitChip(text) {
+    handleSend(text);
+  }
 
-    // Guard against session not being ready yet (first-message bug)
+  async function handleSend(trimmed) {
+    const text = trimmed.trim();
+    if (!text || sending) return;
+
     if (!session?.access_token) {
-      console.log('[DEBUG] Session not ready, returning early');
       setStatus('Not logged in. Please refresh and try again.');
       return;
     }
 
-    console.log('[DEBUG] messages state at submit:', messages);
-    console.log('[DEBUG] input value:', trimmed);
-
-    const newUserMessage = { role: 'user', content: trimmed };
+    const newUserMessage = { role: 'user', content: text };
     const nextMessages = [...messages, newUserMessage];
-    const payloadMessages = nextMessages.filter((message) => message.role !== 'system');
-    
-    console.log('[DEBUG] payloadMessages:', payloadMessages);
-    
+
+    const conversation = messages.filter((message) => message.role !== 'system');
+    const hasCurrentAssistant = conversation.some(
+      (message) => message.role === 'assistant' && message.persona === persona,
+    );
+    const introMessage = hasCurrentAssistant
+      ? []
+      : [{ role: 'assistant', content: PERSONAS[persona].welcome, persona }];
+    const payloadMessages = [...conversation, ...introMessage, newUserMessage];
+
     setMessages(nextMessages);
     setInput('');
     setStatus('');
@@ -277,12 +324,14 @@ function GrindBot() {
         token: session.access_token,
         messages: payloadMessages,
         clientHint,
+        persona,
       });
 
       setMessages((current) => [...current, {
         role: 'assistant',
         content: payload.reply,
         meta: payload.meta || null,
+        persona,
       }]);
       scrollThread();
     } catch (error) {
@@ -292,38 +341,69 @@ function GrindBot() {
     }
   }
 
+  function handleSubmit(event) {
+    event.preventDefault();
+    handleSend(input.trim());
+  }
+
   if (!session?.access_token) return null;
 
   return (
-    <div className="grindbot-widget">
+    <div className="grindbot-widget" ref={widgetRef}>
       {open && (
         <section className="grindbot-panel" aria-label="GrindBot chat">
-          <header className="grindbot-header">
-            <div>
-              <span className="eyebrow">PhillyGrind Help</span>
-              <h2>GrindBot</h2>
+          <header className={`grindbot-header grindbot-header--${persona}`}>
+            <div className="grindbot-header-main">
+              <GrindBotAvatar persona={persona} size={34} />
+              <div>
+                <span className="eyebrow">{currentPersona.scope}</span>
+                <h2>{currentPersona.name}</h2>
+              </div>
             </div>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Close GrindBot">
+            <button type="button" onClick={() => setOpen(false)} aria-label="Close chat">
               <X size={18} />
             </button>
           </header>
+
+          <div className="grindbot-persona-switcher" role="tablist" aria-label="Choose specialist">
+            {Object.values(PERSONAS).map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                role="tab"
+                aria-selected={p.id === persona}
+                className={`grindbot-persona-tab grindbot-persona-tab--${p.id} ${p.id === persona ? 'active' : ''}`}
+                onClick={() => selectPersona(p.id)}
+                title={p.name}
+              >
+                <GrindBotAvatar persona={p.id} size={22} />
+                <span>{p.name}</span>
+              </button>
+            ))}
+          </div>
+
           <div className="grindbot-thread" ref={threadRef}>
+            {welcome && (
+              <article className="grindbot-message">
+                <span>{currentPersona.name}</span>
+                <ReactMarkdown>{welcome}</ReactMarkdown>
+                {persona === 'hustle' && matchStep === 'idle' && (
+                  <button className="grindbot-match-button" type="button" onClick={startMatchFlow} disabled={matching}>
+                    Find me work
+                  </button>
+                )}
+              </article>
+            )}
             {messages.map((message, index) => {
-              const showFindWork = index === 0 && message.role === 'assistant' && matchStep === 'idle';
-              console.log('[DEBUG] Rendering message:', index, message.role, message.content.substring(0, 50));
+              const senderName = message.role === 'user' ? 'You' : PERSONAS[message.persona || persona]?.name || 'GrindBot';
 
               return (
                 <article key={`${message.role}-${index}`} className={message.role === 'user' ? 'grindbot-message user' : 'grindbot-message'}>
-                  <span>{message.role === 'user' ? 'You' : 'GrindBot'}</span>
+                  <span>{senderName}</span>
                   {message.role === 'assistant' ? (
                     <ReactMarkdown>{message.content}</ReactMarkdown>
                   ) : (
                     <p>{message.content}</p>
-                  )}
-                  {showFindWork && (
-                    <button className="grindbot-match-button" type="button" onClick={startMatchFlow} disabled={matching}>
-                      Find me work
-                    </button>
                   )}
                   {message.kind === 'choices' && (
                     <div className="grindbot-choice-grid">
@@ -333,9 +413,9 @@ function GrindBot() {
                           type="button"
                           disabled={
                             !(
-                              (matchStep === 'workType' && workTypeOptions.some((option) => option.value === choice.value))
+                              (matchStep === 'workType' && workTypeOptions.some((o) => o.value === choice.value))
                               || (matchStep === 'category' && categoryOptions.includes(choice.value))
-                              || (matchStep === 'pay' && payOptions.some((option) => option.value === choice.value))
+                              || (matchStep === 'pay' && payOptions.some((o) => o.value === choice.value))
                             )
                           }
                           onClick={() => {
@@ -375,18 +455,32 @@ function GrindBot() {
             })}
             {(sending || matching) && (
               <article className="grindbot-message">
-                <span>GrindBot</span>
+                <span>{currentPersona.name}</span>
                 <p>{matching ? 'Checking the boards...' : 'Working on it...'}</p>
               </article>
             )}
           </div>
+
+          <div className="grindbot-chips">
+            {currentPersona.chips.map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => submitChip(chip)}
+                disabled={sending || matching}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+
           {status && <p className="grindbot-status">{status}</p>}
           <form className="grindbot-form" onSubmit={handleSubmit}>
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Ask about bids, escrow, payouts..."
-              aria-label="Ask GrindBot"
+              placeholder={currentPersona.placeholder}
+              aria-label={`Ask ${currentPersona.name}`}
             />
             <button type="submit" disabled={sending || !input.trim()} aria-label="Send message">
               <Send size={18} />
@@ -394,11 +488,11 @@ function GrindBot() {
           </form>
         </section>
       )}
-      <button className="grindbot-bubble" type="button" onClick={() => setOpen((value) => !value)} aria-label="Open GrindBot">
-        <GrindBotAvatar size={30} />
+      <button className={`grindbot-bubble grindbot-bubble--${persona}`} type="button" onClick={() => setOpen((value) => !value)} aria-label="Open chat">
+        <GrindBotAvatar persona={persona} size={30} />
       </button>
     </div>
   );
-}
+});
 
 export default GrindBot;

@@ -11,6 +11,7 @@ import { subscribeToToasts } from './lib/toast.js';
 import MascotOnboarding from './components/MascotOnboarding.jsx';
 import NotificationBell from './components/NotificationBell.jsx';
 import Toast from './components/Toast.jsx';
+import GrindBot from './components/GrindBot.jsx';
 import {
   hasCompletedMascotOnboarding,
   shouldHideMascotOnboarding,
@@ -31,9 +32,12 @@ function App() {
   const [scrolled, setScrolled] = useState(false);
   const menuButtonRef = useRef(null);
   const mobileNavRef = useRef(null);
+  const grindBotRef = useRef(null);
   const [toastMessage, setToastMessage] = useState('');
   const [mascotDismissed, setMascotDismissed] = useState(false);
   const { isLoggedIn, profile, signOut, user } = useAuth();
+
+  const openChat = (persona) => grindBotRef.current?.openWithPersona(persona);
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const displayName = profile?.name || 'My Profile';
@@ -289,7 +293,7 @@ function App() {
       )}
 
       <main>
-        <Outlet />
+        <Outlet context={{ openChat }} />
       </main>
 
       {shouldShowMascotOnboarding && (
@@ -322,6 +326,7 @@ function App() {
         </nav>
       </footer>
       <Analytics />
+      <GrindBot ref={grindBotRef} />
     </div>
   );
 }

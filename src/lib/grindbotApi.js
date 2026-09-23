@@ -1,6 +1,6 @@
 import { grindBotUserFacingError } from './grindbotErrors.js';
 
-export async function sendGrindBotMessage({ token, messages, clientHint = null }) {
+export async function sendGrindBotMessage({ token, messages, clientHint = null, persona = 'hustle' }) {
   const response = await fetch('/api/grindbotai', {
     method: 'POST',
     headers: {
@@ -10,6 +10,7 @@ export async function sendGrindBotMessage({ token, messages, clientHint = null }
     body: JSON.stringify({
       messages,
       clientHint,
+      persona,
     }),
   });
 
